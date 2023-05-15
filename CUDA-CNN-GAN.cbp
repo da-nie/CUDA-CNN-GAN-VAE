@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="CUDA-CNN-GAN" />
+		<Option pch_mode="2" />
+		<Option compiler="nvcc" />
+		<Build>
+			<Target title="Release">
+				<Option output="bin/Release/CUDA-CNN-GAN" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="nvcc" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-std=c++11" />
+					<Add option="-ccbin=g++" />
+					<Add option="-arch=sm_35" />
+					<Add option="-I /usr/local/cuda-11.1/include" />
+					<Add option="-L /usr/local/cuda-11.1/lib64" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Unit filename="common/cdatastreamfile.cpp" />
+		<Unit filename="common/cdatastreamfile.h" />
+		<Unit filename="common/craiifilein.cpp" />
+		<Unit filename="common/craiifilein.h" />
+		<Unit filename="common/craiifileout.cpp" />
+		<Unit filename="common/craiifileout.h" />
+		<Unit filename="common/idatastream.cpp" />
+		<Unit filename="common/idatastream.h" />
+		<Unit filename="common/tga.cpp" />
+		<Unit filename="common/tga.h" />
+		<Unit filename="cuda/ccudadevicevector.cu.h" />
+		<Unit filename="cuda/ccudafunction.cu.h" />
+		<Unit filename="cuda/ccudatimespent.cu.h" />
+		<Unit filename="cuda/cmain.cu.h" />
+		<Unit filename="cuda/ctensor.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensor.cu.h" />
+		<Unit filename="cuda/ctensorapplyfunc.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensorapplyfunc.cu.h" />
+		<Unit filename="cuda/ctensorconv.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensorconv.cu.h" />
+		<Unit filename="cuda/ctensormath.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensormath.cu.h" />
+		<Unit filename="cuda/ctensortest.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensortest.cu.h" />
+		<Unit filename="cuda/cuda.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/cuda.cu.h" />
+		<Unit filename="cuda/handle_error.cu.h" />
+		<Unit filename="cuda/tensor.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/tensor.cu.h" />
+		<Unit filename="main.cpp" />
+		<Unit filename="netlayer/cnetlayerbackconvolution.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerbackconvolution.cu.h" />
+		<Unit filename="netlayer/cnetlayerconvolution.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerconvolution.cu.h" />
+		<Unit filename="netlayer/cnetlayerconvolutioninput.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerconvolutioninput.cu.h" />
+		<Unit filename="netlayer/cnetlayerlinear.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerlinear.cu.h" />
+		<Unit filename="netlayer/cnetlayermaxpooling.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayermaxpooling.cu.h" />
+		<Unit filename="netlayer/inetlayer.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/inetlayer.cu.h" />
+		<Unit filename="netlayer/neuron.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/neuron.cu.h" />
+		<Unit filename="system/system.cpp" />
+		<Unit filename="system/system.h" />
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>
