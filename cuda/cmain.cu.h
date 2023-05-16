@@ -18,6 +18,7 @@
 
 #include "../system/system.h"
 #include "../common/tga.h"
+#include "ctimestamp.cu.h"
 
 #include "../netlayer/cnetlayerlinear.cu.h"
 #include "../netlayer/cnetlayerconvolution.cu.h"
@@ -25,28 +26,7 @@
 #include "../netlayer/cnetlayerbackconvolution.cu.h"
 #include "../netlayer/cnetlayermaxpooling.cu.h"
 
-#include "ccudatimespent.cu.h"
 #include "tensor.cu.h"
-
-class CTimeStamp
-{
- std::string Text;
- CCUDATimeSpent cCUDATimeSpent;
- public:
-  CTimeStamp(std::string text):Text(text)
-  {
-   cCUDATimeSpent.Start();
-  }
-  ~CTimeStamp(void)
-  {
-   float gpu_time=cCUDATimeSpent.Stop();
-   return;
-   char str[255];
-   sprintf(str,"%.2f мс.",gpu_time);
-   SYSTEM::PutMessageToConsole(Text+str);
-  }
-};
-
 
 //****************************************************************************************************
 //Главный класс программы
@@ -360,7 +340,6 @@ template<class type_t>
 void CMain<type_t>::CreateFakeImage(std::vector<CTensor<type_t>> &cTensor_Generator_Output)
 {
  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
- cTensor_Generator_Output.resize(BATCH_SIZE);
  for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
   if (IsExit()==true) throw("Стоп");
@@ -749,7 +728,6 @@ void CMain<type_t>::TrainingNet(void)
  cTensor_Discriminator_Real_Image_Input=std::vector<CTensor<type_t>>(BATCH_SIZE);
  cTensor_Discriminator_Output=std::vector<CTensor<type_t>>(BATCH_SIZE);
  cTensor_Discriminator_Error=std::vector<CTensor<type_t>>(BATCH_SIZE);
-
  for(size_t n=0;n<BATCH_SIZE;n++)
  {
   cTensor_Generator_Output[n]=CTensor<type_t>(1,IMAGE_WIDTH,IMAGE_HEIGHT);

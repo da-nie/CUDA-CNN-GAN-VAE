@@ -9,6 +9,7 @@
 //подключаемые библиотеки
 //****************************************************************************************************
 #include "ctensor.cu.h"
+#include "../system/system.h"
 #include "ctensormath.cu.h"
 #include "ctensorapplyfunc.cu.h"
 #include "ctensorconv.cu.h"
@@ -79,7 +80,7 @@ template<class type_t>
 bool CTensorTest<type_t>::Test(void)
 {
  {
-  printf("Тест функции CreateDeltaWeightAndBias.\r\n");
+  SYSTEM::PutMessageToConsole("Тест функции CreateDeltaWeightAndBias.");
   {
    CTensor<type_t> cTensor_KernelA(3,3,3);
    CTensor<type_t> cTensor_KernelB(3,3,3);
@@ -365,13 +366,13 @@ bool CTensorTest<type_t>::Test(void)
 
    if (cTensor_dKernel[0].Compare(cTensor_Control,"")==false) return(false);
   }
-  printf("Успешно.\r\n");
+  SYSTEM::PutMessageToConsole("Успешно.");
  }
 
 
 
  {
-  printf("Тест функции BackwardConvolution.\r\n");
+  SYSTEM::PutMessageToConsole("Тест функции BackwardConvolution.");
   CTensor<type_t> cTensor_KernelA(3,2,2);
   CTensor<type_t> cTensor_KernelB(3,2,2);
   //ядро A
@@ -514,12 +515,12 @@ bool CTensorTest<type_t>::Test(void)
 
   //сравниваем полученный тензор
   if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
-  printf("Успешно.\r\n");
+  SYSTEM::PutMessageToConsole("Успешно.");
  }
 
 
  {
-  printf("Тест функции ForwardConvolution.\r\n");
+  SYSTEM::PutMessageToConsole("Тест функции ForwardConvolution.");
   CTensor<type_t> cTensor_KernelA(3,2,2);
   CTensor<type_t> cTensor_KernelB(3,2,2);
 
@@ -626,12 +627,12 @@ bool CTensorTest<type_t>::Test(void)
   CTensorConv<type_t>::ForwardConvolution(cTensor_Output,cTensor_Image,cTensor_Kernel,bias,1,1,0,0);
   //сравниваем полученный тензор
   if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
-  printf("Успешно.\r\n");
+  SYSTEM::PutMessageToConsole("Успешно.");
  }
 
 
  {
-  printf("Тест функции TransponseMul.\r\n");
+  SYSTEM::PutMessageToConsole("Тест функции TransponseMul.");
   CTensor<type_t> cTensorA(1,3,2);
   CTensor<type_t> cTensorAt(1,2,3);
   cTensorA.SetElement(0,0,0,1);
@@ -676,7 +677,7 @@ bool CTensorTest<type_t>::Test(void)
     if (fabs(e1-e2)>0.00001) return(false);
    }
   }
-  printf("Успешно.\r\n");
+  SYSTEM::PutMessageToConsole("Успешно.");
  }
 
 
@@ -694,67 +695,67 @@ bool CTensorTest<type_t>::Test(void)
  cTensorB.SetElement(0,1,0,3);
  cTensorB.SetElement(0,1,1,4);
 
- printf("Тест заполнения тензора по элементам.\r\n");
+ SYSTEM::PutMessageToConsole("Тест заполнения тензора по элементам.");
  //проверка на заполнение тензора
  if (cTensorA.GetElement(0,0,0)!=1) return(false);
  if (cTensorA.GetElement(0,0,1)!=2) return(false);
  if (cTensorA.GetElement(0,1,0)!=3) return(false);
  if (cTensorA.GetElement(0,1,1)!=4) return(false);
- printf("Успешно.\r\n");
+ SYSTEM::PutMessageToConsole("Успешно.");
 
  //умножение на число справа
- printf("Тест умножения на число справа.\r\n");
+ SYSTEM::PutMessageToConsole("Тест умножения на число справа.");
  cTensorC=cTensorA*2.0f;
  if (cTensorC.GetElement(0,0,0)!=2) return(false);
  if (cTensorC.GetElement(0,0,1)!=4) return(false);
  if (cTensorC.GetElement(0,1,0)!=6) return(false);
  if (cTensorC.GetElement(0,1,1)!=8) return(false);
- printf("Успешно.\r\n");
+ SYSTEM::PutMessageToConsole("Успешно.");
 
  //умножение на число слева
- printf("Тест умножения на число слева.\r\n");
+ SYSTEM::PutMessageToConsole("Тест умножения на число слева.");
  cTensorC=2.0f*cTensorA;
  if (cTensorC.GetElement(0,0,0)!=2) return(false);
  if (cTensorC.GetElement(0,0,1)!=4) return(false);
  if (cTensorC.GetElement(0,1,0)!=6) return(false);
  if (cTensorC.GetElement(0,1,1)!=8) return(false);
- printf("Успешно.\r\n");
+ SYSTEM::PutMessageToConsole("Успешно.");
 
  //умножение тензоров
- printf("Тест умножения тензоров.\r\n");
+ SYSTEM::PutMessageToConsole("Тест умножения тензоров.");
  cTensorC=cTensorA*cTensorB;
  if (cTensorC.GetElement(0,0,0)!=7) return(false);
  if (cTensorC.GetElement(0,0,1)!=10) return(false);
  if (cTensorC.GetElement(0,1,0)!=15) return(false);
  if (cTensorC.GetElement(0,1,1)!=22) return(false);
- printf("Успешно.\r\n");
+ SYSTEM::PutMessageToConsole("Успешно.");
 
  //вычитание тензоров
- printf("Тест вычитания тензоров.\r\n");
+ SYSTEM::PutMessageToConsole("Тест вычитания тензоров.");
  cTensorC=cTensorA-cTensorB;
  if (cTensorC.GetElement(0,0,0)!=0) return(false);
  if (cTensorC.GetElement(0,0,1)!=0) return(false);
  if (cTensorC.GetElement(0,1,0)!=0) return(false);
  if (cTensorC.GetElement(0,1,1)!=0) return(false);
- printf("Успешно.\r\n");
+ SYSTEM::PutMessageToConsole("Успешно.");
 
  //сложение тензоров
- printf("Тест сложения тензоров.\r\n");
+ SYSTEM::PutMessageToConsole("Тест сложения тензоров.");
  cTensorC=cTensorA+cTensorB;
  if (cTensorC.GetElement(0,0,0)!=2) return(false);
  if (cTensorC.GetElement(0,0,1)!=4) return(false);
  if (cTensorC.GetElement(0,1,0)!=6) return(false);
  if (cTensorC.GetElement(0,1,1)!=8) return(false);
- printf("Успешно.\r\n");
+ SYSTEM::PutMessageToConsole("Успешно.");
 
  //транспонирование тензора
- printf("Тест транспонирования тензоров.\r\n");
+ SYSTEM::PutMessageToConsole("Тест транспонирования тензоров.");
  cTensorC=CTensorMath<type_t>::Transpose(cTensorA);
  if (cTensorC.GetElement(0,0,0)!=1) return(false);
  if (cTensorC.GetElement(0,0,1)!=3) return(false);
  if (cTensorC.GetElement(0,1,0)!=2) return(false);
  if (cTensorC.GetElement(0,1,1)!=4) return(false);
- printf("Успешно.\r\n");
+ SYSTEM::PutMessageToConsole("Успешно.");
 
 /* //построчное скалярное произведение тензоров
  CTensor<type_t> cTensorD(1,2,1);
@@ -764,14 +765,14 @@ bool CTensorTest<type_t>::Test(void)
  */
 
  //поэлементное умножение тензоров
- printf("Тест поэлементного умножения тензоров.\r\n");
+ SYSTEM::PutMessageToConsole("Тест поэлементного умножения тензоров.");
  CTensor<type_t> cTensorE(1,2,2);
  CTensorMath<type_t>::TensorItemProduction(cTensorE,cTensorA,cTensorB);
  if (cTensorE.GetElement(0,0,0)!=1) return(false);
  if (cTensorE.GetElement(0,0,1)!=4) return(false);
  if (cTensorE.GetElement(0,1,0)!=9) return(false);
  if (cTensorE.GetElement(0,1,1)!=16) return(false);
- printf("Успешно.\r\n");
+ SYSTEM::PutMessageToConsole("Успешно.");
 
  return(true);
 }

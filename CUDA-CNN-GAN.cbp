@@ -33,6 +33,10 @@
 		<Unit filename="common/tga.h" />
 		<Unit filename="cuda/ccudadevicevector.cu.h" />
 		<Unit filename="cuda/ccudafunction.cu.h" />
+		<Unit filename="cuda/ccudatimespent.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
 		<Unit filename="cuda/ccudatimespent.cu.h" />
 		<Unit filename="cuda/cmain.cu.h" />
 		<Unit filename="cuda/ctensor.cu">
@@ -60,6 +64,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="cuda/ctensortest.cu.h" />
+		<Unit filename="cuda/ctimestamp.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctimestamp.cu.h" />
 		<Unit filename="cuda/cuda.cu">
 			<Option compile="1" />
 			<Option link="1" />
