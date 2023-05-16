@@ -134,6 +134,8 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
   }
  }*/
 
+ //TODO: считать все тензоры с видеокарты
+
 
  //для каждого ядра
  for(size_t k=0;k<output_z;k++)
@@ -173,7 +175,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
   }
  }
 
- cTensor_Output.SetOnChange();
+ cTensor_Output.SetHostOnChange();
 }
 
 
@@ -245,6 +247,8 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
  }
 */
 
+ //TODO: считать все тензоры с видеокарты
+
  for(int32_t y=0;y<output_y;y++)
  {
   for(int32_t x=0;x<output_x;x++)
@@ -285,7 +289,7 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
   }
  }
 
- cTensor_OutputDelta.SetOnChange();
+ cTensor_OutputDelta.SetHostOnChange();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -304,6 +308,8 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
  if (dkernel_amount==0) throw("Для создания поправок весов и смещений требуется не пустой вектор поправок к ядрам");
  if (dbias.size()!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы количество поправок фильтров и поправок сдвигов совпадало");
 
+ //TODO: считать все тензоры с видеокарты
+
  int32_t image_x=cTensor_Image.Size_X;
  int32_t image_y=cTensor_Image.Size_Y;
  int32_t image_z=cTensor_Image.Size_Z;
@@ -320,7 +326,7 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
 
  for(int32_t f=0;f<dkernel_amount;f++)
  {
-  cTensor_dKernel[f].SetOnChange();
+  cTensor_dKernel[f].SetHostOnChange();
 
   for(int32_t y=0;y<delta_y;y++)
   {
@@ -366,6 +372,8 @@ void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(std::vector<CTensor<type_
  if (dkernel_amount==0) throw("Для создания поправок весов и смещений требуется не пустой вектор поправок к ядрам");
  if (dbias.size()!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы количество поправок фильтров и поправок сдвигов совпадало");
 
+ //TODO: считать все тензоры с видеокарты
+
  int32_t delta_x=cTensor_Delta.Size_X;
  int32_t delta_y=cTensor_Delta.Size_Y;
  int32_t delta_z=cTensor_Delta.Size_Z;
@@ -382,7 +390,7 @@ void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(std::vector<CTensor<type_
 
  for(int32_t f=0;f<dkernel_amount;f++)
  {
-  cTensor_dKernel[f].SetOnChange();
+  cTensor_dKernel[f].SetHostOnChange();
 
   for(int32_t y=0;y<image_y;y++)
   {

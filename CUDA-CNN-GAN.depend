@@ -399,3 +399,138 @@
 1684003452 source:/home/da-nie/Working/12_05_2023/CUDA-CNN-GAN/cuda/tensor.cu
 	"tensor.cu.h"
 
+1683909983 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/cdatastreamfile.cpp
+	"cdatastreamfile.h"
+
+1683909983 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/cdatastreamfile.h
+	<string>
+	<memory>
+	<fstream>
+	"idatastream.h"
+
+1683909983 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/idatastream.h
+	<stdint.h>
+	<string>
+
+1683909983 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/craiifilein.cpp
+	"craiifilein.h"
+
+1683909983 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/craiifilein.h
+	<stdio.h>
+	<string>
+	<fstream>
+
+1683909983 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/craiifileout.cpp
+	"craiifileout.h"
+
+1683909983 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/craiifileout.h
+	<stdio.h>
+	<string>
+	<fstream>
+
+1683909983 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/idatastream.cpp
+	"idatastream.h"
+	"cdatastreamfile.h"
+
+1683909983 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/tga.cpp
+	"tga.h"
+	"craiifilein.h"
+	"craiifileout.h"
+	<string.h>
+
+1683909983 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/tga.h
+	<stdio.h>
+	<stdint.h>
+
+1683999690 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensor.cu
+	"ctensor.cu.h"
+
+1684167585 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensor.cu.h
+	<vector>
+	<math.h>
+	<cuda_runtime.h>
+	<cuda_runtime_api.h>
+	"../common/idatastream.h"
+	"../system/system.h"
+	"ccudadevicevector.cu.h"
+
+1683909983 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/system/system.h
+	<vector>
+	<string>
+
+1683972906 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ccudadevicevector.cu.h
+	<stdio.h>
+	<stdint.h>
+	<cuda_runtime.h>
+	<cuda_runtime_api.h>
+	"handle_error.cu.h"
+	"../system/system.h"
+
+1683968884 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/handle_error.cu.h
+	"../system/system.h"
+
+1684002592 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorapplyfunc.cu
+	"ctensorapplyfunc.cu.h"
+
+1684167834 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorapplyfunc.cu.h
+	"ctensor.cu.h"
+	"ctensormath.cu.h"
+
+1684167374 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensormath.cu.h
+	"ctensor.cu.h"
+
+1684001755 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu
+	"ctensorconv.cu.h"
+
+1684167808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu.h
+	"ctensor.cu.h"
+	<vector>
+
+1684001078 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensormath.cu
+	"ctensormath.cu.h"
+
+1684002723 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensortest.cu
+	"ctensortest.cu.h"
+
+1684165968 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensortest.cu.h
+	"ctensor.cu.h"
+	"ctensormath.cu.h"
+	"ctensorapplyfunc.cu.h"
+	"ctensorconv.cu.h"
+
+1684003452 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/tensor.cu
+	"tensor.cu.h"
+
+1684001804 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/tensor.cu.h
+	"ctensor.cu.h"
+	"ctensormath.cu.h"
+	"ctensorconv.cu.h"
+	"ctensorapplyfunc.cu.h"
+	"ctensortest.cu.h"
+
+1683909981 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/main.cpp
+	"cuda/cuda.cu.h"
+	<stdio.h>
+	<stdlib.h>
+
+1683969059 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/cuda.cu.h
+
+1683971129 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu
+	"cnetlayerbackconvolution.cu.h"
+
+1684003547 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu.h
+	<stdio.h>
+	<fstream>
+	<vector>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/tensor.cu.h"
+	"neuron.cu.h"
+
+1683909983 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/inetlayer.cu.h
+	<stdio.h>
+
+1683988784 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/neuron.cu.h
+	<stdio.h>
+	<stdint.h>
+

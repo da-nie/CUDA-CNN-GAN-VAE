@@ -273,7 +273,7 @@ void CTensorMath<type_t>::Add(CTensor<type_t> &cTensor_Output,const CTensor<type
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 
  /*
  const type_t *left_ptr=&cTensor_Left.Item[0];
@@ -353,7 +353,7 @@ void CTensorMath<type_t>::Sub(CTensor<type_t> &cTensor_Output,const CTensor<type
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 
  /*
  const type_t *left_ptr=&cTensor_Left.Item[0];
@@ -436,9 +436,10 @@ __host__ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTe
  {
   throw "CTensor::Mul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
  }
- //копируем данные на устройство
+ //копируем данные с устройство
  cTensor_Left.CopyToDevice();
  cTensor_Right.CopyToDevice();
+
 
  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
  STensorKernel<type_t> sTensorKernel_Left(cTensor_Left);
@@ -460,8 +461,7 @@ __host__ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTe
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
-
+ cTensor_Output.SetDeviceOnChange();
  /*
  for(size_t z=0;z<cTensor_Left.Size_Z;z++)
  {
@@ -496,7 +496,6 @@ __global__ void CUDATransponseTensorMulTensorFunction(STensorKernel<type_t> tens
  //координаты элементов блока в выходном тензоре
  size_t x=threadIdx.x;
  size_t y=threadIdx.y;
-
 
  //получаем подматрицу выходной матрицы
  STensorKernel<type_t> Csub=tensor_output.GetSubTensor(z,blockRow,blockCol);
@@ -576,7 +575,7 @@ void CTensorMath<type_t>::TransponseMul(CTensor<type_t> &cTensor_Output,const CT
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 
  /*
  for(size_t z=0;z<cTensor_Left.Size_Z;z++)
@@ -637,13 +636,13 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
  {
   throw "CTensor::Mul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const type_t &value_right): Размерности тензоров не совпадают!";
  }
+
  cTensor_Left.CopyToDevice();
 
  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
  STensorKernel<type_t> sTensorKernel_Input(cTensor_Left);
 
  //запускаем процесс
-
  dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
 
  size_t block_x=cTensor_Left.Size_X/thread.x;
@@ -657,7 +656,7 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 
 /*
  const type_t *left_ptr=&cTensor_Left.Item[0];
@@ -708,7 +707,7 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const type_t &valu
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 
  /*
  const type_t *right_ptr=&cTensor_Right.Item[0];
@@ -737,6 +736,8 @@ void CTensorMath<type_t>::Transponse(CTensor<type_t> &cTensor_Output,const CTens
  {
   throw "void CTensor::Transponse(CTensor &cTensor_Output,const CTensor &cTensor_Input): Размерности матриц не совпадают!";
  }
+ cTensor_Input.CopyFromDevice(true);
+
  for(size_t z=0;z<cTensor_Input.Size_Z;z++)
  {
   const type_t *i_ptr=cTensor_Input.GetColumnPtr(z,0);
@@ -750,7 +751,7 @@ void CTensorMath<type_t>::Transponse(CTensor<type_t> &cTensor_Output,const CTens
    }
   }
  }
- cTensor_Output.SetOnChange();
+ cTensor_Output.SetHostOnChange();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -814,7 +815,8 @@ void CTensorMath<type_t>::TensorItemProduction(CTensor<type_t> &cTensor_Output,C
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
+
  /*
  type_t *right_ptr=cTensor_Right.GetColumnPtr(0,0);
  type_t *output_ptr=cTensor_Output.GetColumnPtr(0,0);

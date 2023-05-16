@@ -76,8 +76,6 @@ class CTensor
   //-константы------------------------------------------------------------------------------------------
  private:
   //-переменные-----------------------------------------------------------------------------------------
-  std::vector<type_t> Item;///<массив компонентов тензора
-
   size_t Size_X;///<размер по X
   size_t Size_Y;///<размер по Y
   size_t Size_Z;///<размер по Z
@@ -86,8 +84,10 @@ class CTensor
   size_t BasedSize_Y;///<исходный размер по Y
   size_t BasedSize_Z;///<исходный размер по Z
 
-  CCUDADeviceVector<type_t> DeviceItem;///<данные на устройстве
-  mutable bool OnChange;///<изменились ли данные
+  mutable std::vector<type_t> Item;///<массив компонентов тензора
+  mutable CCUDADeviceVector<type_t> DeviceItem;///<данные на устройстве
+  mutable bool HostOnChange;///<изменились данные на хосте
+  mutable bool DeviceOnChange;///<изменились данные на устройстве
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CTensor<type_t>(size_t size_z=1,size_t size_y=1,size_t size_x=1);
@@ -130,8 +130,9 @@ class CTensor
   type_t GetNorma(size_t z) const;///<получить норму тензора
 
   void CopyToDevice(bool force=false) const;///<скопировать тензор на устройство
-  void CopyFromDevice(bool force=false);///<скопировать тензор с устройства
-  void SetOnChange(void);///<установить, что данные изменились
+  void CopyFromDevice(bool force=false) const;///<скопировать тензор с устройства
+  void SetDeviceOnChange(void) const;///<установить, что данные на устройстве изменились
+  void SetHostOnChange(void) const;///<установить, что данные изменились
 
   void Print(const std::string &name,bool print_value=true) const;///<вывод тензора на экран
   bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="") const;///<сравнение тензоров
@@ -165,7 +166,7 @@ CTensor<type_t>::CTensor(size_t size_z,size_t size_y,size_t size_x)
 
  Item.resize(Size_X*Size_Y*Size_Z);
  DeviceItem.resize(Size_X*Size_Y*Size_Z);
- SetOnChange();
+ SetHostOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 //конструктор копирования
@@ -182,7 +183,7 @@ CTensor<type_t>::CTensor(const CTensor<type_t> &cTensor)
  BasedSize_X=Size_X;
  BasedSize_Y=Size_Y;
  BasedSize_Z=Size_Z;
- SetOnChange();
+ SetHostOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -242,6 +243,7 @@ template<class type_t>
 type_t CTensor<type_t>::GetElement(size_t z,size_t y,size_t x) const
 {
  if (x>=Size_X || y>=Size_Y || z>=Size_Z) throw("Ошибка доступа к элементу тензора для чтения!");
+ CopyFromDevice();
  return(Item[Size_X*y+x+Size_X*Size_Y*z]);
 }
 //----------------------------------------------------------------------------------------------------
@@ -251,8 +253,9 @@ template<class type_t>
 void CTensor<type_t>::SetElement(size_t z,size_t y,size_t x,type_t value)
 {
  if (x>=Size_X || y>=Size_Y || z>=Size_Z) throw("Ошибка доступа к элементу тензора для записи!");
+ CopyFromDevice();
  Item[Size_X*y+x+ Size_X*Size_Y*z]=value;
- SetOnChange();
+ SetHostOnChange();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -262,6 +265,8 @@ template<class type_t>
 type_t* CTensor<type_t>::GetColumnPtr(size_t z,size_t y)
 {
  if (y>=Size_Y || z>=Size_Z) throw("Ошибка получения указателя на строку тензора!");
+ CopyFromDevice();
+ SetHostOnChange();
  return(&Item[Size_X*y+Size_X*Size_Y*z]);
 }
 
@@ -273,6 +278,8 @@ template<class type_t>
 const type_t* CTensor<type_t>::GetColumnPtr(size_t z,size_t y) const
 {
  if (y>=Size_Y || z>=Size_Z) throw("Ошибка получения указателя на строку тензора!");
+ CopyFromDevice();
+ SetHostOnChange();
  return(&Item[Size_X*y+Size_X*Size_Y*z]);
 }
 //----------------------------------------------------------------------------------------------------
@@ -281,6 +288,7 @@ const type_t* CTensor<type_t>::GetColumnPtr(size_t z,size_t y) const
 template<class type_t>
 void CTensor<type_t>::Unitary(void)
 {
+ CopyFromDevice();
  type_t *o_ptr=&Item[0];
  for(size_t z=0;z<Size_Z;z++)
  {
@@ -293,7 +301,7 @@ void CTensor<type_t>::Unitary(void)
    }
   }
  }
- SetOnChange();
+ SetHostOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 //обнулить тензор
@@ -301,6 +309,7 @@ void CTensor<type_t>::Unitary(void)
 template<class type_t>
 void CTensor<type_t>::Zero(void)
 {
+ CopyFromDevice();
  type_t *o_ptr=&Item[0];
  for(size_t z=0;z<Size_Z;z++)
  {
@@ -312,7 +321,7 @@ void CTensor<type_t>::Zero(void)
    }
   }
  }
- SetOnChange();
+ SetHostOnChange();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -332,6 +341,9 @@ void CTensor<type_t>::Move(CTensor<type_t> &cTensor)
  BasedSize_Y=cTensor.BasedSize_Y;
  BasedSize_Z=cTensor.BasedSize_Z;
 
+ HostOnChange=cTensor.HostOnChange;
+ DeviceOnChange=cTensor.DeviceOnChange;
+
  cTensor.Size_X=0;
  cTensor.Size_Y=0;
  cTensor.Size_Z=0;
@@ -340,8 +352,8 @@ void CTensor<type_t>::Move(CTensor<type_t> &cTensor)
  cTensor.BasedSize_Y=0;
  cTensor.BasedSize_Z=0;
 
- SetOnChange();
- cTensor.SetOnChange();
+ cTensor.HostOnChange=false;
+ cTensor.DeviceOnChange=false;
 }
 //----------------------------------------------------------------------------------------------------
 //скопировать только элементы
@@ -350,8 +362,9 @@ template<class type_t>
 void CTensor<type_t>::CopyItem(CTensor<type_t> &cTensor)
 {
  if (Size_X*Size_Y*Size_Z!=cTensor.GetSizeX()*cTensor.GetSizeY()*cTensor.GetSizeZ()) throw("Нельзя копировать элементы тензора, если их количество различно.");
+ cTensor.CopyFromDevice();
  Item=cTensor.Item;
- SetOnChange();
+ SetHostOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 //оператор "="
@@ -370,7 +383,9 @@ CTensor<type_t>& CTensor<type_t>::operator=(const CTensor<type_t> &cTensor)
   BasedSize_X=cTensor.BasedSize_X;
   BasedSize_Y=cTensor.BasedSize_Y;
   BasedSize_Z=cTensor.BasedSize_Z;
-  SetOnChange();
+
+  HostOnChange=cTensor.HostOnChange;
+  DeviceOnChange=cTensor.DeviceOnChange;
  }
  return(*this);
 }
@@ -380,6 +395,8 @@ CTensor<type_t>& CTensor<type_t>::operator=(const CTensor<type_t> &cTensor)
 template<class type_t>
 bool CTensor<type_t>::Save(IDataStream *iDataStream_Ptr)
 {
+ CopyFromDevice();
+
  //сохраняем размерность тензора
  iDataStream_Ptr->SaveUInt32(Size_Z);
  iDataStream_Ptr->SaveUInt32(Size_Y);
@@ -407,7 +424,7 @@ bool CTensor<type_t>::Load(IDataStream *iDataStream_Ptr)
  //загружаем данные тензора
  for(size_t n=0;n<Size_X*Size_Y*Size_Z;n++) Item[n]=static_cast<type_t>(iDataStream_Ptr->LoadDouble());
 
- SetOnChange();
+ SetHostOnChange();
  return(true);
 }
 
@@ -450,6 +467,8 @@ void CTensor<type_t>::RestoreSize(void)
 template<class type_t>
 void CTensor<type_t>::Normalize(void)
 {
+ CopyFromDevice();
+
  for(size_t z=0;z<Size_Z;z++)
  {
   type_t norma=GetNorma(z);
@@ -462,7 +481,7 @@ void CTensor<type_t>::Normalize(void)
    }
   }
  }
- SetOnChange();
+ SetHostOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 //получить норму тензора
@@ -470,6 +489,7 @@ void CTensor<type_t>::Normalize(void)
 template<class type_t>
 type_t CTensor<type_t>::GetNorma(size_t z) const
 {
+ CopyFromDevice();
  type_t norma=0;
  for(size_t y=0;y<Size_Y;y++)
  {
@@ -488,35 +508,52 @@ type_t CTensor<type_t>::GetNorma(size_t z) const
 template<class type_t>
 void CTensor<type_t>::CopyToDevice(bool force) const
 {
- if (OnChange==false && force==false) return;
+ //копируем данные хоста на устройство
+ if (HostOnChange==false && force==false) return;
  DeviceItem.copy_host_to_device(&Item[0],Item.size());
- OnChange=false;
+ //указываем, что копии идентичные
+ HostOnChange=false;
+ DeviceOnChange=false;
 }
 //----------------------------------------------------------------------------------------------------
 ///!скопировать тензор с устройства
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensor<type_t>::CopyFromDevice(bool force)
+void CTensor<type_t>::CopyFromDevice(bool force) const
 {
- if (OnChange==false && force==false) return;
+ //копируем данные с устройства на хост
+ if (DeviceOnChange==false && force==false) return;
  DeviceItem.copy_device_to_host(&Item[0],Item.size());
- OnChange=false;
+ //указываем, что копии идентичные
+ HostOnChange=false;
+ DeviceOnChange=false;
 }
 
 //----------------------------------------------------------------------------------------------------
-///!установить, что данные изменились
+///!установить, что данные хоста изменились
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensor<type_t>::SetOnChange(void)
+void CTensor<type_t>::SetHostOnChange(void) const
 {
- OnChange=true;
+ HostOnChange=true;
 }
+//----------------------------------------------------------------------------------------------------
+///!установить, что данные устройства изменились
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensor<type_t>::SetDeviceOnChange(void) const
+{
+ DeviceOnChange=true;
+}
+
 //----------------------------------------------------------------------------------------------------
 ///!вывод тензора на экран
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
 void CTensor<type_t>::Print(const std::string &name,bool print_value) const
 {
+ CopyFromDevice();
+
  printf("***** %s *****\r\n",name.c_str());
  printf("Z:%i Y:%i X:%i\r\n",Size_Z,Size_Y,Size_X);
  if (print_value==false) return;
@@ -541,6 +578,9 @@ void CTensor<type_t>::Print(const std::string &name,bool print_value) const
 template<class type_t>
 bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::string &name) const
 {
+ CopyFromDevice();
+ cTensor_Control.CopyFromDevice();
+
  static const double EPS=0.00001;
 
  printf("***** %s *****\r\n",name.c_str());

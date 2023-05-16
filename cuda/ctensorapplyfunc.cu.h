@@ -250,6 +250,7 @@ template<class type_t>
 __host__ void CTensorApplyFunc<type_t>::ApplySigmoid(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
  cTensor_Input.CopyToDevice();
+
  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
  STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
 
@@ -261,7 +262,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplySigmoid(CTensor<type_t> &cTensor_Ou
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -307,7 +308,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyReLU(CTensor<type_t> &cTensor_Outpu
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 ///!функция CUDA для Leaky ReLU
@@ -352,7 +353,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyLeakyReLU(CTensor<type_t> &cTensor_
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -398,7 +399,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyLinear(CTensor<type_t> &cTensor_Out
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -444,7 +445,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyTangence(CTensor<type_t> &cTensor_O
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 /*
 //----------------------------------------------------------------------------------------------------
@@ -480,6 +481,7 @@ template<class type_t>
 __host__ void CTensorApplyFunc<type_t>::ApplySoftMax(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
  cTensor_Input.CopyToDevice();
+
  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
  STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
 
@@ -490,7 +492,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplySoftMax(CTensor<type_t> &cTensor_Ou
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 */
 
@@ -537,7 +539,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(CTensor<type_t>
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 ///!функция CUDA для производной ReLU
@@ -582,7 +584,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialReLU(CTensor<type_t> &c
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 ///!функция CUDA для производной Leaky ReLU
@@ -627,7 +629,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(CTensor<type_
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 ///!функция CUDA для производной линейной функции
@@ -672,7 +674,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialLinear(CTensor<type_t> 
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 //----------------------------------------------------------------------------------------------------
 ///!функция CUDA для производной гиперболического тангенса
@@ -717,7 +719,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialTangence(CTensor<type_t
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 /*
 //----------------------------------------------------------------------------------------------------
@@ -763,7 +765,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialSoftMax(CTensor<type_t>
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- cTensor_Output.CopyFromDevice(true);
+ cTensor_Output.SetDeviceOnChange();
 }
 */
 
