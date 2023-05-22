@@ -342,13 +342,15 @@ bool CTensorTest<type_t>::Test(void)
    std::vector<CTensor<type_t>> cTensor_dKernel;
    cTensor_KernelA.Zero();
    cTensor_dKernel.push_back(cTensor_KernelA);
+   for(size_t n=0;n<cTensor_dKernel.size();n++) cTensor_dKernel[n].Zero();
+   cTensor_dKernel[0].Print("Тензор поправок ядра A после обнуления");
    //создаём вектор попрвок смещений
    std::vector<type_t> dbias;
    dbias.push_back(0);
 
    CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dbias,cTensor_Image,cTensor_dOut);
 
-   cTensor_dKernel[0].Print("Тензор поправок ядра A");
+   cTensor_dKernel[0].Print("Тензор поправок ядра A после расчёта");
    //проверяем
    CTensor<type_t> cTensor_Control(1,3,3);
 
@@ -705,7 +707,7 @@ bool CTensorTest<type_t>::Test(void)
 
  //умножение на число справа
  SYSTEM::PutMessageToConsole("Тест умножения на число справа.");
- cTensorC=cTensorA*2.0f;
+ cTensorC=cTensorA*static_cast<type_t>(2.0);
  if (cTensorC.GetElement(0,0,0)!=2) return(false);
  if (cTensorC.GetElement(0,0,1)!=4) return(false);
  if (cTensorC.GetElement(0,1,0)!=6) return(false);
@@ -714,7 +716,7 @@ bool CTensorTest<type_t>::Test(void)
 
  //умножение на число слева
  SYSTEM::PutMessageToConsole("Тест умножения на число слева.");
- cTensorC=2.0f*cTensorA;
+ cTensorC=static_cast<type_t>(2.0)*cTensorA;
  if (cTensorC.GetElement(0,0,0)!=2) return(false);
  if (cTensorC.GetElement(0,0,1)!=4) return(false);
  if (cTensorC.GetElement(0,1,0)!=6) return(false);

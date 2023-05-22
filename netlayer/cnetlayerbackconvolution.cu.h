@@ -206,17 +206,20 @@ void CNetLayerBackConvolution<type_t>::Reset(void)
 
  for(size_t n=0;n<cTensor_Kernel.size();n++)
  {
-  type_t size=static_cast<type_t>(cTensor_Kernel[n].GetSizeX());
+  type_t size=static_cast<type_t>(cTensor_Kernel[n].GetSizeX()*cTensor_Kernel[n].GetSizeY()*cTensor_Kernel[n].GetSizeZ());
   type_t koeff=static_cast<type_t>(sqrt(2.0/size));
   //веса
-  for(size_t y=0;y<cTensor_Kernel[n].GetSizeY();y++)
+  for(size_t z=0;z<cTensor_Kernel[n].GetSizeZ();z++)
   {
-   for(size_t x=0;x<cTensor_Kernel[n].GetSizeX();x++)
+   for(size_t y=0;y<cTensor_Kernel[n].GetSizeY();y++)
    {
-    //используем метод инициализации He (Ге)
-    type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
-    type_t init=rnd*koeff;
-    cTensor_Kernel[n].SetElement(0,y,x,init);
+    for(size_t x=0;x<cTensor_Kernel[n].GetSizeX();x++)
+    {
+     //используем метод инициализации He (Ге)
+     type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
+     type_t init=rnd*koeff;
+     cTensor_Kernel[n].SetElement(z,y,x,init);
+    }
    }
   }
  }

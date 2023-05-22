@@ -75,6 +75,7 @@
 		</Unit>
 		<Unit filename="cuda/cuda.cu.h" />
 		<Unit filename="cuda/handle_error.cu.h" />
+		<Unit filename="cuda/netmodel/cmodel_v.cu.h" />
 		<Unit filename="cuda/tensor.cu">
 			<Option compile="1" />
 			<Option link="1" />

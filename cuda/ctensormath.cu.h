@@ -109,13 +109,13 @@ struct STensorKernel
  __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
   if (x>=Size_X || y>=Size_Y) return(0);
-  if (z>=Size_X) return(0);
+  if (z>=Size_Z) return(0);
   return TensorData_Ptr[z*StrideZ+y*StrideX+x];
  }
  __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
   if (x>=Size_X || y>=Size_Y) return;
-  if (z>=Size_X) return;
+  if (z>=Size_Z) return;
   TensorData_Ptr[z*StrideZ+y*StrideX+x]=value;
  }
 

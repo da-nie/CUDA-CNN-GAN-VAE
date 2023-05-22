@@ -150,25 +150,25 @@ type_t CMain<type_t>::GetRandValue(type_t max_value)
 template<class type_t>
 void CMain<type_t>::CreateGenerator(void)
 {
- /*
+
  GeneratorNet.resize(4);
  GeneratorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));//16x16
 
  GeneratorNet[0]->GetOutputTensor().ReinterpretSize(1,NOISE_LAYER_SIDE,NOISE_LAYER_SIDE);
- GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,128,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));//20x20
+ GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,32,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));//20x20
  GeneratorNet[0]->GetOutputTensor().RestoreSize();
 
  GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));//24x24
  GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,1,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[2].get()));//28x28
-*/
 
+/*
  GeneratorNet.resize(5);
  GeneratorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));
  GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));
  GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(512,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));
  GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1024,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[2].get()));
  GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(IMAGE_WIDTH*IMAGE_HEIGHT,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[3].get()));
-
+*/
 }
 //----------------------------------------------------------------------------------------------------
 //создать сеть дискриминатора
@@ -176,20 +176,20 @@ void CMain<type_t>::CreateGenerator(void)
 template<class type_t>
 void CMain<type_t>::CreateDiscriminator(void)
 {
-/*
  DiscriminatorNet.resize(3);
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().ReinterpretSize(1,IMAGE_HEIGHT,IMAGE_WIDTH);
  DiscriminatorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get()));//28x28
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().RestoreSize();
- DiscriminatorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128,5,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[0].get()));
+ DiscriminatorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(32,5,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[0].get()));
  DiscriminatorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,NNeuron::NEURON_FUNCTION_SIGMOID,DiscriminatorNet[1].get()));
-*/
 
+/*
  DiscriminatorNet.resize(4);
  DiscriminatorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1024,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get()));
  DiscriminatorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(512,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[0].get()));
  DiscriminatorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[1].get()));
  DiscriminatorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,NNeuron::NEURON_FUNCTION_SIGMOID,DiscriminatorNet[2].get()));
+*/
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -623,7 +623,7 @@ void CMain<type_t>::SaveImage(CTensor<type_t> &cTensor_Generator_Output,const st
 template<class type_t>
 void CMain<type_t>::Training(void)
 {
- const double disc_speed=0.05;//скорость обучения дискриминатора
+ const double disc_speed=0.01;//скорость обучения дискриминатора
  const double gen_speed=disc_speed*2.0;//скорость обучения генератора
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
  uint32_t iteration=0;
@@ -638,7 +638,7 @@ void CMain<type_t>::Training(void)
   {
    if (IsExit()==true) throw("Стоп");
 
-   if (batch%50==0)
+   if (batch%10==0)
    {
     SYSTEM::PutMessageToConsole("Save net.");
     SaveNet();
@@ -747,7 +747,7 @@ void CMain<type_t>::TrainingNet(void)
  //включаем обучение
  for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingStart();
  for(size_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingStart();
- printf("C\r\n");
+
  Training();
  //отключаем обучение
  for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingStop();
@@ -790,6 +790,166 @@ void CMain<type_t>::Execute(void)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
 
  if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
+
+ //измеряем время свёрток
+
+
+ {
+  SYSTEM::PutMessageToConsole("Тест скорости функции ForwardConvolution.");
+  CTensor<type_t> cTensor_KernelA(3,2,2);
+  CTensor<type_t> cTensor_KernelB(3,2,2);
+
+  //ядро A
+  cTensor_KernelA.SetElement(0,0,0,1);
+  cTensor_KernelA.SetElement(0,0,1,2);
+
+  cTensor_KernelA.SetElement(0,1,0,3);
+  cTensor_KernelA.SetElement(0,1,1,4);
+
+
+  cTensor_KernelA.SetElement(1,0,0,5);
+  cTensor_KernelA.SetElement(1,0,1,6);
+
+  cTensor_KernelA.SetElement(1,1,0,7);
+  cTensor_KernelA.SetElement(1,1,1,8);
+
+
+  cTensor_KernelA.SetElement(2,0,0,9);
+  cTensor_KernelA.SetElement(2,0,1,10);
+
+  cTensor_KernelA.SetElement(2,1,0,11);
+  cTensor_KernelA.SetElement(2,1,1,12);
+  //ядро B
+  cTensor_KernelB.SetElement(0,0,0,12);
+  cTensor_KernelB.SetElement(0,0,1,11);
+
+  cTensor_KernelB.SetElement(0,1,0,10);
+  cTensor_KernelB.SetElement(0,1,1,9);
+
+
+  cTensor_KernelB.SetElement(1,0,0,8);
+  cTensor_KernelB.SetElement(1,0,1,7);
+
+  cTensor_KernelB.SetElement(1,1,0,6);
+  cTensor_KernelB.SetElement(1,1,1,5);
+
+
+  cTensor_KernelB.SetElement(2,0,0,4);
+  cTensor_KernelB.SetElement(2,0,1,3);
+
+  cTensor_KernelB.SetElement(2,1,0,2);
+  cTensor_KernelB.SetElement(2,1,1,1);
+  //создаём вектор тензоров ядер
+  std::vector<CTensor<type_t>> cTensor_Kernel;
+  std::vector<CTensor<type_t>> cTensor_Kernel_Test;
+  cTensor_Kernel.push_back(cTensor_KernelA);
+  cTensor_Kernel.push_back(cTensor_KernelB);
+
+  for(size_t n=0;n<128;n++)
+  {
+   cTensor_Kernel_Test.push_back(cTensor_KernelA);
+   cTensor_Kernel_Test.push_back(cTensor_KernelB);
+  }
+  //создаём вектор смещений
+  std::vector<type_t> bias;
+  std::vector<type_t> bias_test;
+  bias.push_back(0);
+  bias.push_back(0);
+
+  for(size_t n=0;n<128;n++)
+  {
+   bias_test.push_back(0);
+   bias_test.push_back(0);
+  }
+
+  //входное изображение
+  CTensor<type_t> cTensor_Image(3,3,3);
+
+  cTensor_Image.SetElement(0,0,0,1);
+  cTensor_Image.SetElement(0,0,1,2);
+  cTensor_Image.SetElement(0,0,2,3);
+  cTensor_Image.SetElement(0,1,0,4);
+  cTensor_Image.SetElement(0,1,1,5);
+  cTensor_Image.SetElement(0,1,2,6);
+  cTensor_Image.SetElement(0,2,0,7);
+  cTensor_Image.SetElement(0,2,1,8);
+  cTensor_Image.SetElement(0,2,2,9);
+
+  cTensor_Image.SetElement(1,0,0,10);
+  cTensor_Image.SetElement(1,0,1,11);
+  cTensor_Image.SetElement(1,0,2,12);
+  cTensor_Image.SetElement(1,1,0,13);
+  cTensor_Image.SetElement(1,1,1,14);
+  cTensor_Image.SetElement(1,1,2,15);
+  cTensor_Image.SetElement(1,2,0,16);
+  cTensor_Image.SetElement(1,2,1,17);
+  cTensor_Image.SetElement(1,2,2,18);
+
+  cTensor_Image.SetElement(2,0,0,19);
+  cTensor_Image.SetElement(2,0,1,20);
+  cTensor_Image.SetElement(2,0,2,21);
+  cTensor_Image.SetElement(2,1,0,22);
+  cTensor_Image.SetElement(2,1,1,23);
+  cTensor_Image.SetElement(2,1,2,24);
+  cTensor_Image.SetElement(2,2,0,25);
+  cTensor_Image.SetElement(2,2,1,26);
+  cTensor_Image.SetElement(2,2,2,27);
+  //выходной тензор свёртки
+  CTensor<type_t> cTensor_Output(2,2,2);
+  //проверочный тензор свёртки
+  CTensor<type_t> cTensor_Control(2,2,2);
+
+  cTensor_Control.SetElement(0,0,0,1245);
+  cTensor_Control.SetElement(0,0,1,1323);
+
+  cTensor_Control.SetElement(0,1,0,1479);
+  cTensor_Control.SetElement(0,1,1,1557);
+
+
+  cTensor_Control.SetElement(1,0,0,627);
+  cTensor_Control.SetElement(1,0,1,705);
+
+  cTensor_Control.SetElement(1,1,0,861);
+  cTensor_Control.SetElement(1,1,1,939);
+
+  //выполняем прямую свёртку
+  {
+   CTensor<type_t> cTensor_ImageMax(3,300,300);
+   //выходной тензор свёртки
+   CTensor<type_t> cTensor_OutputMax(256,299,299);
+   CTimeStamp cTimeStamp("Скорость прямой свёрти:");
+   {
+    for(size_t n=0;n<1;n++)
+    {
+     CTensorConv<type_t>::ForwardConvolution(cTensor_OutputMax,cTensor_ImageMax,cTensor_Kernel_Test,bias_test,1,1,0,0);
+    }
+   }
+  }
+
+  //выполняем обратную свёртку
+  {
+   CTensor<type_t> cTensor_DeltaMax(256,299,299);
+   //выходной тензор свёртки
+   CTensor<type_t> cTensor_OutputDeltaMax(3,300,300);
+   CTimeStamp cTimeStamp("Скорость обратной свёрти:");
+   {
+    for(size_t n=0;n<1;n++)
+    {
+     CTensorConv<type_t>::BackwardConvolution(cTensor_OutputDeltaMax,cTensor_DeltaMax,cTensor_Kernel_Test,bias_test);
+    }
+   }
+  }
+
+
+  //сравниваем полученный тензор
+  CTensorConv<type_t>::ForwardConvolution(cTensor_Output,cTensor_Image,cTensor_Kernel,bias,1,1,0,0);
+  if (cTensor_Output.Compare(cTensor_Control,"")==false) throw("Свёртка неправильная!");
+  SYSTEM::PutMessageToConsole("Успешно.");
+ }
+
+
+
+
  TrainingNet();
 }
 

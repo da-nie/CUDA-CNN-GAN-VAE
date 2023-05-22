@@ -80,7 +80,7 @@ class CCUDADeviceVector
 template<class type_t>
 __host__ CCUDADeviceVector<type_t>::CCUDADeviceVector(size_t size)
 {
- Size=size;
+ Size=0;
  ItemPtr=NULL;
  resize(size);
 }

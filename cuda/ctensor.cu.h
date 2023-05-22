@@ -76,13 +76,13 @@ class CTensor
   //-константы------------------------------------------------------------------------------------------
  private:
   //-переменные-----------------------------------------------------------------------------------------
-  size_t Size_X;///<размер по X
-  size_t Size_Y;///<размер по Y
-  size_t Size_Z;///<размер по Z
+  mutable size_t Size_X;///<размер по X
+  mutable size_t Size_Y;///<размер по Y
+  mutable size_t Size_Z;///<размер по Z
 
-  size_t BasedSize_X;///<исходный размер по X
-  size_t BasedSize_Y;///<исходный размер по Y
-  size_t BasedSize_Z;///<исходный размер по Z
+  mutable size_t BasedSize_X;///<исходный размер по X
+  mutable size_t BasedSize_Y;///<исходный размер по Y
+  mutable size_t BasedSize_Z;///<исходный размер по Z
 
   mutable std::vector<type_t> Item;///<массив компонентов тензора
   mutable CCUDADeviceVector<type_t> DeviceItem;///<данные на устройстве
@@ -104,6 +104,7 @@ class CTensor
   void SetElement(size_t z,size_t y,size_t x,type_t value);///<задать элемент тензора
   type_t* GetColumnPtr(size_t z,size_t y);///<получить указатель на строку тензора
   const type_t* GetColumnPtr(size_t z,size_t y) const;///<получить указатель на строку тензора
+  CCUDADeviceVector<type_t>& GetDeviceVector(void) const;///<получить класс хранения данных на устройстве
   void Unitary(void);///<привести к единичному виду
   void Zero(void);///<обнулить тензор
   void Move(CTensor<type_t> &cTensor);///<переместить тензор
@@ -122,9 +123,9 @@ class CTensor
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить тензор
   bool Load(IDataStream *iDataStream_Ptr);///<загрузить тензор
 
-  void ExchangeSizeXY(void);///<обменять размеры по X и по Y местами
-  void ReinterpretSize(size_t size_z,size_t size_y,size_t size_x);///<интерпретировать размер по-новому
-  void RestoreSize(void);///<восстановить первоначальную интерпретацию размеров
+  void ExchangeSizeXY(void) const;///<обменять размеры по X и по Y местами
+  void ReinterpretSize(size_t size_z,size_t size_y,size_t size_x) const;///<интерпретировать размер по-новому
+  void RestoreSize(void) const;///<восстановить первоначальную интерпретацию размеров
 
   void Normalize(void);///<нормировка тензора
   type_t GetNorma(size_t z) const;///<получить норму тензора
@@ -166,7 +167,9 @@ CTensor<type_t>::CTensor(size_t size_z,size_t size_y,size_t size_x)
 
  Item.resize(Size_X*Size_Y*Size_Z);
  DeviceItem.resize(Size_X*Size_Y*Size_Z);
- SetHostOnChange();
+
+ HostOnChange=false;
+ DeviceOnChange=false;
 }
 //----------------------------------------------------------------------------------------------------
 //конструктор копирования
@@ -176,14 +179,17 @@ CTensor<type_t>::CTensor(const CTensor<type_t> &cTensor)
 {
  if (&cTensor==this) return;
  Item=cTensor.Item;
- DeviceItem.resize(Item.size());
+ DeviceItem=cTensor.DeviceItem;
+
  Size_X=cTensor.Size_X;
  Size_Y=cTensor.Size_Y;
  Size_Z=cTensor.Size_Z;
  BasedSize_X=Size_X;
  BasedSize_Y=Size_Y;
  BasedSize_Z=Size_Z;
- SetHostOnChange();
+
+ HostOnChange=cTensor.HostOnChange;
+ DeviceOnChange=cTensor.DeviceOnChange;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -269,8 +275,6 @@ type_t* CTensor<type_t>::GetColumnPtr(size_t z,size_t y)
  SetHostOnChange();
  return(&Item[Size_X*y+Size_X*Size_Y*z]);
 }
-
-
 //----------------------------------------------------------------------------------------------------
 //получить указатель на строку тензора
 //----------------------------------------------------------------------------------------------------
@@ -282,6 +286,15 @@ const type_t* CTensor<type_t>::GetColumnPtr(size_t z,size_t y) const
  SetHostOnChange();
  return(&Item[Size_X*y+Size_X*Size_Y*z]);
 }
+//----------------------------------------------------------------------------------------------------
+///!получить класс хранения данных на устройстве
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+CCUDADeviceVector<type_t>& CTensor<type_t>::GetDeviceVector(void) const
+{
+ return(DeviceItem);
+}
+
 //----------------------------------------------------------------------------------------------------
 //привести к единичному виду
 //----------------------------------------------------------------------------------------------------
@@ -432,7 +445,7 @@ bool CTensor<type_t>::Load(IDataStream *iDataStream_Ptr)
 //обменять размеры по X и по Y местами
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensor<type_t>::ExchangeSizeXY(void)
+void CTensor<type_t>::ExchangeSizeXY(void) const
 {
  size_t tmp=Size_X;
  Size_X=Size_Y;
@@ -442,7 +455,7 @@ void CTensor<type_t>::ExchangeSizeXY(void)
 //интерпретировать размер по-новому
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensor<type_t>::ReinterpretSize(size_t size_z,size_t size_y,size_t size_x)
+void CTensor<type_t>::ReinterpretSize(size_t size_z,size_t size_y,size_t size_x) const
 {
  if (Size_X*Size_Y*Size_Z!=size_x*size_y*size_z) throw("Новая интерпретация размеров невозможна из-за различного количества элементов.");
  Size_X=size_x;
@@ -453,7 +466,7 @@ void CTensor<type_t>::ReinterpretSize(size_t size_z,size_t size_y,size_t size_x)
 //восстановить первоначальную интерпретацию размеров
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensor<type_t>::RestoreSize(void)
+void CTensor<type_t>::RestoreSize(void) const
 {
  Size_X=BasedSize_X;
  Size_Y=BasedSize_Y;
@@ -583,6 +596,8 @@ bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::
 
  static const double EPS=0.00001;
 
+ bool ret=true;
+
  printf("***** %s *****\r\n",name.c_str());
  for(size_t z=0;z<GetSizeZ();z++)
  {
@@ -594,13 +609,13 @@ bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::
     type_t e1=GetElement(z,y,x);
     type_t e2=cTensor_Control.GetElement(z,y,x);
     printf("%f[%f] ",e1,e2);
-    if (fabs(e1-e2)>EPS) return(false);
+    if (fabs(e1-e2)>EPS) ret=false;
    }
    printf("\r\n");
   }
  }
  printf("\r\n");
- return(true);
+ return(ret);
 }
 
 
