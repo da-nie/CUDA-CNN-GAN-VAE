@@ -422,7 +422,6 @@ CTensor<type_t>& CNetLayerLinear<type_t>::GetDeltaTensor(void)
 template<class type_t>
 void CNetLayerLinear<type_t>::SetOutputError(CTensor<type_t>& error)
 {
-
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(cTensor_Delta,cTensor_Z);
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialReLU(cTensor_Delta,cTensor_Z);
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(cTensor_Delta,cTensor_Z);

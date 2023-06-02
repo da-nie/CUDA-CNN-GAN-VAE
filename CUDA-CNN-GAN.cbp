@@ -102,11 +102,21 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayerlinear.cu.h" />
+		<Unit filename="netlayer/cnetlayermaxdepooling.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayermaxdepooling.cu.h" />
 		<Unit filename="netlayer/cnetlayermaxpooling.cu">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayermaxpooling.cu.h" />
+		<Unit filename="netlayer/cnetlayerupsampling.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerupsampling.cu.h" />
 		<Unit filename="netlayer/inetlayer.cu">
 			<Option compile="1" />
 			<Option link="1" />

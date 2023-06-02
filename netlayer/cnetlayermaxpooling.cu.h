@@ -53,8 +53,12 @@ class CNetLayerMaxPooling:public INetLayer<type_t>
   CTensor<type_t> cTensor_H;///<тензор значений нейронов после функции активации
   CTensor<SPos> cTensor_P;///<тензор выбранной позиции субдискретизации (номер точки в блоке)
 
-  size_t Pooling_X=0;///<коэффициент сжатия по X
-  size_t Pooling_Y=0;///<коэффициент сжатия по Y
+  size_t Pooling_X;///<коэффициент сжатия по X
+  size_t Pooling_Y;///<коэффициент сжатия по Y
+
+  size_t InputSize_X;///<размер входного тензора по X
+  size_t InputSize_Y;///<размер входного тензора по Y
+  size_t InputSize_Z;///<размер входного тензора по Z
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензор дельты слоя
@@ -99,6 +103,8 @@ class CNetLayerMaxPooling:public INetLayer<type_t>
 template<class type_t>
 CNetLayerMaxPooling<type_t>::CNetLayerMaxPooling(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr)
 {
+ Pooling_X=0;///<коэффициент сжатия по X
+ Pooling_Y=0;///<коэффициент сжатия по Y
  Create(pooling_y,pooling_x,prev_layer_ptr);
 }
 //----------------------------------------------------------------------------------------------------
@@ -155,6 +161,11 @@ void CNetLayerMaxPooling<type_t>::Create(size_t pooling_y,size_t pooling_x,INetL
  size_t output_y=input_y/pooling_y;
  size_t output_z=input_z;
 
+ //запомним размеры входного тензора, чтобы потом всегда к ним приводить
+ InputSize_X=input_x;
+ InputSize_Y=input_y;
+ InputSize_Z=input_z;
+
  if (output_x==0 || output_y==0) throw("Выходной тензор слоя субдискретизации нулевого размера!");
  //создаём выходные тензоры
  cTensor_H=CTensor<type_t>(output_z,output_y,output_x);
@@ -209,7 +220,13 @@ void CNetLayerMaxPooling<type_t>::Forward(void)
  size_t output_y=cTensor_H.GetSizeY();
  size_t output_z=cTensor_H.GetSizeZ();
 
+ //приведём входной тензор к нужному виду
+ PrevLayerPtr->GetOutputTensor().ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
+
  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
+ size_t input_x=input.GetSizeX();
+ size_t input_y=input.GetSizeY();
+ size_t input_z=input.GetSizeZ();
 
  for(size_t z=0;z<output_z;z++)
  {
@@ -243,6 +260,8 @@ void CNetLayerMaxPooling<type_t>::Forward(void)
    }
   }
  }
+
+ PrevLayerPtr->GetOutputTensor().ReinterpretSize(input_z,input_y,input_x);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -319,13 +338,17 @@ void CNetLayerMaxPooling<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerMaxPooling<type_t>::TrainingBackward(void)
 {
+ size_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ size_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ size_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ //приведём входной тензор к нужному виду
+ PrevLayerPtr->GetOutputTensor().ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
+ cTensor_PrevLayerError.ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
+
  //размер выходного тензора
  size_t output_x=cTensor_Delta.GetSizeX();
  size_t output_y=cTensor_Delta.GetSizeY();
  size_t output_z=cTensor_Delta.GetSizeZ();
-
- CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
- size_t input_x=input.GetSizeX();
 
  cTensor_PrevLayerError.Zero();
 
@@ -341,6 +364,11 @@ void CNetLayerMaxPooling<type_t>::TrainingBackward(void)
    }
   }
  }
+
+ //задаём ошибку предыдущего слоя
+ PrevLayerPtr->GetOutputTensor().ReinterpretSize(input_z,input_y,input_x);
+ cTensor_PrevLayerError.ReinterpretSize(input_z,input_y,input_x);
+
  //задаём ошибку предыдущего слоя
  PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
 }

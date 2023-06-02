@@ -25,6 +25,8 @@
 #include "../../netlayer/cnetlayerconvolutioninput.cu.h"
 #include "../../netlayer/cnetlayerbackconvolution.cu.h"
 #include "../../netlayer/cnetlayermaxpooling.cu.h"
+#include "../../netlayer/cnetlayermaxdepooling.cu.h"
+#include "../../netlayer/cnetlayerupsampling.cu.h"
 
 #include "../tensor.cu.h"
 
@@ -39,15 +41,19 @@ class CModelV
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
   static const size_t STRING_BUFFER_SIZE=1024;///<размер буфера строки
-
+/*
   static const size_t MNIST_IMAGE_AMOUNT=60000;///<количество обучающих изображений
   static const size_t BATCH_AMOUNT=1000;///<количество пакетов
   static const size_t BATCH_SIZE=MNIST_IMAGE_AMOUNT/BATCH_AMOUNT;///<размер пакета
+  */
 
-  static const size_t IMAGE_WIDTH=28; ///<ширина входных изображений
-  static const size_t IMAGE_HEIGHT=28; ///<высота входных изображений
+  static const size_t IMAGE_WIDTH=44; ///<ширина входных изображений
+  static const size_t IMAGE_HEIGHT=44; ///<высота входных изображений
   static const size_t NOISE_LAYER_SIDE=16;///<размерность стороны слоя шума
-  static const size_t NOISE_LAYER_SIZE=NOISE_LAYER_SIDE*NOISE_LAYER_SIDE;///<размерность слоя шума
+  static const size_t NOISE_LAYER_SIZE=NOISE_LAYER_SIDE*NOISE_LAYER_SIDE*3;///<размерность слоя шума
+
+  size_t BATCH_AMOUNT;///<количество пакетов
+  size_t BATCH_SIZE;///<размер пакета
  private:
   //-структуры------------------------------------------------------------------------------------------
   struct SProtectedVariables
@@ -82,9 +88,8 @@ class CModelV
   type_t GetRandValue(type_t max_value);//случайное число
   void CreateGenerator(void);//создать сеть генератора
   void CreateDiscriminator(void);//создать сеть дискриминатора
-  bool LoadRealMNISTImage(void);//загрузить образы истинных изображений MNIST
+  bool LoadRealMNISTImage(void);//загрузить образы истинных изображений из MNIST
   bool LoadRealImage(void);//загрузить образы истинных изображений
-  void CreateMNISTImage(void);//создать набор отдельных картинок
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить слои сети
   void LoadNet(void);//загрузить сети
@@ -108,8 +113,10 @@ class CModelV
 //конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CModelV<type_t>::CModelV(void):RealImage(MNIST_IMAGE_AMOUNT),RealImageIndex(MNIST_IMAGE_AMOUNT)
+CModelV<type_t>::CModelV(void)
 {
+ BATCH_AMOUNT=0;
+ BATCH_SIZE=0;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -151,16 +158,60 @@ template<class type_t>
 void CModelV<type_t>::CreateGenerator(void)
 {
 
- GeneratorNet.resize(4);
+ GeneratorNet.resize(5);
  GeneratorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));//16x16
-
- GeneratorNet[0]->GetOutputTensor().ReinterpretSize(1,NOISE_LAYER_SIDE,NOISE_LAYER_SIDE);
- GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,32,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));//20x20
+ GeneratorNet[0]->GetOutputTensor().ReinterpretSize(3,NOISE_LAYER_SIDE,NOISE_LAYER_SIDE);
+ GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,GeneratorNet[0].get()));
  GeneratorNet[0]->GetOutputTensor().RestoreSize();
+ //GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));//16x16
 
- GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));//24x24
- GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,1,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[2].get()));//28x28
+ GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,32,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));//24x24
+ GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[2].get()));//24x24
+ GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,3,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[3].get()));//28x28
 
+
+
+/*
+ GeneratorNet.resize(6);
+ GeneratorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));
+
+ GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(29*29*3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));
+
+ GeneratorNet[1]->GetOutputTensor().ReinterpretSize(3,29,29);
+ GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxDePooling<type_t>(2,2,GeneratorNet[1].get()));
+ GeneratorNet[1]->GetOutputTensor().RestoreSize();
+
+ GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[2].get()));
+ GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,128,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[3].get()));
+ GeneratorNet[5]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,3,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[4].get()));
+*/
+/*
+ GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[1].get()));//48x48
+ GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[2].get()));//56x56
+ GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[3].get()));//64x64
+ GeneratorNet[5]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[4].get()));//72x72
+ GeneratorNet[6]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[5].get()));//80x80
+ GeneratorNet[7]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[6].get()));//88x88
+ GeneratorNet[8]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[7].get()));//96x96
+ GeneratorNet[9]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[8].get()));//104x104
+ GeneratorNet[10]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[9].get()));//112x112
+ GeneratorNet[11]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[10].get()));//120x120
+ GeneratorNet[12]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[11].get()));//128x128
+ GeneratorNet[13]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[12].get()));//136x136
+ GeneratorNet[14]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[13].get()));//144x144
+ GeneratorNet[15]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[14].get()));//152x152
+ GeneratorNet[16]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[15].get()));//160x160
+ GeneratorNet[17]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[16].get()));//168x168
+ GeneratorNet[18]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[17].get()));//176x176
+ GeneratorNet[19]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[18].get()));//184x184
+ GeneratorNet[20]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,4,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[19].get()));//192x192
+ GeneratorNet[21]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,8,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[20].get()));//200x200
+ GeneratorNet[22]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,16,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[21].get()));//208x208
+ GeneratorNet[23]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,32,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[22].get()));//212x212
+ GeneratorNet[24]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[23].get()));//216x216
+ GeneratorNet[25]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,128,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[24].get()));//220x220
+ GeneratorNet[26]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,3,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[25].get()));//224x224
+*/
 /*
  GeneratorNet.resize(5);
  GeneratorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));
@@ -176,13 +227,23 @@ void CModelV<type_t>::CreateGenerator(void)
 template<class type_t>
 void CModelV<type_t>::CreateDiscriminator(void)
 {
+
  DiscriminatorNet.resize(3);
- GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().ReinterpretSize(1,IMAGE_HEIGHT,IMAGE_WIDTH);
+ GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().ReinterpretSize(3,IMAGE_HEIGHT,IMAGE_WIDTH);
  DiscriminatorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get()));//28x28
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().RestoreSize();
  DiscriminatorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(32,5,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[0].get()));
  DiscriminatorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,NNeuron::NEURON_FUNCTION_SIGMOID,DiscriminatorNet[1].get()));
 
+/*
+ DiscriminatorNet.resize(4);
+ GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().ReinterpretSize(3,IMAGE_HEIGHT,IMAGE_WIDTH);
+ DiscriminatorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(32,3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get()));//28x28
+ GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().RestoreSize();
+ DiscriminatorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(16,3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[0].get()));
+ DiscriminatorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxPooling<type_t>(2,2,DiscriminatorNet[1].get()));
+ DiscriminatorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,NNeuron::NEURON_FUNCTION_SIGMOID,DiscriminatorNet[2].get()));
+*/
 /*
  DiscriminatorNet.resize(4);
  DiscriminatorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1024,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get()));
@@ -192,12 +253,17 @@ void CModelV<type_t>::CreateDiscriminator(void)
 */
 }
 
+
 //----------------------------------------------------------------------------------------------------
 //загрузить образы истинных изображений MNIST
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
 bool CModelV<type_t>::LoadRealMNISTImage(void)
 {
+ static const size_t MNIST_IMAGE_AMOUNT=60000;///<количество обучающих изображений
+ static const size_t MNIST_IMAGE_WIDTH=28; ///<ширина входных изображений
+ static const size_t MNIST_IMAGE_HEIGHT=28; ///<высота входных изображений
+
  #pragma pack(1)
  //все числа в big-endian!
  struct SHeader
@@ -209,7 +275,7 @@ bool CModelV<type_t>::LoadRealMNISTImage(void)
  };
  struct SImage
  {
-  uint8_t Color[IMAGE_WIDTH*IMAGE_HEIGHT];
+  uint8_t Color[MNIST_IMAGE_WIDTH*MNIST_IMAGE_HEIGHT];
  };
  #pragma pack()
 
@@ -239,40 +305,146 @@ bool CModelV<type_t>::LoadRealMNISTImage(void)
    *e_ptr=tmp;
   }
  }
- if (sHeader.Width!=IMAGE_WIDTH || sHeader.Height!=IMAGE_HEIGHT)
+ if (sHeader.Width!=MNIST_IMAGE_WIDTH || sHeader.Height!=MNIST_IMAGE_HEIGHT)
  {
   SYSTEM::PutMessageToConsole("Размеры изображения в файле MNIST неверные!");
   fclose(file);
   return(false);
  }
+
  if (sHeader.NumberOfImages<MNIST_IMAGE_AMOUNT)
  {
   SYSTEM::PutMessageToConsole("Слишком мало изображений в файле MNIST!");
   fclose(file);
   return(false);
  }
- for(uint32_t n=0;n<MNIST_IMAGE_AMOUNT;n++)
+
+ double dx=static_cast<double>(sHeader.Width)/static_cast<double>(IMAGE_WIDTH);
+ double dy=static_cast<double>(sHeader.Height)/static_cast<double>(IMAGE_HEIGHT);
+
+ size_t amount=MNIST_IMAGE_AMOUNT;
+ amount/=5;
+ for(uint32_t n=0;n<amount;n++)
  {
-  RealImage[n]=CTensor<type_t>(1,IMAGE_WIDTH,IMAGE_HEIGHT);
-  RealImageIndex[n]=n;
+  RealImage.push_back(CTensor<type_t>(3,IMAGE_WIDTH,IMAGE_HEIGHT));
+  RealImageIndex.push_back(n);
   SImage sImage;
   if (fread(&sImage,sizeof(SImage),1,file)<1) continue;
   size_t index=0;
+
   for(uint32_t y=0;y<IMAGE_HEIGHT;y++)
   {
    for(uint32_t x=0;x<IMAGE_WIDTH;x++,index++)
    {
-    uint32_t offset=(x+y*sHeader.Width);
+    size_t xp=x*dx;
+    size_t yp=y*dy;
+
+    uint32_t offset=(xp+yp*sHeader.Width);
     float c=sImage.Color[offset];
     c/=255.0;
     //приведём к диапазону [-1,1]
     c*=2.0;
     c-=1.0;
-    RealImage[n].SetElement(0,y,x,c);
+
+    float r=c;
+    float g=c;
+    float b=c;
+
+    RealImage[n].SetElement(0,y,x,r);
+    RealImage[n].SetElement(1,y,x,g);
+    RealImage[n].SetElement(2,y,x,b);
    }
   }
  }
  SYSTEM::PutMessageToConsole("Образы MNIST загружены успешно.");
+ return(true);
+}
+
+//----------------------------------------------------------------------------------------------------
+//загрузить образы истинных изображений
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CModelV<type_t>::LoadRealImage(void)
+{
+ RealImage.clear();
+ RealImageIndex.clear();
+
+ std::string path="RealImage";
+
+ std::vector<std::string> file_list;
+ SYSTEM::CreateFileList(path,file_list);
+ //обрабатываем файлы
+ size_t index=0;
+ size_t size=file_list.size();
+ RealImage.reserve(size);
+ RealImageIndex.reserve(size);
+
+ for(size_t n=0;n<size;n++)
+ {
+  std::string &file_name=file_list[n];
+  //проверяем расширение
+  size_t length=file_name.length();
+  if (length<4) continue;
+  if (file_name[length-4]!='.') continue;
+  if (file_name[length-3]!='t' && file_name[length-3]!='T')  continue;
+  if (file_name[length-2]!='g' && file_name[length-2]!='G') continue;
+  if ((file_name[length-1]!='a' && file_name[length-1]!='A') && (file_name[length-1]!='i' && file_name[length-1]!='I')) continue;//для переименованных в tgi файлов
+  //отправляем файл на обработку  int32_t width;
+  int32_t height;
+  int32_t width;
+  std::string name=path+"/"+file_name;
+  uint32_t *img_ptr=reinterpret_cast<uint32_t*>(LoadTGAFromFile(name.c_str(),width,height));//загрузить tga-файл
+  if (img_ptr==NULL) continue;
+  /*if (width!=IMAGE_WIDTH || height!=IMAGE_HEIGHT)
+  {
+   delete[](img_ptr);
+   continue;
+  }
+  */
+
+  RealImage.push_back(CTensor<type_t>(3,IMAGE_WIDTH,IMAGE_HEIGHT));
+  RealImageIndex.push_back(index);
+
+  double dx=static_cast<double>(width)/static_cast<double>(IMAGE_WIDTH);
+  double dy=static_cast<double>(height)/static_cast<double>(IMAGE_HEIGHT);
+
+  for(uint32_t y=0;y<IMAGE_HEIGHT;y++)
+  {
+   for(uint32_t x=0;x<IMAGE_WIDTH;x++)
+   {
+    size_t xp=x*dx;
+    size_t yp=y*dy;
+
+    uint32_t offset=(xp+yp*width);
+    uint32_t color=img_ptr[offset];
+    float r=(color>>0)&0xff;
+    float g=(color>>8)&0xff;
+    float b=(color>>16)&0xff;
+
+    r/=255.0;
+    g/=255.0;
+    b/=255.0;
+    //приведём к диапазону [-1,1]
+    r*=2.0;
+    r-=1.0;
+
+    g*=2.0;
+    g-=1.0;
+
+    b*=2.0;
+    b-=1.0;
+
+    RealImage[index].SetElement(0,y,x,r);
+    RealImage[index].SetElement(1,y,x,g);
+    RealImage[index].SetElement(2,y,x,b);
+   }
+  }
+  index++;
+  delete[](img_ptr);
+ }
+ char str[STRING_BUFFER_SIZE];
+ sprintf(str,"Загружено реальных изображений:%i",index);
+ SYSTEM::PutMessageToConsole(str);
  return(true);
 }
 
@@ -559,11 +731,12 @@ template<class type_t>
 void CModelV<type_t>::ExchangeRealImageIndex(void)
 {
  //делаем перемешивание
- for(size_t n=0;n<MNIST_IMAGE_AMOUNT;n++)
+ size_t image_amount=RealImage.size();
+ for(size_t n=0;n<image_amount;n++)
  {
   size_t index_1=n;
-  size_t index_2=static_cast<size_t>((rand()*static_cast<double>(MNIST_IMAGE_AMOUNT*10))/static_cast<double>(RAND_MAX));
-  index_2%=MNIST_IMAGE_AMOUNT;
+  size_t index_2=static_cast<size_t>((rand()*static_cast<double>(image_amount*10))/static_cast<double>(RAND_MAX));
+  index_2%=image_amount;
 
   size_t tmp=RealImageIndex[index_1];
   RealImageIndex[index_1]=RealImageIndex[index_2];
@@ -576,7 +749,6 @@ void CModelV<type_t>::ExchangeRealImageIndex(void)
 template<class type_t>
 void CModelV<type_t>::SaveRandomImage(void)
 {
- for(size_t n=0;n<BATCH_SIZE;n++) cTensor_Generator_Output[n]=CTensor<type_t>(IMAGE_WIDTH*IMAGE_HEIGHT,1);
  CreateFakeImage(cTensor_Generator_Output);
  //SaveImage(cTensor_Generator_Output[0],"Test/test.tga");
  for(size_t n=0;n<BATCH_SIZE;n++)
@@ -592,29 +764,54 @@ void CModelV<type_t>::SaveRandomImage(void)
 template<class type_t>
 void CModelV<type_t>::SaveImage(CTensor<type_t> &cTensor_Generator_Output,const std::string &name)
 {
- uint8_t image[IMAGE_WIDTH*IMAGE_HEIGHT*4];
-
+ static uint32_t image[IMAGE_WIDTH*IMAGE_HEIGHT];
  type_t *ptr=cTensor_Generator_Output.GetColumnPtr(0,0);
  for(uint32_t y=0;y<IMAGE_HEIGHT;y++)
  {
   for(uint32_t x=0;x<IMAGE_WIDTH;x++)
   {
-   double c=ptr[x+y*IMAGE_WIDTH];
+   double r=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*0];
+   double g=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*1];
+   double b=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*2];
 
-   c+=1.0;
-   c/=2.0;
+   r+=1.0;
+   r/=2.0;
 
-   if (c<0) c=0;
-   if (c>1) c=1;
-   c*=255.0;
-   uint32_t offset=(x+y*IMAGE_WIDTH)*4;
-   image[offset+0]=c;
-   image[offset+1]=c;
-   image[offset+2]=c;
-   image[offset+3]=255;
+   if (r<0) r=0;
+   if (r>1) r=1;
+   r*=255.0;
+
+   g+=1.0;
+   g/=2.0;
+
+   if (g<0) g=0;
+   if (g>1) g=1;
+   g*=255.0;
+
+   b+=1.0;
+   b/=2.0;
+
+   if (b<0) b=0;
+   if (b>1) b=1;
+   b*=255.0;
+
+   uint32_t offset=x+y*IMAGE_WIDTH;
+   uint8_t rc=static_cast<uint8_t>(r);
+   uint8_t gc=static_cast<uint8_t>(g);
+   uint8_t bc=static_cast<uint8_t>(b);
+
+   uint32_t color=0xff;
+   color<<=8;
+   color|=bc;
+   color<<=8;
+   color|=gc;
+   color<<=8;
+   color|=rc;
+
+   image[offset]=color;
   }
  }
- SaveTGA(name.c_str(),IMAGE_WIDTH,IMAGE_HEIGHT,image);
+ SaveTGA(name.c_str(),IMAGE_WIDTH,IMAGE_HEIGHT,reinterpret_cast<uint8_t*>(image));
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -623,10 +820,12 @@ void CModelV<type_t>::SaveImage(CTensor<type_t> &cTensor_Generator_Output,const 
 template<class type_t>
 void CModelV<type_t>::Training(void)
 {
- const double disc_speed=0.01;//скорость обучения дискриминатора
- const double gen_speed=disc_speed*2.0;//скорость обучения генератора
+ const double disc_speed=0.005;//скорость обучения дискриминатора
+ const double gen_speed=disc_speed*2;//скорость обучения генератора
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
  uint32_t iteration=0;
+
+ size_t image_amount=RealImage.size();
 
  std::string str;
  while(iteration<max_iteration)
@@ -638,7 +837,7 @@ void CModelV<type_t>::Training(void)
   {
    if (IsExit()==true) throw("Стоп");
 
-   if (batch%10==0)
+   if (batch%50==0)
    {
     SYSTEM::PutMessageToConsole("Save net.");
     SaveNet();
@@ -718,11 +917,23 @@ template<class type_t>
 void CModelV<type_t>::TrainingNet(void)
 {
  SYSTEM::MakeDirectory("Test");
- if (LoadRealMNISTImage()==false)
+// if (LoadRealMNISTImage()==false)
+ if (LoadRealImage()==false)
  {
   SYSTEM::PutMessage("Не удалось загрузить образы изображений!");
   return;
  }
+ //дополняем набор до кратного 10
+ size_t batch=10;
+ size_t image_amount=RealImage.size();
+ for(size_t n=0;n<image_amount%batch;n++)
+ {
+  RealImage.push_back(RealImage[n]);
+  RealImageIndex.push_back(RealImageIndex[n]);
+ }
+ image_amount=RealImage.size();
+ BATCH_SIZE=image_amount/batch;
+ BATCH_AMOUNT=batch;
 
  cTensor_Generator_Output=std::vector<CTensor<type_t>>(BATCH_SIZE);
  cTensor_Discriminator_Real_Image_Input=std::vector<CTensor<type_t>>(BATCH_SIZE);
@@ -788,168 +999,7 @@ void CModelV<type_t>::Execute(void)
 {
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
-
  if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
-
- //измеряем время свёрток
-
-
- {
-  SYSTEM::PutMessageToConsole("Тест скорости функции ForwardConvolution.");
-  CTensor<type_t> cTensor_KernelA(3,2,2);
-  CTensor<type_t> cTensor_KernelB(3,2,2);
-
-  //ядро A
-  cTensor_KernelA.SetElement(0,0,0,1);
-  cTensor_KernelA.SetElement(0,0,1,2);
-
-  cTensor_KernelA.SetElement(0,1,0,3);
-  cTensor_KernelA.SetElement(0,1,1,4);
-
-
-  cTensor_KernelA.SetElement(1,0,0,5);
-  cTensor_KernelA.SetElement(1,0,1,6);
-
-  cTensor_KernelA.SetElement(1,1,0,7);
-  cTensor_KernelA.SetElement(1,1,1,8);
-
-
-  cTensor_KernelA.SetElement(2,0,0,9);
-  cTensor_KernelA.SetElement(2,0,1,10);
-
-  cTensor_KernelA.SetElement(2,1,0,11);
-  cTensor_KernelA.SetElement(2,1,1,12);
-  //ядро B
-  cTensor_KernelB.SetElement(0,0,0,12);
-  cTensor_KernelB.SetElement(0,0,1,11);
-
-  cTensor_KernelB.SetElement(0,1,0,10);
-  cTensor_KernelB.SetElement(0,1,1,9);
-
-
-  cTensor_KernelB.SetElement(1,0,0,8);
-  cTensor_KernelB.SetElement(1,0,1,7);
-
-  cTensor_KernelB.SetElement(1,1,0,6);
-  cTensor_KernelB.SetElement(1,1,1,5);
-
-
-  cTensor_KernelB.SetElement(2,0,0,4);
-  cTensor_KernelB.SetElement(2,0,1,3);
-
-  cTensor_KernelB.SetElement(2,1,0,2);
-  cTensor_KernelB.SetElement(2,1,1,1);
-  //создаём вектор тензоров ядер
-  std::vector<CTensor<type_t>> cTensor_Kernel;
-  std::vector<CTensor<type_t>> cTensor_Kernel_Test;
-  cTensor_Kernel.push_back(cTensor_KernelA);
-  cTensor_Kernel.push_back(cTensor_KernelB);
-
-  for(size_t n=0;n<128;n++)
-  {
-   cTensor_Kernel_Test.push_back(cTensor_KernelA);
-   cTensor_Kernel_Test.push_back(cTensor_KernelB);
-  }
-  //создаём вектор смещений
-  std::vector<type_t> bias;
-  std::vector<type_t> bias_test;
-  bias.push_back(0);
-  bias.push_back(0);
-
-  for(size_t n=0;n<128;n++)
-  {
-   bias_test.push_back(0);
-   bias_test.push_back(0);
-  }
-
-  //входное изображение
-  CTensor<type_t> cTensor_Image(3,3,3);
-
-  cTensor_Image.SetElement(0,0,0,1);
-  cTensor_Image.SetElement(0,0,1,2);
-  cTensor_Image.SetElement(0,0,2,3);
-  cTensor_Image.SetElement(0,1,0,4);
-  cTensor_Image.SetElement(0,1,1,5);
-  cTensor_Image.SetElement(0,1,2,6);
-  cTensor_Image.SetElement(0,2,0,7);
-  cTensor_Image.SetElement(0,2,1,8);
-  cTensor_Image.SetElement(0,2,2,9);
-
-  cTensor_Image.SetElement(1,0,0,10);
-  cTensor_Image.SetElement(1,0,1,11);
-  cTensor_Image.SetElement(1,0,2,12);
-  cTensor_Image.SetElement(1,1,0,13);
-  cTensor_Image.SetElement(1,1,1,14);
-  cTensor_Image.SetElement(1,1,2,15);
-  cTensor_Image.SetElement(1,2,0,16);
-  cTensor_Image.SetElement(1,2,1,17);
-  cTensor_Image.SetElement(1,2,2,18);
-
-  cTensor_Image.SetElement(2,0,0,19);
-  cTensor_Image.SetElement(2,0,1,20);
-  cTensor_Image.SetElement(2,0,2,21);
-  cTensor_Image.SetElement(2,1,0,22);
-  cTensor_Image.SetElement(2,1,1,23);
-  cTensor_Image.SetElement(2,1,2,24);
-  cTensor_Image.SetElement(2,2,0,25);
-  cTensor_Image.SetElement(2,2,1,26);
-  cTensor_Image.SetElement(2,2,2,27);
-  //выходной тензор свёртки
-  CTensor<type_t> cTensor_Output(2,2,2);
-  //проверочный тензор свёртки
-  CTensor<type_t> cTensor_Control(2,2,2);
-
-  cTensor_Control.SetElement(0,0,0,1245);
-  cTensor_Control.SetElement(0,0,1,1323);
-
-  cTensor_Control.SetElement(0,1,0,1479);
-  cTensor_Control.SetElement(0,1,1,1557);
-
-
-  cTensor_Control.SetElement(1,0,0,627);
-  cTensor_Control.SetElement(1,0,1,705);
-
-  cTensor_Control.SetElement(1,1,0,861);
-  cTensor_Control.SetElement(1,1,1,939);
-
-  //выполняем прямую свёртку
-  {
-   CTensor<type_t> cTensor_ImageMax(3,300,300);
-   //выходной тензор свёртки
-   CTensor<type_t> cTensor_OutputMax(256,299,299);
-   CTimeStamp cTimeStamp("Скорость прямой свёрти:");
-   {
-    for(size_t n=0;n<1;n++)
-    {
-     CTensorConv<type_t>::ForwardConvolution(cTensor_OutputMax,cTensor_ImageMax,cTensor_Kernel_Test,bias_test,1,1,0,0);
-    }
-   }
-  }
-
-  //выполняем обратную свёртку
-  {
-   CTensor<type_t> cTensor_DeltaMax(256,299,299);
-   //выходной тензор свёртки
-   CTensor<type_t> cTensor_OutputDeltaMax(3,300,300);
-   CTimeStamp cTimeStamp("Скорость обратной свёрти:");
-   {
-    for(size_t n=0;n<1;n++)
-    {
-     CTensorConv<type_t>::BackwardConvolution(cTensor_OutputDeltaMax,cTensor_DeltaMax,cTensor_Kernel_Test,bias_test);
-    }
-   }
-  }
-
-
-  //сравниваем полученный тензор
-  CTensorConv<type_t>::ForwardConvolution(cTensor_Output,cTensor_Image,cTensor_Kernel,bias,1,1,0,0);
-  if (cTensor_Output.Compare(cTensor_Control,"")==false) throw("Свёртка неправильная!");
-  SYSTEM::PutMessageToConsole("Успешно.");
- }
-
-
-
-
  TrainingNet();
 }
 

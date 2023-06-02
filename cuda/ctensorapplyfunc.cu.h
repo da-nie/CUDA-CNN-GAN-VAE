@@ -102,8 +102,8 @@ class CTensorApplyFunc
 template<class type_t>
 __host__ __device__ type_t CTensorApplyFunc<type_t>::Sigmoid(type_t v)
 {
- if (v>20) v=19.99999;
- if (v<-20) v=-19.99999;
+ if (v>30) v=29.99999;
+ if (v<-30) v=-29.99999;
 
  return(1.0/(1.0+exp(-v)));
 }
@@ -139,8 +139,8 @@ __host__ __device__ type_t CTensorApplyFunc<type_t>::Linear(type_t v)
 template<class type_t>
 __host__ __device__ type_t CTensorApplyFunc<type_t>::Tangence(type_t v)
 {
- if (v>20) v=19.99999;
- if (v<-20) v=-19.99999;
+ if (v>30) v=29.99999;
+ if (v<-30) v=-29.99999;
 
  //if (v>20) return(1);
  //if (v<-20) return(-1);

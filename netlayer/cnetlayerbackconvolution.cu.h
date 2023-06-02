@@ -50,10 +50,10 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
   std::vector<type_t> Bias;///<сдвиги
   NNeuron::NEURON_FUNCTION NeuronFunction;///<функция активации нейронов слоя
 
-  size_t Padding_X=0;///<дополнение нулями по X
-  size_t Padding_Y=0;///<дополнение нулями по Y
-  size_t Step_X=1;///<шаг свёртки по x
-  size_t Step_Y=1;///<шаг свёртки по Y
+  size_t Padding_X;///<дополнение нулями по X
+  size_t Padding_Y;///<дополнение нулями по Y
+  size_t Step_X;///<шаг свёртки по x
+  size_t Step_Y;///<шаг свёртки по Y
 
   size_t InputSize_X;///<размер входного тензора по X
   size_t InputSize_Y;///<размер входного тензора по Y
@@ -105,6 +105,11 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
 template<class type_t>
 CNetLayerBackConvolution<type_t>::CNetLayerBackConvolution(size_t kernel_size,size_t kernel_depth,NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr)
 {
+ Padding_X=0;///<дополнение нулями по X
+ Padding_Y=0;///<дополнение нулями по Y
+ Step_X=1;///<шаг свёртки по x
+ Step_Y=1;///<шаг свёртки по Y
+
  Create(kernel_size,kernel_depth,neuron_function,prev_layer_ptr);
 }
 //----------------------------------------------------------------------------------------------------
@@ -423,10 +428,11 @@ void CNetLayerBackConvolution<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerBackConvolution<type_t>::TrainingUpdateWeight(double speed)
 {
+ //speed/=cTensor_Kernel.size();//TODO: странно, вроде бы не должно зависеть от количества ядер
  for(size_t n=0;n<cTensor_Kernel.size();n++)
  {
-  CTensorMath<type_t>::Mul(cTensor_dKernel[n],speed,cTensor_dKernel[n]);
-  CTensorMath<type_t>::Sub(cTensor_Kernel[n],cTensor_Kernel[n],cTensor_dKernel[n]);
+  //CTensorMath<type_t>::Mul(cTensor_dKernel[n],speed,cTensor_dKernel[n]);
+  CTensorMath<type_t>::Sub(cTensor_Kernel[n],cTensor_Kernel[n],cTensor_dKernel[n],1,speed);
   Bias[n]-=dBias[n]*speed;
  }
 }

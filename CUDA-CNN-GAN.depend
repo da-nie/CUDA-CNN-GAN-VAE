@@ -445,7 +445,7 @@
 1683999690 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensor.cu
 	"ctensor.cu.h"
 
-1684574303 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensor.cu.h
+1684574304 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensor.cu.h
 	<vector>
 	<math.h>
 	<cuda_runtime.h>
@@ -472,17 +472,17 @@
 1684002592 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorapplyfunc.cu
 	"ctensorapplyfunc.cu.h"
 
-1684167834 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorapplyfunc.cu.h
+1684947114 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorapplyfunc.cu.h
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 
-1684579722 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensormath.cu.h
+1684948800 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensormath.cu.h
 	"ctensor.cu.h"
 
-1684001755 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu
+1684001756 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu
 	"ctensorconv.cu.h"
 
-1684760169 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu.h
+1684760170 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu.h
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 	<vector>
@@ -490,10 +490,10 @@
 1684001078 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensormath.cu
 	"ctensormath.cu.h"
 
-1684002723 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensortest.cu
+1684002724 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensortest.cu
 	"ctensortest.cu.h"
 
-1684755413 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensortest.cu.h
+1684755414 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensortest.cu.h
 	"ctensor.cu.h"
 	"../system/system.h"
 	"ctensormath.cu.h"
@@ -515,12 +515,12 @@
 	<stdio.h>
 	<stdlib.h>
 
-1683969059 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/cuda.cu.h
+1683969060 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/cuda.cu.h
 
-1683971129 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu
+1685347342 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu
 	"cnetlayerbackconvolution.cu.h"
 
-1684003547 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu.h
+1685347372 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -529,41 +529,41 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1683909983 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/inetlayer.cu.h
+1683909984 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/inetlayer.cu.h
 	<stdio.h>
 
 1683988784 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/neuron.cu.h
 	<stdio.h>
 	<stdint.h>
 
-1684251565 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ccudatimespent.cu
+1684251566 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ccudatimespent.cu
 	"ccudatimespent.cu.h"
 
-1684251581 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ccudatimespent.cu.h
+1684251582 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ccudatimespent.cu.h
 	<stdio.h>
 	<stdint.h>
 	<cuda_runtime.h>
 	<cuda_runtime_api.h>
 	"handle_error.cu.h"
 
-1684588629 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctimestamp.cu
+1684588630 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctimestamp.cu
 	"ctimestamp.cu.h"
 	"../system/system.h"
 
-1684251385 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctimestamp.cu.h
+1684251386 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctimestamp.cu.h
 	<string>
 	<cuda_runtime.h>
 	<cuda_runtime_api.h>
 	"ccudatimespent.cu.h"
 
-1684757693 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/cuda.cu
+1684771300 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/cuda.cu
 	"cuda.cu.h"
 	<cstdio>
 	<ctime>
 	<stdio.h>
 	<stdint.h>
 	"handle_error.cu.h"
-	"cmain.cu.h"
+	"netmodel/cmodel_v.cu.h"
 	"../system/system.h"
 
 1684759014 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/cmain.cu.h
@@ -583,7 +583,7 @@
 	"../netlayer/cnetlayermaxpooling.cu.h"
 	"tensor.cu.h"
 
-1684759006 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu.h
+1685032006 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -591,7 +591,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1684003681 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolution.cu.h
+1685347397 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -600,7 +600,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1684003689 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolutioninput.cu.h
+1685347401 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolutioninput.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -608,7 +608,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1683971122 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxpooling.cu.h
+1685349016 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxpooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -617,19 +617,19 @@
 	"../cuda/ctensor.cu.h"
 	"neuron.cu.h"
 
-1683971157 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolution.cu
+1683971158 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolution.cu
 	"cnetlayerconvolution.cu.h"
 
 1683971164 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolutioninput.cu
 	"cnetlayerconvolutioninput.cu.h"
 
-1683971169 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu
+1683971170 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu
 	"cnetlayerlinear.cu.h"
 
-1683971173 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxpooling.cu
+1683971174 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxpooling.cu
 	"cnetlayermaxpooling.cu.h"
 
-1683971177 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/inetlayer.cu
+1683971178 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/inetlayer.cu
 	"inetlayer.cu.h"
 
 1683993250 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/neuron.cu
@@ -644,4 +644,47 @@
 	<sys/stat.h>
 	<sys/times.h>
 	<unistd.h>
+
+1685553298 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_v.cu.h
+	<string>
+	<vector>
+	<memory>
+	<math.h>
+	<cuda_runtime.h>
+	<cuda_runtime_api.h>
+	"../../system/system.h"
+	"../../common/tga.h"
+	"../ctimestamp.cu.h"
+	"../../netlayer/cnetlayerlinear.cu.h"
+	"../../netlayer/cnetlayerconvolution.cu.h"
+	"../../netlayer/cnetlayerconvolutioninput.cu.h"
+	"../../netlayer/cnetlayerbackconvolution.cu.h"
+	"../../netlayer/cnetlayermaxpooling.cu.h"
+	"../../netlayer/cnetlayermaxdepooling.cu.h"
+	"../../netlayer/cnetlayerupsampling.cu.h"
+	"../tensor.cu.h"
+
+1685379044 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxdepooling.cu.h
+	<stdio.h>
+	<fstream>
+	<vector>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/ctensor.cu.h"
+	"neuron.cu.h"
+
+1683971174 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxdepooling.cu
+	"cnetlayermaxpooling.cu.h"
+
+1685463615 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerupsampling.cu.h
+	<stdio.h>
+	<fstream>
+	<vector>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/ctensor.cu.h"
+	"neuron.cu.h"
+
+1685457510 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerupsampling.cu
+	"cnetlayerupsampling.cu.h"
 
