@@ -215,10 +215,10 @@ void CModelV<type_t>::CreateGenerator(void)
 /*
  GeneratorNet.resize(5);
  GeneratorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));
- GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));
- GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(512,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));
- GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1024,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[2].get()));
- GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(IMAGE_WIDTH*IMAGE_HEIGHT,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[3].get()));
+ GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256*3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));
+ GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(512*3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));
+ GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1024*3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[2].get()));
+ GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(IMAGE_WIDTH*IMAGE_HEIGHT*3,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[3].get()));
 */
 }
 //----------------------------------------------------------------------------------------------------
@@ -917,7 +917,7 @@ template<class type_t>
 void CModelV<type_t>::TrainingNet(void)
 {
  SYSTEM::MakeDirectory("Test");
-// if (LoadRealMNISTImage()==false)
+ //if (LoadRealMNISTImage()==false)
  if (LoadRealImage()==false)
  {
   SYSTEM::PutMessage("Не удалось загрузить образы изображений!");

@@ -79,6 +79,119 @@ class CTensorTest
 template<class type_t>
 bool CTensorTest<type_t>::Test(void)
 {
+
+ {
+  SYSTEM::PutMessageToConsole("Тест функции ForwardConvolution.");
+  CTensor<type_t> cTensor_KernelA(3,2,2);
+  CTensor<type_t> cTensor_KernelB(3,2,2);
+
+  //ядро A
+  cTensor_KernelA.SetElement(0,0,0,1);
+  cTensor_KernelA.SetElement(0,0,1,2);
+
+  cTensor_KernelA.SetElement(0,1,0,3);
+  cTensor_KernelA.SetElement(0,1,1,4);
+
+
+  cTensor_KernelA.SetElement(1,0,0,5);
+  cTensor_KernelA.SetElement(1,0,1,6);
+
+  cTensor_KernelA.SetElement(1,1,0,7);
+  cTensor_KernelA.SetElement(1,1,1,8);
+
+
+  cTensor_KernelA.SetElement(2,0,0,9);
+  cTensor_KernelA.SetElement(2,0,1,10);
+
+  cTensor_KernelA.SetElement(2,1,0,11);
+  cTensor_KernelA.SetElement(2,1,1,12);
+  //ядро B
+  cTensor_KernelB.SetElement(0,0,0,12);
+  cTensor_KernelB.SetElement(0,0,1,11);
+
+  cTensor_KernelB.SetElement(0,1,0,10);
+  cTensor_KernelB.SetElement(0,1,1,9);
+
+
+  cTensor_KernelB.SetElement(1,0,0,8);
+  cTensor_KernelB.SetElement(1,0,1,7);
+
+  cTensor_KernelB.SetElement(1,1,0,6);
+  cTensor_KernelB.SetElement(1,1,1,5);
+
+
+  cTensor_KernelB.SetElement(2,0,0,4);
+  cTensor_KernelB.SetElement(2,0,1,3);
+
+  cTensor_KernelB.SetElement(2,1,0,2);
+  cTensor_KernelB.SetElement(2,1,1,1);
+  //создаём вектор тензоров ядер
+  std::vector<CTensor<type_t>> cTensor_Kernel;
+  cTensor_Kernel.push_back(cTensor_KernelA);
+  cTensor_Kernel.push_back(cTensor_KernelB);
+  //создаём вектор смещений
+  std::vector<type_t> bias;
+  bias.push_back(0);
+  bias.push_back(0);
+
+  //входное изображение
+  CTensor<type_t> cTensor_Image(3,3,3);
+
+  cTensor_Image.SetElement(0,0,0,1);
+  cTensor_Image.SetElement(0,0,1,2);
+  cTensor_Image.SetElement(0,0,2,3);
+  cTensor_Image.SetElement(0,1,0,4);
+  cTensor_Image.SetElement(0,1,1,5);
+  cTensor_Image.SetElement(0,1,2,6);
+  cTensor_Image.SetElement(0,2,0,7);
+  cTensor_Image.SetElement(0,2,1,8);
+  cTensor_Image.SetElement(0,2,2,9);
+
+  cTensor_Image.SetElement(1,0,0,10);
+  cTensor_Image.SetElement(1,0,1,11);
+  cTensor_Image.SetElement(1,0,2,12);
+  cTensor_Image.SetElement(1,1,0,13);
+  cTensor_Image.SetElement(1,1,1,14);
+  cTensor_Image.SetElement(1,1,2,15);
+  cTensor_Image.SetElement(1,2,0,16);
+  cTensor_Image.SetElement(1,2,1,17);
+  cTensor_Image.SetElement(1,2,2,18);
+
+  cTensor_Image.SetElement(2,0,0,19);
+  cTensor_Image.SetElement(2,0,1,20);
+  cTensor_Image.SetElement(2,0,2,21);
+  cTensor_Image.SetElement(2,1,0,22);
+  cTensor_Image.SetElement(2,1,1,23);
+  cTensor_Image.SetElement(2,1,2,24);
+  cTensor_Image.SetElement(2,2,0,25);
+  cTensor_Image.SetElement(2,2,1,26);
+  cTensor_Image.SetElement(2,2,2,27);
+  //выходной тензор свёртки
+  CTensor<type_t> cTensor_Output(2,2,2);
+  //проверочный тензор свёртки
+  CTensor<type_t> cTensor_Control(2,2,2);
+
+  cTensor_Control.SetElement(0,0,0,1245);
+  cTensor_Control.SetElement(0,0,1,1323);
+
+  cTensor_Control.SetElement(0,1,0,1479);
+  cTensor_Control.SetElement(0,1,1,1557);
+
+
+  cTensor_Control.SetElement(1,0,0,627);
+  cTensor_Control.SetElement(1,0,1,705);
+
+  cTensor_Control.SetElement(1,1,0,861);
+  cTensor_Control.SetElement(1,1,1,939);
+
+  //выполняем прямую свёртку
+  CTensorConv<type_t>::ForwardConvolution(cTensor_Output,cTensor_Image,cTensor_Kernel,bias,1,1,0,0);
+  //сравниваем полученный тензор
+  if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
+  SYSTEM::PutMessageToConsole("Успешно.");
+ }
+
+
  {
   SYSTEM::PutMessageToConsole("Тест функции CreateDeltaWeightAndBias.");
   {
@@ -519,119 +632,6 @@ bool CTensorTest<type_t>::Test(void)
   if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
   SYSTEM::PutMessageToConsole("Успешно.");
  }
-
-
- {
-  SYSTEM::PutMessageToConsole("Тест функции ForwardConvolution.");
-  CTensor<type_t> cTensor_KernelA(3,2,2);
-  CTensor<type_t> cTensor_KernelB(3,2,2);
-
-  //ядро A
-  cTensor_KernelA.SetElement(0,0,0,1);
-  cTensor_KernelA.SetElement(0,0,1,2);
-
-  cTensor_KernelA.SetElement(0,1,0,3);
-  cTensor_KernelA.SetElement(0,1,1,4);
-
-
-  cTensor_KernelA.SetElement(1,0,0,5);
-  cTensor_KernelA.SetElement(1,0,1,6);
-
-  cTensor_KernelA.SetElement(1,1,0,7);
-  cTensor_KernelA.SetElement(1,1,1,8);
-
-
-  cTensor_KernelA.SetElement(2,0,0,9);
-  cTensor_KernelA.SetElement(2,0,1,10);
-
-  cTensor_KernelA.SetElement(2,1,0,11);
-  cTensor_KernelA.SetElement(2,1,1,12);
-  //ядро B
-  cTensor_KernelB.SetElement(0,0,0,12);
-  cTensor_KernelB.SetElement(0,0,1,11);
-
-  cTensor_KernelB.SetElement(0,1,0,10);
-  cTensor_KernelB.SetElement(0,1,1,9);
-
-
-  cTensor_KernelB.SetElement(1,0,0,8);
-  cTensor_KernelB.SetElement(1,0,1,7);
-
-  cTensor_KernelB.SetElement(1,1,0,6);
-  cTensor_KernelB.SetElement(1,1,1,5);
-
-
-  cTensor_KernelB.SetElement(2,0,0,4);
-  cTensor_KernelB.SetElement(2,0,1,3);
-
-  cTensor_KernelB.SetElement(2,1,0,2);
-  cTensor_KernelB.SetElement(2,1,1,1);
-  //создаём вектор тензоров ядер
-  std::vector<CTensor<type_t>> cTensor_Kernel;
-  cTensor_Kernel.push_back(cTensor_KernelA);
-  cTensor_Kernel.push_back(cTensor_KernelB);
-  //создаём вектор смещений
-  std::vector<type_t> bias;
-  bias.push_back(0);
-  bias.push_back(0);
-
-  //входное изображение
-  CTensor<type_t> cTensor_Image(3,3,3);
-
-  cTensor_Image.SetElement(0,0,0,1);
-  cTensor_Image.SetElement(0,0,1,2);
-  cTensor_Image.SetElement(0,0,2,3);
-  cTensor_Image.SetElement(0,1,0,4);
-  cTensor_Image.SetElement(0,1,1,5);
-  cTensor_Image.SetElement(0,1,2,6);
-  cTensor_Image.SetElement(0,2,0,7);
-  cTensor_Image.SetElement(0,2,1,8);
-  cTensor_Image.SetElement(0,2,2,9);
-
-  cTensor_Image.SetElement(1,0,0,10);
-  cTensor_Image.SetElement(1,0,1,11);
-  cTensor_Image.SetElement(1,0,2,12);
-  cTensor_Image.SetElement(1,1,0,13);
-  cTensor_Image.SetElement(1,1,1,14);
-  cTensor_Image.SetElement(1,1,2,15);
-  cTensor_Image.SetElement(1,2,0,16);
-  cTensor_Image.SetElement(1,2,1,17);
-  cTensor_Image.SetElement(1,2,2,18);
-
-  cTensor_Image.SetElement(2,0,0,19);
-  cTensor_Image.SetElement(2,0,1,20);
-  cTensor_Image.SetElement(2,0,2,21);
-  cTensor_Image.SetElement(2,1,0,22);
-  cTensor_Image.SetElement(2,1,1,23);
-  cTensor_Image.SetElement(2,1,2,24);
-  cTensor_Image.SetElement(2,2,0,25);
-  cTensor_Image.SetElement(2,2,1,26);
-  cTensor_Image.SetElement(2,2,2,27);
-  //выходной тензор свёртки
-  CTensor<type_t> cTensor_Output(2,2,2);
-  //проверочный тензор свёртки
-  CTensor<type_t> cTensor_Control(2,2,2);
-
-  cTensor_Control.SetElement(0,0,0,1245);
-  cTensor_Control.SetElement(0,0,1,1323);
-
-  cTensor_Control.SetElement(0,1,0,1479);
-  cTensor_Control.SetElement(0,1,1,1557);
-
-
-  cTensor_Control.SetElement(1,0,0,627);
-  cTensor_Control.SetElement(1,0,1,705);
-
-  cTensor_Control.SetElement(1,1,0,861);
-  cTensor_Control.SetElement(1,1,1,939);
-
-  //выполняем прямую свёртку
-  CTensorConv<type_t>::ForwardConvolution(cTensor_Output,cTensor_Image,cTensor_Kernel,bias,1,1,0,0);
-  //сравниваем полученный тензор
-  if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
-  SYSTEM::PutMessageToConsole("Успешно.");
- }
-
 
  {
   SYSTEM::PutMessageToConsole("Тест функции TransponseMul.");
