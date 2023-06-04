@@ -172,8 +172,6 @@ __global__ void CUDAForwardConvolutionFunction(STensorKernel<type_t> tensor_outp
 /*!прямая свёртка
 */
 //----------------------------------------------------------------------------------------------------
-
-/*
 template<class type_t>
 void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Image,const std::vector<CTensor<type_t> > &cTensor_Kernel,const std::vector<type_t> &bias,uint32_t step_y,uint32_t step_x,uint32_t padding_y,uint32_t padding_x)
 {
@@ -223,7 +221,6 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  HANDLE_ERROR(cudaDeviceSynchronize());
  cTensor_Output.SetDeviceOnChange();
 }
-*/
 
 
 //----------------------------------------------------------------------------------------------------
@@ -694,7 +691,7 @@ void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(std::vector<CTensor<type_
 }
 
 
-
+/*
 
 //Свёртка умножением матрицы Теплица (строятся прямо в процессе работы) - ОЧЕНЬ ТОРМОЗИТ!!!
 //----------------------------------------------------------------------------------------------------
@@ -867,7 +864,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
 
 }
 
-
+*/
 
 #endif
 

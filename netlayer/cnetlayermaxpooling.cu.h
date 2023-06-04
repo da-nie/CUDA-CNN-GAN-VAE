@@ -103,8 +103,8 @@ class CNetLayerMaxPooling:public INetLayer<type_t>
 template<class type_t>
 CNetLayerMaxPooling<type_t>::CNetLayerMaxPooling(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr)
 {
- Pooling_X=0;///<коэффициент сжатия по X
- Pooling_Y=0;///<коэффициент сжатия по Y
+ Pooling_X=1;///<коэффициент сжатия по X
+ Pooling_Y=1;///<коэффициент сжатия по Y
  Create(pooling_y,pooling_x,prev_layer_ptr);
 }
 //----------------------------------------------------------------------------------------------------
