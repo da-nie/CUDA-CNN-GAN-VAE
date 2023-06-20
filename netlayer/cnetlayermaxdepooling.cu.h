@@ -14,7 +14,7 @@
 
 #include "../common/idatastream.h"
 #include "inetlayer.cu.h"
-#include "../cuda/ctensor.cu.h"
+#include "../cuda/tensor.cu.h"
 #include "neuron.cu.h"
 
 //****************************************************************************************************

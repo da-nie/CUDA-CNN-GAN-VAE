@@ -47,8 +47,8 @@ class CModelV
   static const size_t BATCH_SIZE=MNIST_IMAGE_AMOUNT/BATCH_AMOUNT;///<размер пакета
   */
 
-  static const size_t IMAGE_WIDTH=320; ///<ширина входных изображений
-  static const size_t IMAGE_HEIGHT=256; ///<высота входных изображений
+  static const size_t IMAGE_WIDTH=164; ///<ширина входных изображений
+  static const size_t IMAGE_HEIGHT=132; ///<высота входных изображений
   static const size_t NOISE_LAYER_SIDE_X=16;///<размерность стороны слоя шума по X
   static const size_t NOISE_LAYER_SIDE_Y=12;///<размерность стороны слоя шума по Y
   static const size_t NOISE_LAYER_SIZE=NOISE_LAYER_SIDE_X*NOISE_LAYER_SIDE_Y*3;///<размерность слоя шума
@@ -130,14 +130,14 @@ CModelV<type_t>::~CModelV()
 //закрытые функции
 //****************************************************************************************************
 template<class type_t>
-type_t SafeLog(type_t value)
+static type_t SafeLog(type_t value)
 {
  if (value>0) return(log(value));
  SYSTEM::PutMessageToConsole("Error log!");
  return(-100000);
 }
 template<class type_t>
-type_t CrossEntropy(type_t y,type_t p)
+static type_t CrossEntropy(type_t y,type_t p)
 {
  type_t s=y*SafeLog(p)+(1-y)*SafeLog(1-p);
  return(-s);
@@ -159,73 +159,22 @@ template<class type_t>
 void CModelV<type_t>::CreateGenerator(void)
 {
 
- GeneratorNet.resize(10);
- GeneratorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));//16
+ GeneratorNet.clear();
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL)));//16x12
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get())));//16x12
 
- GeneratorNet[0]->GetOutputTensor().ReinterpretSize(3,NOISE_LAYER_SIDE_Y,NOISE_LAYER_SIDE_X);
- GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxDePooling<type_t>(2,2,GeneratorNet[0].get()));//32x13
- GeneratorNet[0]->GetOutputTensor().RestoreSize();
+ size_t convert=GeneratorNet.size()-1;
+ GeneratorNet[convert]->GetOutputTensor().ReinterpretSize(3,NOISE_LAYER_SIDE_Y,NOISE_LAYER_SIDE_X);
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxDePooling<type_t>(2,2,GeneratorNet[GeneratorNet.size()-1].get())));//32x24
+ GeneratorNet[convert]->GetOutputTensor().RestoreSize();
 
- GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,8,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));//36x26
- GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxDePooling<type_t>(2,2,GeneratorNet[2].get()));//72x52
- GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,8,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[3].get()));//76x56
- GeneratorNet[5]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxDePooling<type_t>(2,2,GeneratorNet[4].get()));//152x112
- GeneratorNet[6]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,8,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[5].get()));//156x116
- GeneratorNet[7]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxDePooling<type_t>(2,2,GeneratorNet[6].get()));//312x232
- GeneratorNet[8]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[7].get()));//316x236
- GeneratorNet[9]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,3,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[8].get()));//320x240
-
-
-
-/*
- GeneratorNet.resize(6);
- GeneratorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));
-
- GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(29*29*3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));
-
- GeneratorNet[1]->GetOutputTensor().ReinterpretSize(3,29,29);
- GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxDePooling<type_t>(2,2,GeneratorNet[1].get()));
- GeneratorNet[1]->GetOutputTensor().RestoreSize();
-
- GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[2].get()));
- GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,128,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[3].get()));
- GeneratorNet[5]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,3,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[4].get()));
-*/
-/*
- GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[1].get()));//48x48
- GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[2].get()));//56x56
- GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[3].get()));//64x64
- GeneratorNet[5]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[4].get()));//72x72
- GeneratorNet[6]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[5].get()));//80x80
- GeneratorNet[7]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[6].get()));//88x88
- GeneratorNet[8]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[7].get()));//96x96
- GeneratorNet[9]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[8].get()));//104x104
- GeneratorNet[10]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[9].get()));//112x112
- GeneratorNet[11]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[10].get()));//120x120
- GeneratorNet[12]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[11].get()));//128x128
- GeneratorNet[13]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[12].get()));//136x136
- GeneratorNet[14]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[13].get()));//144x144
- GeneratorNet[15]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[14].get()));//152x152
- GeneratorNet[16]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[15].get()));//160x160
- GeneratorNet[17]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[16].get()));//168x168
- GeneratorNet[18]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[17].get()));//176x176
- GeneratorNet[19]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,2,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[18].get()));//184x184
- GeneratorNet[20]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,4,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[19].get()));//192x192
- GeneratorNet[21]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,8,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[20].get()));//200x200
- GeneratorNet[22]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(9,16,NNeuron::NEURON_FUNCTION_SIGMOID,GeneratorNet[21].get()));//208x208
- GeneratorNet[23]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,32,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[22].get()));//212x212
- GeneratorNet[24]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[23].get()));//216x216
- GeneratorNet[25]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,128,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[24].get()));//220x220
- GeneratorNet[26]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,3,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[25].get()));//224x224
-*/
-/*
- GeneratorNet.resize(5);
- GeneratorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NNeuron::NEURON_FUNCTION_LEAKY_RELU,NULL));
- GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256*3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));
- GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(512*3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));
- GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1024*3,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[2].get()));
- GeneratorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(IMAGE_WIDTH*IMAGE_HEIGHT*3,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[3].get()));
-*/
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,4,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get())));//36x28
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxDePooling<type_t>(2,2,GeneratorNet[GeneratorNet.size()-1].get())));//72x56
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,8,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get())));//76x60
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxDePooling<type_t>(2,2,GeneratorNet[GeneratorNet.size()-1].get())));//152x120
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,16,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get())));//156x124
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,128,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get())));//160x128
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,3,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[GeneratorNet.size()-1].get())));//164x32
 }
 //----------------------------------------------------------------------------------------------------
 //создать сеть дискриминатора

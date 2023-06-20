@@ -122,14 +122,14 @@ CMain<type_t>::~CMain()
 //закрытые функции
 //****************************************************************************************************
 template<class type_t>
-type_t SafeLog(type_t value)
+static type_t SafeLog(type_t value)
 {
  if (value>0) return(log(value));
  SYSTEM::PutMessageToConsole("Error log!");
  return(-100000);
 }
 template<class type_t>
-type_t CrossEntropy(type_t y,type_t p)
+static type_t CrossEntropy(type_t y,type_t p)
 {
  type_t s=y*SafeLog(p)+(1-y)*SafeLog(1-p);
  return(-s);
@@ -158,7 +158,7 @@ void CMain<type_t>::CreateGenerator(void)
  GeneratorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,32,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[0].get()));//20x20
  GeneratorNet[0]->GetOutputTensor().RestoreSize();
 
- GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));//24x24
+ GeneratorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,256,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[1].get()));//24x24
  GeneratorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,1,NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[2].get()));//28x28
 
 /*
@@ -176,20 +176,20 @@ void CMain<type_t>::CreateGenerator(void)
 template<class type_t>
 void CMain<type_t>::CreateDiscriminator(void)
 {
+/*
  DiscriminatorNet.resize(3);
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().ReinterpretSize(1,IMAGE_HEIGHT,IMAGE_WIDTH);
  DiscriminatorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get()));//28x28
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().RestoreSize();
  DiscriminatorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(32,5,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[0].get()));
  DiscriminatorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,NNeuron::NEURON_FUNCTION_SIGMOID,DiscriminatorNet[1].get()));
+*/
 
-/*
  DiscriminatorNet.resize(4);
  DiscriminatorNet[0]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1024,NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get()));
  DiscriminatorNet[1]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(512,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[0].get()));
  DiscriminatorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[1].get()));
  DiscriminatorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,NNeuron::NEURON_FUNCTION_SIGMOID,DiscriminatorNet[2].get()));
-*/
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -638,7 +638,7 @@ void CMain<type_t>::Training(void)
   {
    if (IsExit()==true) throw("Стоп");
 
-   if (batch%10==0)
+   if (batch%50==0)
    {
     SYSTEM::PutMessageToConsole("Save net.");
     SaveNet();

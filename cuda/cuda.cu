@@ -7,7 +7,8 @@
 
 #include "handle_error.cu.h"
 //#include "cmain.cu.h"
-#include "netmodel/cmodel_v.cu.h"
+//#include "netmodel/cmodel_v.cu.h"
+#include "netmodel/cmodel_gray.cu.h"
 #include "../system/system.h"
 
 //----------------------------------------------------------------------------------------------------
@@ -81,10 +82,12 @@ struct cudaDeviceProp
  HANDLE_ERROR(cudaDeviceReset());
  HANDLE_ERROR(cudaGetLastError());
 
- //CMain<double> cMain;
- //cMain.Execute();
+// CMain<double> cMain;
+// cMain.Execute();
 
- CModelV<double> cModelV;
- cModelV.Execute();
+ //CModelV<double> cModelV;
+ //cModelV.Execute();
 
+ CModelGray<double> cModelGray;
+ cModelGray.Execute();
 }

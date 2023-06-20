@@ -82,23 +82,11 @@ class CTensorConv
 template<class type_t>
 __global__ void CUDAForwardConvolutionFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_image,STensorKernel<type_t> tensor_kernel,type_t** kernel_item_ptr_array,type_t* bias_ptr,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
- //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
-
- x+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
- y+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+ int32_t x=blockIdx.x;
+ int32_t y=blockIdx.y;
+ int32_t z=threadIdx.x;
 
  int32_t output_z=z;
- int32_t output_x=tensor_output.GetSizeX();
- int32_t output_y=tensor_output.GetSizeY();
-
- if (x>=output_x) return;
- if (y>=output_y) return;
-
 
  int32_t kernel_x=tensor_kernel.GetSizeX();
  int32_t kernel_y=tensor_kernel.GetSizeY();
@@ -226,38 +214,12 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  kernel_item_ptr_array.copy_host_to_device(&item_ptr[0],item_ptr.size());
  //выполняем свёртку
  STensorKernel<type_t> sTensorKernel_Kernel(cTensor_Kernel[0]);
-
-
- dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
-
- size_t block_x=output_x/thread.x;
- if (output_x%thread.x) block_x++;
- size_t block_y=output_y/thread.y;
- if (output_y%thread.y) block_y++;
- size_t block_z=cTensor_Kernel.size();
-
- dim3 blocks(block_x,block_y,block_z);
- if (blocks.x==0) blocks.x=1;
- if (blocks.y==0) blocks.y=1;
- if (blocks.z==0) blocks.z=1;
- CUDAForwardConvolutionFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Image,sTensorKernel_Kernel,kernel_item_ptr_array.get(),bias_array.get(),padding_x,padding_y,step_x,step_y);
- HANDLE_ERROR(cudaGetLastError());
- HANDLE_ERROR(cudaDeviceSynchronize());
-
-
-/*
  dim3 thread(cTensor_Kernel.size(),1,1);
  dim3 blocks(output_x,output_y,1);
- if (blocks.x==0) blocks.x=1;
- if (blocks.y==0) blocks.y=1;
- if (blocks.z==0) blocks.z=1;
  CUDAForwardConvolutionFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Image,sTensorKernel_Kernel,kernel_item_ptr_array.get(),bias_array.get(),padding_x,padding_y,step_x,step_y);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
- */
-
  cTensor_Output.SetDeviceOnChange();
-
 }
 
 
@@ -267,32 +229,12 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
 template<class type_t>
 __global__ void CUDABackwardConvolutionFunction(STensorKernel<type_t> tensor_output_delta,STensorKernel<type_t> tensor_delta,STensorKernel<type_t> tensor_kernel,type_t** kernel_item_ptr_array,size_t kernel_amount,type_t* bias_ptr,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
- //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
-
- x+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
- y+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-
- int32_t output_z=z;
- int32_t output_x=tensor_output_delta.GetSizeX();
- int32_t output_y=tensor_output_delta.GetSizeY();
-
- if (x>=output_x) return;
- if (y>=output_y) return;
-/*
-
-
  int32_t x=blockIdx.x;
  int32_t y=blockIdx.y;
 
  int32_t z=threadIdx.x;
 
  int32_t output_z=z;
- */
 
  int32_t kernel_x=tensor_kernel.GetSizeX();
  int32_t kernel_y=tensor_kernel.GetSizeY();
@@ -383,34 +325,12 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
  kernel_item_ptr_array.copy_host_to_device(&item_ptr[0],item_ptr.size());
  //выполняем свёртку
  STensorKernel<type_t> sTensorKernel_Kernel(cTensor_Kernel[0]);
-
- dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
-
- size_t block_x=output_x/thread.x;
- if (output_x%thread.x) block_x++;
- size_t block_y=output_y/thread.y;
- if (output_y%thread.y) block_y++;
- size_t block_z=output_z;
-
- dim3 blocks(block_x,block_y,block_z);
- if (blocks.x==0) blocks.x=1;
- if (blocks.y==0) blocks.y=1;
- if (blocks.z==0) blocks.z=1;
- CUDABackwardConvolutionFunction<type_t><<<blocks,thread>>>(sTensorKernel_OutputDelta,sTensorKernel_Delta,sTensorKernel_Kernel,kernel_item_ptr_array.get(),cTensor_Kernel.size(),bias_array.get(),padding_x,padding_y,step_x,step_y);
- HANDLE_ERROR(cudaGetLastError());
- HANDLE_ERROR(cudaDeviceSynchronize());
-
-
-/*
  dim3 thread(output_z,1,1);
  dim3 blocks(output_x,output_y,1);
- if (blocks.x==0) blocks.x=1;
- if (blocks.y==0) blocks.y=1;
- if (blocks.z==0) blocks.z=1;
  CUDABackwardConvolutionFunction<type_t><<<blocks,thread>>>(sTensorKernel_OutputDelta,sTensorKernel_Delta,sTensorKernel_Kernel,kernel_item_ptr_array.get(),cTensor_Kernel.size(),bias_array.get(),padding_x,padding_y,step_x,step_y);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
-*/
+
  cTensor_OutputDelta.SetDeviceOnChange();
 
 
@@ -499,32 +419,14 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
 //функция CUDA для выполнения поправок
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__global__ void CUDADeltaWeightAndBiasFunction(STensorKernel<type_t> tensor_d_kernel,type_t** d_kernel_item_ptr_array,type_t* d_bias_ptr,STensorKernel<type_t> tensor_image,STensorKernel<type_t> tensor_delta,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y,size_t dkernel_amount)
+__global__ void CUDADeltaWeightAndBiasFunction(STensorKernel<type_t> tensor_d_kernel,type_t** d_kernel_item_ptr_array,type_t* d_bias_ptr,STensorKernel<type_t> tensor_image,STensorKernel<type_t> tensor_delta,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t kz=blockIdx.z/dkernel_amount;
- //координаты элементов блока в выходном тензоре
- size_t kx=threadIdx.x;
- size_t ky=threadIdx.y;
-
- kx+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
- ky+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-
- int32_t d_kernel_x=tensor_d_kernel.GetSizeX();
- int32_t d_kernel_y=tensor_d_kernel.GetSizeY();
-
- if (kx>=d_kernel_x) return;
- if (ky>=d_kernel_y) return;
-
- int32_t f=blockIdx.z%dkernel_amount;
-/*
  int32_t kx=blockIdx.x;
  int32_t ky=blockIdx.y;
  int32_t kz=blockIdx.z;
 
  int32_t f=threadIdx.x;
-*/
+
  int32_t image_x=tensor_image.GetSizeX();
  int32_t image_y=tensor_image.GetSizeY();
 
@@ -605,32 +507,11 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
  d_kernel_item_ptr_array.copy_host_to_device(&item_ptr[0],item_ptr.size());
  //выполняем свёртку
  STensorKernel<type_t> sTensorKernel_dKernel(cTensor_dKernel[0]);
-
- dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,1);
-
- size_t block_x=dkernel_x/thread.x;
- if (dkernel_x%thread.x) block_x++;
- size_t block_y=dkernel_y/thread.y;
- if (dkernel_y%thread.y) block_y++;
- size_t block_z=dkernel_amount+dkernel_z*dkernel_amount;
-
- dim3 blocks(block_x,block_y,block_z);
- if (blocks.x==0) blocks.x=1;
- if (blocks.y==0) blocks.y=1;
- if (blocks.z==0) blocks.z=1;
- CUDADeltaWeightAndBiasFunction<type_t><<<blocks,thread>>>(sTensorKernel_dKernel,d_kernel_item_ptr_array.get(),d_bias_array.get(),sTensorKernel_Image,sTensorKernel_Delta,padding_x,padding_y,step_x,step_y,dkernel_amount);
- HANDLE_ERROR(cudaGetLastError());
- HANDLE_ERROR(cudaDeviceSynchronize());
-
-/*
  dim3 thread(dkernel_amount,1,1);
  dim3 blocks(dkernel_x,dkernel_y,dkernel_z);
- if (blocks.x==0) blocks.x=1;
- if (blocks.y==0) blocks.y=1;
- if (blocks.z==0) blocks.z=1;
  CUDADeltaWeightAndBiasFunction<type_t><<<blocks,thread>>>(sTensorKernel_dKernel,d_kernel_item_ptr_array.get(),d_bias_array.get(),sTensorKernel_Image,sTensorKernel_Delta,padding_x,padding_y,step_x,step_y);
  HANDLE_ERROR(cudaGetLastError());
- HANDLE_ERROR(cudaDeviceSynchronize());*/
+ HANDLE_ERROR(cudaDeviceSynchronize());
 
  for(size_t n=0;n<cTensor_dKernel.size();n++)
  {
@@ -676,33 +557,14 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
 //функция CUDA для выполнения поправок для обратной свёртки
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__global__ void CUDABackDeltaWeightAndBiasFunction(STensorKernel<type_t> tensor_d_kernel,type_t** d_kernel_item_ptr_array,type_t* d_bias_ptr,STensorKernel<type_t> tensor_image,STensorKernel<type_t> tensor_delta,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y,int32_t dkernel_amount)
+__global__ void CUDABackDeltaWeightAndBiasFunction(STensorKernel<type_t> tensor_d_kernel,type_t** d_kernel_item_ptr_array,type_t* d_bias_ptr,STensorKernel<type_t> tensor_image,STensorKernel<type_t> tensor_delta,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t kz=blockIdx.z/dkernel_amount;
- //координаты элементов блока в выходном тензоре
- size_t kx=threadIdx.x;
- size_t ky=threadIdx.y;
-
- kx+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
- ky+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-
- int32_t d_kernel_x=tensor_d_kernel.GetSizeX();
- int32_t d_kernel_y=tensor_d_kernel.GetSizeY();
-
- if (kx>=d_kernel_x) return;
- if (ky>=d_kernel_y) return;
-
- int32_t f=blockIdx.z%dkernel_amount;
-
-/*
  int32_t kx=blockIdx.x;
  int32_t ky=blockIdx.y;
  int32_t kz=blockIdx.z;
 
  int32_t f=threadIdx.x;
-*/
+
  int32_t image_x=tensor_image.GetSizeX();
  int32_t image_y=tensor_image.GetSizeY();
 
@@ -783,31 +645,11 @@ void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(std::vector<CTensor<type_
  d_kernel_item_ptr_array.copy_host_to_device(&item_ptr[0],item_ptr.size());
  //выполняем свёртку
  STensorKernel<type_t> sTensorKernel_dKernel(cTensor_dKernel[0]);
-
- dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,1);
-
- size_t block_x=dkernel_x/thread.x;
- if (dkernel_x%thread.x) block_x++;
- size_t block_y=dkernel_y/thread.y;
- if (dkernel_y%thread.y) block_y++;
- size_t block_z=dkernel_amount+dkernel_z*dkernel_amount;
-
- dim3 blocks(block_x,block_y,block_z);
- if (blocks.x==0) blocks.x=1;
- if (blocks.y==0) blocks.y=1;
- if (blocks.z==0) blocks.z=1;
- CUDABackDeltaWeightAndBiasFunction<type_t><<<blocks,thread>>>(sTensorKernel_dKernel,d_kernel_item_ptr_array.get(),d_bias_array.get(),sTensorKernel_Image,sTensorKernel_Delta,padding_x,padding_y,step_x,step_y,dkernel_amount);
- HANDLE_ERROR(cudaGetLastError());
- HANDLE_ERROR(cudaDeviceSynchronize());
-
-
-/*
  dim3 thread(dkernel_amount,1,1);
  dim3 blocks(dkernel_x,dkernel_y,dkernel_z);
  CUDABackDeltaWeightAndBiasFunction<type_t><<<blocks,thread>>>(sTensorKernel_dKernel,d_kernel_item_ptr_array.get(),d_bias_array.get(),sTensorKernel_Image,sTensorKernel_Delta,padding_x,padding_y,step_x,step_y);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
- */
 
  for(size_t n=0;n<cTensor_dKernel.size();n++)
  {
@@ -1014,9 +856,6 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  size_t block_z=cTensor_Kernel.size();
 
  dim3 blocks(block_x,block_y,block_z);
- if (blocks.x==0) blocks.x=1;
- if (blocks.y==0) blocks.y=1;
- if (blocks.z==0) blocks.z=1;
  CUDAFastForwardConvolutionFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Image,sTensorKernel_Kernel,kernel_item_ptr_array.get(),bias_array.get(),padding_x,padding_y,step_x,step_y);
  //Test<type_t>(sTensorKernel_Output,sTensorKernel_Image,sTensorKernel_Kernel,kernel_item_ptr_array.get(),bias_array.get(),padding_x,padding_y,step_x,step_y);
  HANDLE_ERROR(cudaGetLastError());
@@ -1332,9 +1171,6 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  size_t block_z=cTensor_Kernel.size();
 
  dim3 blocks(block_x,block_y,block_z);
- if (blocks.x==0) blocks.x=1;
- if (blocks.y==0) blocks.y=1;
- if (blocks.z==0) blocks.z=1;
  CUDAFastForwardConvolutionFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Image,sTensorKernel_Kernel,kernel_item_ptr_array.get(),bias_array.get(),padding_x,padding_y,step_x,step_y);
  //Test<type_t>(sTensorKernel_Output,sTensorKernel_Image,sTensorKernel_Kernel,kernel_item_ptr_array.get(),bias_array.get(),padding_x,padding_y,step_x,step_y);
  HANDLE_ERROR(cudaGetLastError());
