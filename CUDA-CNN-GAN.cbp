@@ -38,7 +38,6 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="cuda/ccudatimespent.cu.h" />
-		<Unit filename="cuda/cmain.cu.h" />
 		<Unit filename="cuda/ctensor.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -77,6 +76,7 @@
 		<Unit filename="cuda/handle_error.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_gray.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_v.cu.h" />
+		<Unit filename="cuda/netmodel/cmodelmain.cu.h" />
 		<Unit filename="cuda/tensor.cu">
 			<Option compile="1" />
 			<Option link="1" />
