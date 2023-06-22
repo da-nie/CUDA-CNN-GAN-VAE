@@ -36,6 +36,10 @@ class CModelGray:public CModelMain<type_t>
   using CModelMain<type_t>::NOISE_LAYER_SIZE;
   using CModelMain<type_t>::NOISE_LAYER_SIZE;
 
+  using CModelMain<type_t>::SPEED_DISCRIMINATOR;
+  using CModelMain<type_t>::SPEED_GENERATOR;
+
+
   using CModelMain<type_t>::GeneratorNet;
   using CModelMain<type_t>::DiscriminatorNet;
 
@@ -73,6 +77,9 @@ CModelGray<type_t>::CModelGray(void)
  NOISE_LAYER_SIDE_Y=16;
  NOISE_LAYER_SIDE_Z=3;
  NOISE_LAYER_SIZE=NOISE_LAYER_SIDE_X*NOISE_LAYER_SIDE_Y*NOISE_LAYER_SIDE_Z;
+
+ SPEED_DISCRIMINATOR=0.0002;
+ SPEED_GENERATOR=0.001*100;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -134,7 +141,7 @@ void CModelGray<type_t>::CreateDiscriminator(void)
  DiscriminatorNet[2]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(16,5,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[1].get()));
  DiscriminatorNet[3]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxPooling<type_t>(2,2,DiscriminatorNet[2].get()));
  DiscriminatorNet[4]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(8,5,NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[3].get()));
- DiscriminatorNet[5]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,NNeuron::NEURON_FUNCTION_SIGMOID,DiscriminatorNet[4].get()));
+ DiscriminatorNet[5]=std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,NNeuron::NEURON_FUNCTION_LINEAR,DiscriminatorNet[4].get()));
 
 /*
  DiscriminatorNet.resize(4);

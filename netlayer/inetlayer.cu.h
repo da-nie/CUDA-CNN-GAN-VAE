@@ -58,6 +58,7 @@ class INetLayer
   virtual void TrainingUpdateWeight(double speed)=0;///<выполнить обновления весов
   virtual CTensor<type_t>& GetDeltaTensor(void)=0;///<получить ссылку на тензор дельты слоя
   virtual void SetOutputError(CTensor<type_t>& error)=0;///<задать ошибку и расчитать дельту
+  virtual void ClipWeight(type_t min,type_t max)=0;///<ограничить веса в диапазон
   //-открытые статические функции-----------------------------------------------------------------------
 };
 

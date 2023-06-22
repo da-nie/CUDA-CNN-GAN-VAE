@@ -82,6 +82,8 @@ class CNetLayerUpSampling:public INetLayer<type_t>
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
   void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
+
+  void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -407,6 +409,16 @@ template<class type_t>
 void CNetLayerUpSampling<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  cTensor_Delta=error;
+}
+//----------------------------------------------------------------------------------------------------
+/*!ограничить веса в диапазон
+\param[in] min Минимальное значение веса
+\param[in] max Максимальное значение веса
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerUpSampling<type_t>::ClipWeight(type_t min,type_t max)
+{
 }
 
 #endif

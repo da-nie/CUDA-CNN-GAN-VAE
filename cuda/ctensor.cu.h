@@ -137,6 +137,8 @@ class CTensor
 
   void Print(const std::string &name,bool print_value=true) const;///<вывод тензора на экран
   bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="") const;///<сравнение тензоров
+
+  void Clip(type_t min,type_t max);///<ограничить диапазон значений элементов тензора
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -567,23 +569,30 @@ void CTensor<type_t>::Print(const std::string &name,bool print_value) const
 {
  CopyFromDevice();
 
- printf("***** %s *****\r\n",name.c_str());
- printf("Z:%i Y:%i X:%i\r\n",Size_Z,Size_Y,Size_X);
+ char str[255];
+
+ sprintf(str,"***** %s *****",name.c_str());
+ SYSTEM::PutMessageToConsole(str);
+ sprintf(str,"Z:%i Y:%i X:%i",Size_Z,Size_Y,Size_X);
+ SYSTEM::PutMessageToConsole(str);
  if (print_value==false) return;
  for(size_t z=0;z<GetSizeZ();z++)
  {
-  printf("-----%i-----\r\n",z);
+  sprintf(str,"-----%i-----",z);
+  SYSTEM::PutMessageToConsole(str);
   for(size_t y=0;y<GetSizeY();y++)
   {
+   std::string line;
    for(size_t x=0;x<GetSizeX();x++)
    {
     type_t e1=GetElement(z,y,x);
-    printf("%f ",e1);
+    sprintf(str,"%f ",e1);
+	line+=str;
    }
-   printf("\r\n");
+   SYSTEM::PutMessageToConsole(line);
   }
  }
- printf("\r\n");
+ SYSTEM::PutMessageToConsole("");
 }
 //----------------------------------------------------------------------------------------------------
 ///!сравнение тензоров
@@ -618,5 +627,30 @@ bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::
  return(ret);
 }
 
+//----------------------------------------------------------------------------------------------------
+///!ограничить диапазон значений элементов тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensor<type_t>::Clip(type_t min,type_t max)
+{
+ CopyFromDevice();
+ for(size_t z=0;z<GetSizeZ();z++)
+ {
+  for(size_t y=0;y<GetSizeY();y++)
+  {
+   for(size_t x=0;x<GetSizeX();x++)
+   {
+    type_t e=GetElement(z,y,x);
+    if (e<min || e>max)
+    {
+     if (e<min) e=min;
+     if (e>max) e=max;
+     SetElement(z,y,x,e);
+    }
+   }
+  }
+ }
+ CopyToDevice();
+}
 
 #endif

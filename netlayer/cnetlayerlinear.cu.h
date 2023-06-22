@@ -80,6 +80,8 @@ class CNetLayerLinear:public INetLayer<type_t>
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
   void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
+
+  void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
   type_t GetRandValue(type_t max_value);///<получить случайное число
@@ -439,7 +441,19 @@ void CNetLayerLinear<type_t>::SetOutputError(CTensor<type_t>& error)
   cTensor_Delta.SetElement(0,y,0,e*NNeuron::GetNeuronFunctionDifferencialPtr(NeuronFunction)(v));
  }
  */
+}
 
+//----------------------------------------------------------------------------------------------------
+/*!ограничить веса в диапазон
+\param[in] min Минимальное значение веса
+\param[in] max Максимальное значение веса
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerLinear<type_t>::ClipWeight(type_t min,type_t max)
+{
+ cTensor_W.Clip(min,max);
+ cTensor_B.Clip(min,max);
 }
 
 #endif
