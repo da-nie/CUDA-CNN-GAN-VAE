@@ -75,6 +75,55 @@ class CTensorConv
 //статические функции
 //****************************************************************************************************
 
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA переупорядочения входного тензора в матрицу для свёртки
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDAForwardConvolutionConvertInputFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,int32_t dst_x,int32_t dst_y,int32_t kernel_x,int32_t kernel_y,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+
+ x+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+ y+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+
+ int32_t output_x=tensor_output.GetSizeX();
+ int32_t output_y=tensor_output.GetSizeY();
+
+ int32_t input_x=tensor_input.GetSizeX();
+ int32_t input_y=tensor_input.GetSizeY();
+
+ if (x>=output_x) return;
+ if (y>=output_y) return;
+
+ //копируем значение в выходной тензор
+
+ int32_t pos=x+y*output_x;//линейная координата
+ int32_t dx=pos%dst_x;
+ pos/=dst_x;
+ int32_t dy=pos%dst_y;
+ pos/=dst_y;
+ int32_t kx=pos%kernel_x;
+ pos/=kernel_x;
+ int32_t ky=pos%kernel_y;
+ pos/=kernel_y;
+ int32_t z=pos;
+
+ int32_t sy=dy*step_y+ky-padding_y;
+ int32_t sx=dx*step_x+kx-padding_x;
+ if (sy>=0 && sy<input_y && sx>=0 && sx<input_x)
+ {
+  type_t e=tensor_input.GetElement(z,sy,sx);
+  tensor_output.SetElement(0,y,x,e);
+ }
+ else tensor_output.SetElement(0,y,x,0);
+}
+
+
 //----------------------------------------------------------------------------------------------------
 /*!прямая свёртка через умножение матриц
 */
@@ -110,7 +159,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  int32_t new_input_y=kernel_y*kernel_x*kernel_z;
  int32_t new_input_x=dst_x*dst_y;
  CTensor<type_t> cTensor_NewInput(new_input_z,new_input_y,new_input_x);
-
+ /*
  cTensor_Image.CopyFromDevice();
 
  type_t *d_ptr=cTensor_NewInput.GetColumnPtr(0,0);
@@ -134,6 +183,30 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
    }
   }
  }
+ */
+
+ cTensor_Image.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Image);
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_NewInput);
+
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=new_input_x/thread.x;
+ if (new_input_x%thread.x) block_x++;
+ size_t block_y=new_input_y/thread.y;
+ if (new_input_y%thread.y) block_y++;
+ size_t block_z=1;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDAForwardConvolutionConvertInputFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,dst_x,dst_y,kernel_x,kernel_y,padding_x,padding_y,step_x,step_y);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+ cTensor_NewInput.SetDeviceOnChange();
+
  //перестроим тензоры ядер в строку
  CTensor<type_t> cTensor_NewKernel(1,output_z,kernel_x*kernel_y*kernel_z);
  for(size_t k=0;k<cTensor_Kernel.size();k++)
@@ -158,6 +231,55 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  }
  cTensor_Output.SetHostOnChange();
 }
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA переупорядочения входного тензора в матрицу для обратной свёртки
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDABackwardConvolutionConvertInputFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,int32_t dst_x,int32_t dst_y,int32_t kernel_x,int32_t kernel_y,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+
+ x+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+ y+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+
+ int32_t output_x=tensor_output.GetSizeX();
+ int32_t output_y=tensor_output.GetSizeY();
+
+ int32_t input_x=tensor_input.GetSizeX();
+ int32_t input_y=tensor_input.GetSizeY();
+
+ if (x>=output_x) return;
+ if (y>=output_y) return;
+
+ //копируем значение в выходной тензор
+
+ int32_t pos=x+y*output_x;//линейная координата
+ int32_t dx=pos%dst_x;
+ pos/=dst_x;
+ int32_t dy=pos%dst_y;
+ pos/=dst_y;
+ int32_t kx=pos%kernel_x;
+ pos/=kernel_x;
+ int32_t ky=pos%kernel_y;
+ pos/=kernel_y;
+ int32_t z=pos;
+
+ int32_t sy=dy*step_y+ky-padding_y;
+ int32_t sx=dx*step_x+kx-padding_x;
+ if (sy>=0 && sy<input_y && sx>=0 && sx<input_x)
+ {
+  type_t e=tensor_input.GetElement(z,sy,sx);
+  tensor_output.SetElement(0,y,x,e);
+ }
+ else tensor_output.SetElement(0,y,x,0);
+}
+
 //----------------------------------------------------------------------------------------------------
 /*!обратная свёртка через умножение матриц
 */
@@ -203,6 +325,29 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
  int32_t new_input_x=dst_x*dst_y;
  CTensor<type_t> cTensor_NewInput(new_input_z,new_input_y,new_input_x);
 
+ cTensor_Delta.CopyToDevice();
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Delta);
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_NewInput);
+
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=new_input_x/thread.x;
+ if (new_input_x%thread.x) block_x++;
+ size_t block_y=new_input_y/thread.y;
+ if (new_input_y%thread.y) block_y++;
+ size_t block_z=1;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDABackwardConvolutionConvertInputFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,dst_x,dst_y,kernel_x,kernel_y,padding_x,padding_y,step_x,step_y);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_NewInput.SetDeviceOnChange();
+
+ /*
  cTensor_Delta.CopyFromDevice();
 
  type_t *d_ptr=cTensor_NewInput.GetColumnPtr(0,0);
@@ -226,6 +371,8 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
    }
   }
  }
+ */
+
  //перестроим тензоры ядер в строку по глубине и переворачиваем их на 180
  CTensor<type_t> cTensor_NewKernel(1,kernel_z,kernel_x*kernel_y*input_z);
  for(size_t z=0;z<kernel_z;z++)
@@ -256,9 +403,84 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
 }
 
 //----------------------------------------------------------------------------------------------------
+//функция CUDA переупорядочения входного тензора в матрицу для создания поправок весов для прямой свёртки
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDACreateDeltaWeightAndBiasConvertInputFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,int32_t dst_x,int32_t dst_y,int32_t kernel_x,int32_t kernel_y,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+
+ x+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+ y+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+
+ int32_t output_x=tensor_output.GetSizeX();
+ int32_t output_y=tensor_output.GetSizeY();
+
+ int32_t input_x=tensor_input.GetSizeX();
+ int32_t input_y=tensor_input.GetSizeY();
+ int32_t input_z=tensor_input.GetSizeZ();
+
+ if (x>=output_x) return;
+ if (y>=output_y) return;
+
+ //копируем значение в выходной тензор
+
+ int32_t pos=x+y*output_x;//линейная координата
+ int32_t dx=pos%dst_x;
+ pos/=dst_x;
+ int32_t dy=pos%dst_y;
+ pos/=dst_y;
+ int32_t z=pos%input_z;
+ pos/=input_z;
+ int32_t kx=pos%kernel_x;
+ pos/=kernel_x;
+ int32_t ky=pos;
+
+ int32_t sy=dy*step_y+ky-padding_y;
+ int32_t sx=dx*step_x+kx-padding_x;
+ if (sy>=0 && sy<input_y && sx>=0 && sx<input_x)
+ {
+  type_t e=tensor_input.GetElement(z,sy,sx);
+  tensor_output.SetElement(0,y,x,e);
+ }
+ else tensor_output.SetElement(0,y,x,0);
+
+
+/*
+  for(int32_t ky=0;ky<delta_y;ky++)
+ {
+  for(int32_t kx=0;kx<delta_x;kx++)
+  {
+   for(int32_t z=0;z<image_z;z++)
+   {
+    const type_t *i_ptr=cTensor_Image.GetColumnPtr(z,0);
+    for(int32_t dy=0;dy<dst_y;dy++)
+    {
+     for (int32_t dx=0;dx<dst_x;dx++)
+     {
+      int32_t sy=dy*step_y+ky-padding_y;
+      int32_t sx=dx*step_x+kx-padding_x;
+      if (sy>=0 && sy<image_y && sx>=0 && sx<image_x) *d_ptr=i_ptr[sy*image_x+sx];
+                                                 else *d_ptr=0;
+      d_ptr++;
+     }
+    }
+   }
+  }
+*/
+}
+
+
+
+//----------------------------------------------------------------------------------------------------
 /*!создание поправок весов и смещений для прямой свёртки через умножение матриц
 */
 //----------------------------------------------------------------------------------------------------
+
 template<class type_t>
 void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> > &cTensor_dKernel,std::vector<type_t> &dbias,const CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta)
 {
@@ -295,10 +517,34 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
  int32_t new_input_x=dst_x*dst_y*image_z;
  CTensor<type_t> cTensor_NewInput(new_input_z,new_input_y,new_input_x);
 
+ cTensor_Image.CopyToDevice();
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Image);
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_NewInput);
+
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=new_input_x/thread.x;
+ if (new_input_x%thread.x) block_x++;
+ size_t block_y=new_input_y/thread.y;
+ if (new_input_y%thread.y) block_y++;
+ size_t block_z=1;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDACreateDeltaWeightAndBiasConvertInputFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,dst_x,dst_y,delta_x,delta_y,padding_x,padding_y,step_x,step_y);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_NewInput.SetDeviceOnChange();
+
+ /*
+
  cTensor_Image.CopyFromDevice();
- cTensor_Delta.CopyFromDevice();
 
  type_t *d_ptr=cTensor_NewInput.GetColumnPtr(0,0);
+
  for(int32_t ky=0;ky<delta_y;ky++)
  {
   for(int32_t kx=0;kx<delta_x;kx++)
@@ -320,19 +566,23 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
    }
   }
  }
+*/
 
  //перестроим тензоры дельт в строку (вообще, сняв константность можно прямо изменить размер дельт без копирования)
+ cTensor_Delta.CopyFromDevice();
  CTensor<type_t> cTensor_NewDelta(1,delta_z,delta_x*delta_y);
  {
   const type_t *s_ptr=cTensor_Delta.GetColumnPtr(0,0);
   type_t *d_ptr=cTensor_NewDelta.GetColumnPtr(0,0);
   for(size_t n=0;n<delta_x*delta_y*delta_z;n++,s_ptr++,d_ptr++) *d_ptr=*s_ptr;
  }
+
  //умножаем матрицы
  CTensor<type_t> cTensor_Output(1,delta_z,new_input_x);
  CTensorMath<type_t>::Mul(cTensor_Output,cTensor_NewDelta,cTensor_NewInput);
  cTensor_Output.CopyFromDevice();
  cTensor_Output.ReinterpretSize(dkernel_z*delta_z,dkernel_y,dkernel_x);
+
  //копируем результаты в поправки ядер
  for(size_t k=0;k<dkernel_amount;k++)
  {
@@ -359,4 +609,410 @@ void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(std::vector<CTensor<type_
 {
  CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dbias,cTensor_Delta,cTensor_Image);
 }
+
+
+
+
+
+
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для выполнения поправок
+//----------------------------------------------------------------------------------------------------
+/*
+template<class type_t>
+__global__ void CUDADeltaWeightAndBiasFunction(STensorKernel<type_t> tensor_d_kernel,type_t** d_kernel_item_ptr_array,type_t* d_bias_ptr,STensorKernel<type_t> tensor_image,STensorKernel<type_t> tensor_delta,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y,size_t dkernel_amount)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t kz=blockIdx.z/dkernel_amount;
+ //координаты элементов блока в выходном тензоре
+ size_t kx=threadIdx.x;
+ size_t ky=threadIdx.y;
+
+ kx+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+ ky+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+
+ int32_t d_kernel_x=tensor_d_kernel.GetSizeX();
+ int32_t d_kernel_y=tensor_d_kernel.GetSizeY();
+
+ if (kx>=d_kernel_x) return;
+ if (ky>=d_kernel_y) return;
+
+ int32_t f=blockIdx.z%dkernel_amount;
+
+ int32_t image_x=tensor_image.GetSizeX();
+ int32_t image_y=tensor_image.GetSizeY();
+
+ int32_t delta_x=tensor_delta.GetSizeX();
+ int32_t delta_y=tensor_delta.GetSizeY();
+ int32_t delta_z=tensor_delta.GetSizeZ();
+
+ //настроим ядро
+ tensor_d_kernel.TensorData_Ptr=d_kernel_item_ptr_array[f];
+
+ for(int32_t y=0;y<delta_y;y++)
+ {
+  for(int32_t x=0;x<delta_x;x++)
+  {
+   type_t delta=tensor_delta.GetElement(f,y,x);//запоминаем значение градиента
+   int32_t i0=ky+y*step_y-padding_y;//TODO: возможно, ошибочно умножать на шаг
+   int32_t j0=kx+x*step_x-padding_x;//TODO: возможно, ошибочно умножать на шаг
+   if (i0>=0 && i0<image_y && j0>=0 && j0<image_x)//игнорируем выходящие за границы элементы
+   {
+    //наращиваем градиент фильтра
+    type_t dk=tensor_d_kernel.GetElement(kz,ky,kx);
+    dk+=delta*tensor_image.GetElement(kz,i0,j0);
+    tensor_d_kernel.SetElement(kz,ky,kx,dk);
+   }
+   if (kx==0 && ky==0 && kz==0) d_bias_ptr[f]+=delta;
+  }
+ }
+}
+*/
+//----------------------------------------------------------------------------------------------------
+/*!создание поправок весов и смещений
+*/
+//----------------------------------------------------------------------------------------------------
+/*
+template<class type_t>
+void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> > &cTensor_dKernel,std::vector<type_t> &dbias,const CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta)
+{
+ int32_t padding_x=0;//дополнение нулями
+ int32_t padding_y=0;//дополнение нулями
+ int32_t step_x=1;//шаг свёртки
+ int32_t step_y=1;//шаг свёртки
+
+ int32_t dkernel_amount=cTensor_dKernel.size();
+ if (dkernel_amount==0) throw("Для создания поправок весов и смещений требуется не пустой вектор поправок к ядрам");
+ if (dbias.size()!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы количество поправок фильтров и поправок сдвигов совпадало");
+
+ //TODO: считать все тензоры с видеокарты
+
+ int32_t image_x=cTensor_Image.Size_X;
+ int32_t image_y=cTensor_Image.Size_Y;
+ int32_t image_z=cTensor_Image.Size_Z;
+
+ int32_t delta_x=cTensor_Delta.Size_X;
+ int32_t delta_y=cTensor_Delta.Size_Y;
+ int32_t delta_z=cTensor_Delta.Size_Z;
+
+ int32_t dkernel_x=image_x-delta_x+1;
+ int32_t dkernel_y=image_y-delta_y+1;
+ int32_t dkernel_z=image_z;
+
+ if (dkernel_x!=cTensor_dKernel[0].Size_X || dkernel_y!=cTensor_dKernel[0].Size_Y || dkernel_z!=cTensor_dKernel[0].Size_Z) throw("Неверные размеры тензора поправок к ядрам для обновления весов и смещений");
+
+ cTensor_Delta.CopyToDevice();
+ cTensor_Image.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Delta(cTensor_Delta);
+ STensorKernel<type_t> sTensorKernel_Image(cTensor_Image);
+
+ CCUDADeviceVector<type_t> d_bias_array(dbias.size());
+ d_bias_array.copy_host_to_device(&dbias[0],dbias.size());
+
+ CCUDADeviceVector<type_t *> d_kernel_item_ptr_array(cTensor_dKernel.size());
+ std::vector<type_t *> item_ptr(cTensor_dKernel.size());
+ for(size_t n=0;n<cTensor_dKernel.size();n++)
+ {
+  cTensor_dKernel[n].CopyToDevice();
+  item_ptr[n]=cTensor_dKernel[n].GetDeviceVector().get();
+ }
+ d_kernel_item_ptr_array.copy_host_to_device(&item_ptr[0],item_ptr.size());
+ //выполняем свёртку
+ STensorKernel<type_t> sTensorKernel_dKernel(cTensor_dKernel[0]);
+
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,1);
+
+ size_t block_x=dkernel_x/thread.x;
+ if (dkernel_x%thread.x) block_x++;
+ size_t block_y=dkernel_y/thread.y;
+ if (dkernel_y%thread.y) block_y++;
+ size_t block_z=dkernel_amount+dkernel_z*dkernel_amount;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDADeltaWeightAndBiasFunction<type_t><<<blocks,thread>>>(sTensorKernel_dKernel,d_kernel_item_ptr_array.get(),d_bias_array.get(),sTensorKernel_Image,sTensorKernel_Delta,padding_x,padding_y,step_x,step_y,dkernel_amount);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ for(size_t n=0;n<cTensor_dKernel.size();n++)
+ {
+  cTensor_dKernel[n].SetDeviceOnChange();
+ }
+ d_bias_array.copy_device_to_host(&dbias[0],dbias.size());
+}
+*/
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для выполнения поправок для обратной свёртки
+//----------------------------------------------------------------------------------------------------
+/*
+template<class type_t>
+__global__ void CUDABackDeltaWeightAndBiasFunction(STensorKernel<type_t> tensor_d_kernel,type_t** d_kernel_item_ptr_array,type_t* d_bias_ptr,STensorKernel<type_t> tensor_image,STensorKernel<type_t> tensor_delta,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y,int32_t dkernel_amount)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t kz=blockIdx.z/dkernel_amount;
+ //координаты элементов блока в выходном тензоре
+ size_t kx=threadIdx.x;
+ size_t ky=threadIdx.y;
+
+ kx+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+ ky+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+
+ int32_t d_kernel_x=tensor_d_kernel.GetSizeX();
+ int32_t d_kernel_y=tensor_d_kernel.GetSizeY();
+
+ if (kx>=d_kernel_x) return;
+ if (ky>=d_kernel_y) return;
+
+ int32_t f=blockIdx.z%dkernel_amount;
+
+ int32_t image_x=tensor_image.GetSizeX();
+ int32_t image_y=tensor_image.GetSizeY();
+
+ int32_t delta_x=tensor_delta.GetSizeX();
+ int32_t delta_y=tensor_delta.GetSizeY();
+ int32_t delta_z=tensor_delta.GetSizeZ();
+
+ //настроим ядро
+ tensor_d_kernel.TensorData_Ptr=d_kernel_item_ptr_array[f];
+
+ for(int32_t y=0;y<image_y;y++)
+ {
+  for(int32_t x=0;x<image_x;x++)
+  {
+   type_t image=tensor_image.GetElement(f,y,x);//запоминаем значение градиента
+   int32_t i0=ky+y*step_y-padding_y;//TODO: возможно, ошибочно умножать на шаг
+   int32_t j0=kx+x*step_x-padding_x;//TODO: возможно, ошибочно умножать на шаг
+   if (i0>=0 && i0<delta_y && j0>=0 && j0<delta_x)//игнорируем выходящие за границы элементы
+   {
+    //наращиваем градиент фильтра
+    type_t dk=tensor_d_kernel.GetElement(kz,ky,kx);
+    dk+=image*tensor_delta.GetElement(kz,i0,j0);
+    tensor_d_kernel.SetElement(kz,ky,kx,dk);
+   }
+  }
+ }
+}
+*/
+//----------------------------------------------------------------------------------------------------
+/*!создание поправок весов и смещений для обратной свёртки
+*/
+//----------------------------------------------------------------------------------------------------
+/*
+template<class type_t>
+void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(std::vector<CTensor<type_t> > &cTensor_dKernel,std::vector<type_t> &dbias,const CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta)
+{
+ int32_t padding_x=0;//дополнение нулями
+ int32_t padding_y=0;//дополнение нулями
+ int32_t step_x=1;//шаг свёртки
+ int32_t step_y=1;//шаг свёртки
+
+ int32_t dkernel_amount=cTensor_dKernel.size();
+ if (dkernel_amount==0) throw("Для создания поправок весов и смещений требуется не пустой вектор поправок к ядрам");
+ if (dbias.size()!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы количество поправок фильтров и поправок сдвигов совпадало");
+
+ //TODO: считать все тензоры с видеокарты
+
+ int32_t delta_x=cTensor_Delta.Size_X;
+ int32_t delta_y=cTensor_Delta.Size_Y;
+ int32_t delta_z=cTensor_Delta.Size_Z;
+
+ int32_t image_x=cTensor_Image.Size_X;
+ int32_t image_y=cTensor_Image.Size_Y;
+ int32_t image_z=cTensor_Image.Size_Z;
+
+ int32_t dkernel_x=delta_x-image_x+1;
+ int32_t dkernel_y=delta_y-image_y+1;
+ int32_t dkernel_z=delta_z;
+
+ if (dkernel_x!=cTensor_dKernel[0].Size_X || dkernel_y!=cTensor_dKernel[0].Size_Y || dkernel_z!=cTensor_dKernel[0].Size_Z) throw("Неверные размеры тензора поправок к ядрам для обновления весов и смещений");
+
+ cTensor_Delta.CopyToDevice();
+ cTensor_Image.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Delta(cTensor_Delta);
+ STensorKernel<type_t> sTensorKernel_Image(cTensor_Image);
+
+ CCUDADeviceVector<type_t> d_bias_array(dbias.size());
+ d_bias_array.copy_host_to_device(&dbias[0],dbias.size());
+
+ CCUDADeviceVector<type_t *> d_kernel_item_ptr_array(cTensor_dKernel.size());
+ std::vector<type_t *> item_ptr(cTensor_dKernel.size());
+ for(size_t n=0;n<cTensor_dKernel.size();n++)
+ {
+  cTensor_dKernel[n].CopyToDevice();
+  item_ptr[n]=cTensor_dKernel[n].GetDeviceVector().get();
+ }
+ d_kernel_item_ptr_array.copy_host_to_device(&item_ptr[0],item_ptr.size());
+ //выполняем свёртку
+ STensorKernel<type_t> sTensorKernel_dKernel(cTensor_dKernel[0]);
+
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,1);
+
+ size_t block_x=dkernel_x/thread.x;
+ if (dkernel_x%thread.x) block_x++;
+ size_t block_y=dkernel_y/thread.y;
+ if (dkernel_y%thread.y) block_y++;
+ size_t block_z=dkernel_amount+dkernel_z*dkernel_amount;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDABackDeltaWeightAndBiasFunction<type_t><<<blocks,thread>>>(sTensorKernel_dKernel,d_kernel_item_ptr_array.get(),d_bias_array.get(),sTensorKernel_Image,sTensorKernel_Delta,padding_x,padding_y,step_x,step_y,dkernel_amount);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ for(size_t n=0;n<cTensor_dKernel.size();n++)
+ {
+  cTensor_dKernel[n].SetDeviceOnChange();
+ }
+ d_bias_array.copy_device_to_host(&dbias[0],dbias.size());
+}
+*/
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для выполнения обратной свёртки
+//----------------------------------------------------------------------------------------------------
+/*
+template<class type_t>
+__global__ void CUDABackwardConvolutionFunction(STensorKernel<type_t> tensor_output_delta,STensorKernel<type_t> tensor_delta,STensorKernel<type_t> tensor_kernel,type_t** kernel_item_ptr_array,size_t kernel_amount,type_t* bias_ptr,int32_t padding_x,int32_t padding_y,int32_t step_x,int32_t step_y)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+
+ x+=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+ y+=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+
+ int32_t output_z=z;
+ int32_t output_x=tensor_output_delta.GetSizeX();
+ int32_t output_y=tensor_output_delta.GetSizeY();
+
+ if (x>=output_x) return;
+ if (y>=output_y) return;
+
+ int32_t kernel_x=tensor_kernel.GetSizeX();
+ int32_t kernel_y=tensor_kernel.GetSizeY();
+ int32_t kernel_z=tensor_kernel.GetSizeZ();
+
+ int32_t input_x=tensor_delta.GetSizeX();
+ int32_t input_y=tensor_delta.GetSizeY();
+
+ type_t sum=0;
+ //применяем фильтр
+ for(int32_t ky=0;ky<kernel_y;ky++)
+ {
+  int32_t y0=y+ky-padding_y;
+  if (y0<0 || y0>=input_y) continue;
+  for(int32_t kx=0;kx<kernel_x;kx++)
+  {
+   int32_t x0=x+kx-padding_x;
+   //игнорируем элементы вне границ входного тензора
+   if (x0<0 || x0>=input_x) continue;
+   //проходимся по всей глубине тензора и считаем сумму
+   for(int32_t k=0;k<kernel_amount;k++)
+   {
+    //настроим ядро
+    tensor_kernel.TensorData_Ptr=kernel_item_ptr_array[k];
+    //считаем свёртку
+    type_t kernel=tensor_kernel.GetElement(output_z,kernel_y-1-ky,kernel_x-1-kx);
+    type_t delta=tensor_delta.GetElement(k,y0,x0);
+
+    sum+=kernel*delta;
+   }
+  }
+ }
+ tensor_output_delta.SetElement(output_z,y,x,sum);
+}
+*/
+//----------------------------------------------------------------------------------------------------
+/*!обратная свёртка
+*/
+//----------------------------------------------------------------------------------------------------
+/*
+template<class type_t>
+void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDelta,const CTensor<type_t> &cTensor_Delta,const std::vector<CTensor<type_t> > &cTensor_Kernel,const std::vector<type_t> &bias)
+{
+ int32_t padding_x=0;//дополнение нулями
+ int32_t padding_y=0;//дополнение нулями
+ int32_t step_x=1;//шаг свёртки
+ int32_t step_y=1;//шаг свёртки
+
+ //вычисляем размеры выходного тензора
+ int32_t kernel_amount=cTensor_Kernel.size();
+ if (kernel_amount==0) throw("Для обратной свёртки требуется хотя бы одно ядро свёртки");
+ if (kernel_amount!=bias.size()) throw("Для обратной свёртки требуется чтобы количество ядер и смещений совпадало");
+
+ int32_t kernel_x=cTensor_Kernel[0].Size_X;
+ int32_t kernel_y=cTensor_Kernel[0].Size_Y;
+ int32_t kernel_z=cTensor_Kernel[0].Size_Z;
+
+ int32_t input_y=cTensor_Delta.Size_Y;
+ int32_t input_x=cTensor_Delta.Size_X;
+ int32_t input_z=cTensor_Delta.Size_Z;
+
+ //обратная свёртка делается с ядрами, повёрнутыми на 180
+ int32_t output_x=step_x*(input_x-1)+kernel_x-2*padding_x;
+ int32_t output_y=step_y*(input_y-1)+kernel_y-2*padding_y;
+ int32_t output_z=kernel_z;
+
+ padding_x=kernel_x-1-padding_x;
+ padding_y=kernel_y-1-padding_y;
+
+ if (cTensor_OutputDelta.Size_X!=output_x || cTensor_OutputDelta.Size_Y!=output_y || cTensor_OutputDelta.Size_Z!=output_z) throw("Ошибочная размерность выходного тензора для обратной свёртки");
+ if (input_z!=kernel_amount) throw("Для обратной свёртки требуется чтобы количество фильтров и глубина входного тензора совпадали");
+
+ STensorKernel<type_t> sTensorKernel_OutputDelta(cTensor_OutputDelta);//выходной тензор
+ STensorKernel<type_t> sTensorKernel_Delta(cTensor_Delta);//входной тензор
+
+ cTensor_Delta.CopyToDevice();
+
+ //копируем на видеокарту указатели и смещения
+ CCUDADeviceVector<type_t> bias_array(bias.size());
+ bias_array.copy_host_to_device(&bias[0],bias.size());
+
+ CCUDADeviceVector<type_t *> kernel_item_ptr_array(cTensor_Kernel.size());
+ std::vector<type_t *> item_ptr(cTensor_Kernel.size());
+ for(size_t n=0;n<cTensor_Kernel.size();n++)
+ {
+  cTensor_Kernel[n].CopyToDevice();
+  item_ptr[n]=cTensor_Kernel[n].GetDeviceVector().get();
+ }
+ kernel_item_ptr_array.copy_host_to_device(&item_ptr[0],item_ptr.size());
+ //выполняем свёртку
+ STensorKernel<type_t> sTensorKernel_Kernel(cTensor_Kernel[0]);
+
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=output_x/thread.x;
+ if (output_x%thread.x) block_x++;
+ size_t block_y=output_y/thread.y;
+ if (output_y%thread.y) block_y++;
+ size_t block_z=output_z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDABackwardConvolutionFunction<type_t><<<blocks,thread>>>(sTensorKernel_OutputDelta,sTensorKernel_Delta,sTensorKernel_Kernel,kernel_item_ptr_array.get(),cTensor_Kernel.size(),bias_array.get(),padding_x,padding_y,step_x,step_y);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_OutputDelta.SetDeviceOnChange();
+
+}
+*/
+
+
 #endif

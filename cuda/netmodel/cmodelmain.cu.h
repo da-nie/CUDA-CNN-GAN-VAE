@@ -936,7 +936,7 @@ void CModelMain<type_t>::Training(void)
   {
    if (IsExit()==true) throw("Стоп");
 
-   if (batch%10==0)
+   if (batch%50==0)
    {
     SYSTEM::PutMessageToConsole("Save net.");
     SaveNet();
@@ -1012,10 +1012,6 @@ void CModelMain<type_t>::Training(void)
    SYSTEM::PutMessageToConsole("");
   }
   ExchangeRealImageIndex();
-  SYSTEM::PutMessageToConsole("Save net.");
-  SaveNet();
-  SYSTEM::PutMessageToConsole("Save image.");
-  SaveRandomImage();
   iteration++;
  }
 }
