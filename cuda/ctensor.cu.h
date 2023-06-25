@@ -515,7 +515,15 @@ void CTensor<type_t>::ExchangeSizeXY(void) const
 template<class type_t>
 void CTensor<type_t>::ReinterpretSize(size_t size_z,size_t size_y,size_t size_x) const
 {
- if (Size_X*Size_Y*Size_Z!=size_x*size_y*size_z) throw("Новая интерпретация размеров невозможна из-за различного количества элементов.");
+ static const size_t STRING_BUFFER_SIZE=1024;
+
+ if (Size_X*Size_Y*Size_Z!=size_x*size_y*size_z)
+ {
+  char str[STRING_BUFFER_SIZE];
+  sprintf(str,"%ix%ix%i->%ix%ix%i",Size_Z,Size_Y,Size_X,size_z,size_y,size_x);
+  SYSTEM::PutMessageToConsole(str);
+  throw("Новая интерпретация размеров невозможна из-за различного количества элементов.");
+ }
  Size_X=size_x;
  Size_Y=size_y;
  Size_Z=size_z;

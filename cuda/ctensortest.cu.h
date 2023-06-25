@@ -448,7 +448,7 @@ bool CTensorTest<type_t>::Test(void)
    CTensor<type_t> cTensor_Delta(1,4,4);
 
    std::vector<type_t> back_bias(cTensor_Kernel.size(),0);
-   CTensorConv<type_t>::BackwardConvolution(cTensor_Delta,cTensor_dOut,cTensor_Kernel,back_bias);
+   CTensorConv<type_t>::BackwardConvolution(cTensor_Delta,cTensor_dOut,cTensor_Kernel,back_bias,1,1,0,0);
    cTensor_Delta.Print("Тензор поправок дельта");
 
    //создаём вектор тензоров поправок к ядрам
@@ -461,7 +461,7 @@ bool CTensorTest<type_t>::Test(void)
    std::vector<type_t> dbias;
    dbias.push_back(0);
 
-   CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dbias,cTensor_Image,cTensor_dOut);
+   CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dbias,cTensor_Image,cTensor_dOut,1,1,0,0);
 
    cTensor_dKernel[0].Print("Тензор поправок ядра A после расчёта");
    //проверяем
@@ -564,7 +564,7 @@ bool CTensorTest<type_t>::Test(void)
   CTensor<type_t> cTensor_Control(3,4,4);
   //выполняем обратную свёртку
   std::vector<type_t> back_bias(cTensor_Kernel.size(),0);
-  CTensorConv<type_t>::BackwardConvolution(cTensor_Output,cTensor_Delta,cTensor_Kernel,back_bias);
+  CTensorConv<type_t>::BackwardConvolution(cTensor_Output,cTensor_Delta,cTensor_Kernel,back_bias,1,1,0,0);
 
   cTensor_Control.SetElement(0,0,0,121);
   cTensor_Control.SetElement(0,0,1,246);

@@ -129,6 +129,8 @@ CModelMain<type_t>::CModelMain(void)
 
  SPEED_DISCRIMINATOR=0;
  SPEED_GENERATOR=0;
+
+ BATCH_SIZE=1;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -828,6 +830,7 @@ void CModelMain<type_t>::Training(void)
 template<class type_t>
 void CModelMain<type_t>::TrainingNet(bool mnist)
 {
+ char str[STRING_BUFFER_SIZE];
  SYSTEM::MakeDirectory("Test");
  //if (LoadRealMNISTImage()==false)
  if (LoadRealImage()==false)
@@ -838,15 +841,18 @@ void CModelMain<type_t>::TrainingNet(bool mnist)
  SYSTEM::PutMessage("Образы изображений загружены.");
  //дополняем набор до кратного размеру пакета
  size_t image_amount=RealImage.size();
- BATCH_SIZE=10;
  BATCH_AMOUNT=image_amount/BATCH_SIZE;
  if (BATCH_AMOUNT==0) BATCH_AMOUNT=1;
- for(size_t n=0;n<BATCH_SIZE-image_amount%BATCH_AMOUNT-1;n++)
+ if (image_amount%BATCH_AMOUNT!=0)
  {
-  RealImageIndex.push_back(RealImageIndex[n%image_amount]);
+  size_t index=0;
+  for(size_t n=image_amount%BATCH_AMOUNT;n<BATCH_SIZE;n++,index++)
+  {
+   RealImageIndex.push_back(RealImageIndex[index%image_amount]);
+  }
+  image_amount=RealImageIndex.size();
+  BATCH_AMOUNT=image_amount/BATCH_SIZE;
  }
- image_amount=RealImageIndex.size();
- char str[STRING_BUFFER_SIZE];
  sprintf(str,"Изображений:%i Минипакетов:%i",image_amount,BATCH_AMOUNT);
  SYSTEM::PutMessageToConsole(str);
 
@@ -939,7 +945,7 @@ void CModelMain<type_t>::Execute(void)
 {
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
- //if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
+ if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
  TrainingNet(true);
 }
 
