@@ -34,7 +34,6 @@ class CModelGray:public CModelMain<type_t>
   using CModelMain<type_t>::NOISE_LAYER_SIDE_Y;
   using CModelMain<type_t>::NOISE_LAYER_SIDE_Z;
   using CModelMain<type_t>::NOISE_LAYER_SIZE;
-  using CModelMain<type_t>::NOISE_LAYER_SIZE;
 
   using CModelMain<type_t>::SPEED_DISCRIMINATOR;
   using CModelMain<type_t>::SPEED_GENERATOR;
@@ -78,7 +77,7 @@ CModelGray<type_t>::CModelGray(void)
 // SPEED_DISCRIMINATOR=0.0002;
 // SPEED_GENERATOR=0.001;
 
- SPEED_DISCRIMINATOR=0.0002;
+ SPEED_DISCRIMINATOR=0.00002;
  SPEED_GENERATOR=0.001*10;
 
  BATCH_SIZE=60;
@@ -237,3 +236,4 @@ void CModelGray<type_t>::CreateDiscriminator(void)
 
 }
 */
+

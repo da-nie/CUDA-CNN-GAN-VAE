@@ -843,10 +843,10 @@ void CModelMain<type_t>::TrainingNet(bool mnist)
  size_t image_amount=RealImage.size();
  BATCH_AMOUNT=image_amount/BATCH_SIZE;
  if (BATCH_AMOUNT==0) BATCH_AMOUNT=1;
- if (image_amount%BATCH_AMOUNT!=0)
+ if (image_amount%BATCH_SIZE!=0)
  {
   size_t index=0;
-  for(size_t n=image_amount%BATCH_AMOUNT;n<BATCH_SIZE;n++,index++)
+  for(size_t n=image_amount%BATCH_SIZE;n<BATCH_SIZE;n++,index++)
   {
    RealImageIndex.push_back(RealImageIndex[index%image_amount]);
   }

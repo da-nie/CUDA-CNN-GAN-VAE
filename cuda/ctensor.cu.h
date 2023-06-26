@@ -614,6 +614,7 @@ void CTensor<type_t>::CopyFromDevice(bool force) const
 template<class type_t>
 void CTensor<type_t>::SetHostOnChange(void) const
 {
+ DeviceOnChange=false;
  HostOnChange=true;
 }
 //----------------------------------------------------------------------------------------------------
@@ -623,6 +624,7 @@ template<class type_t>
 void CTensor<type_t>::SetDeviceOnChange(void) const
 {
  DeviceOnChange=true;
+ HostOnChange=false;
 }
 
 //----------------------------------------------------------------------------------------------------

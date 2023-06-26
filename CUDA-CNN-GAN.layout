@@ -2,74 +2,9 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Release" />
-	<File name="cuda/ctensorconv.cu.h" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="netlayer/cnetlayerconvolutioninput.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="9315" topLine="134" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerbackconvolution.cu.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="11955" topLine="179" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerlinear.cu.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="23377" topLine="423" />
-		</Cursor>
-	</File>
-	<File name="cuda/ccudadevicevector.cu.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="10506" topLine="196" />
-		</Cursor>
-	</File>
-	<File name="system/system.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1284" topLine="9" />
-		</Cursor>
-	</File>
-	<File name="cuda/tensor.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="976" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="cuda/ctensormath.cu.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="5234" topLine="31" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayermaxpooling.cu.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="20763" topLine="389" />
-		</Cursor>
-	</File>
-	<File name="main.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="279" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerconvolution.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="291" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="cuda/cuda.cu" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2784" topLine="57" />
-		</Cursor>
-	</File>
-	<File name="netlayer/inetlayer.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="280" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerconvolutioninput.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="296" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="cuda/ctensorapplyfunc.cu.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="9262" topLine="124" />
+			<Cursor1 position="15314" topLine="247" />
 		</Cursor>
 	</File>
 	<File name="cuda/ccudafunction.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -77,39 +12,14 @@
 			<Cursor1 position="13056" topLine="246" />
 		</Cursor>
 	</File>
-	<File name="cuda/handle_error.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="system/system.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="409" topLine="0" />
+			<Cursor1 position="1284" topLine="9" />
 		</Cursor>
 	</File>
-	<File name="cuda/ctimestamp.cu.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="cuda/netmodel/cmodel_gray.cu.h" open="1" top="1" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1344" topLine="5" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerlinear.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="286" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerconvolution.cu.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="7766" topLine="111" />
-		</Cursor>
-	</File>
-	<File name="netlayer/neuron.cu" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="4352" topLine="88" />
-		</Cursor>
-	</File>
-	<File name="cuda/netmodel/cmodel_gray.cu.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="7451" topLine="96" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerupsampling.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="286" topLine="0" />
+			<Cursor1 position="3758" topLine="60" />
 		</Cursor>
 	</File>
 	<File name="netlayer/cnetlayermaxdepooling.cu.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -117,59 +27,29 @@
 			<Cursor1 position="21680" topLine="386" />
 		</Cursor>
 	</File>
+	<File name="cuda/cuda.cu" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2784" topLine="57" />
+		</Cursor>
+	</File>
+	<File name="netlayer/neuron.cu" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4352" topLine="88" />
+		</Cursor>
+	</File>
 	<File name="cuda/ccudatimespent.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="2976" topLine="15" />
 		</Cursor>
 	</File>
-	<File name="netlayer/inetlayer.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="netlayer/cnetlayerconvolution.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="4118" topLine="28" />
+			<Cursor1 position="291" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="cuda/netmodel/cmodelmain.cu.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="1" zoom_2="0">
+	<File name="netlayer/cnetlayermaxpooling.cu.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="16928" topLine="339" />
-		</Cursor>
-	</File>
-	<File name="netlayer/neuron.cu.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="628" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="cuda/ctensortest.cu.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="19637" topLine="540" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerbackconvolution.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="295" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerconvolutioninput.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="15314" topLine="247" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayermaxpooling.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="290" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="cuda/ctimestamp.cu" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1177" topLine="1" />
-		</Cursor>
-	</File>
-	<File name="netlayer/cnetlayerupsampling.cu.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="21148" topLine="388" />
-		</Cursor>
-	</File>
-	<File name="cuda/netmodel/cmodel_v.cu.h" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="7925" topLine="152" />
+			<Cursor1 position="20763" topLine="389" />
 		</Cursor>
 	</File>
 	<File name="cuda/cuda.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -177,14 +57,134 @@
 			<Cursor1 position="67" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="cuda/ctensor.cu.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="cuda/ctensorapplyfunc.cu.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="22857" topLine="501" />
+			<Cursor1 position="36614" topLine="735" />
 		</Cursor>
 	</File>
 	<File name="cuda/ccudatimespent.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="1307" topLine="12" />
+		</Cursor>
+	</File>
+	<File name="netlayer/cnetlayerlinear.cu.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="23377" topLine="423" />
+		</Cursor>
+	</File>
+	<File name="cuda/tensor.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="976" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="netlayer/inetlayer.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4118" topLine="28" />
+		</Cursor>
+	</File>
+	<File name="cuda/ctensormath.cu.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="38482" topLine="839" />
+		</Cursor>
+	</File>
+	<File name="netlayer/cnetlayermaxpooling.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="290" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="netlayer/cnetlayerbackconvolution.cu.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="11955" topLine="179" />
+		</Cursor>
+	</File>
+	<File name="netlayer/cnetlayerupsampling.cu.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="21148" topLine="388" />
+		</Cursor>
+	</File>
+	<File name="netlayer/neuron.cu.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="628" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="netlayer/cnetlayerupsampling.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="286" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="cuda/netmodel/cmodel_v.cu.h" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="7925" topLine="152" />
+		</Cursor>
+	</File>
+	<File name="cuda/ctensortest.cu.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="19637" topLine="540" />
+		</Cursor>
+	</File>
+	<File name="netlayer/cnetlayerlinear.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="286" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="cuda/ctimestamp.cu.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1344" topLine="5" />
+		</Cursor>
+	</File>
+	<File name="netlayer/inetlayer.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="280" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="netlayer/cnetlayerconvolution.cu.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="7766" topLine="111" />
+		</Cursor>
+	</File>
+	<File name="netlayer/cnetlayerbackconvolution.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="295" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="cuda/handle_error.cu.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="409" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="cuda/ctensor.cu.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="29480" topLine="685" />
+		</Cursor>
+	</File>
+	<File name="cuda/ccudadevicevector.cu.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="10506" topLine="196" />
+		</Cursor>
+	</File>
+	<File name="main.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="279" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="cuda/ctimestamp.cu" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1177" topLine="1" />
+		</Cursor>
+	</File>
+	<File name="cuda/netmodel/cmodelmain.cu.h" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="1" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="41185" topLine="1075" />
+		</Cursor>
+	</File>
+	<File name="cuda/ctensorconv.cu.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="28729" topLine="603" />
+		</Cursor>
+	</File>
+	<File name="netlayer/cnetlayerconvolutioninput.cu" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="296" topLine="0" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>
