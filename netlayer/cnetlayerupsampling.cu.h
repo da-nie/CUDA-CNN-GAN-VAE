@@ -234,18 +234,18 @@ void CNetLayerUpSampling<type_t>::Forward(void)
    for(size_t x=0;x<input_x;x++)
    {
     type_t value=input.GetElement(z,y,x);
-    //выставляем всем точкам блока увеличения разрешения значение 0
+    //выставляем всем точкам блока увеличения разрешения значение value
     size_t hx=x*UpSampling_X;
     size_t hy=y*UpSampling_Y;
     for(size_t py=0;py<UpSampling_Y;py++)
     {
      for(size_t px=0;px<UpSampling_X;px++)
      {
-      cTensor_H.SetElement(z,hy+py,hx+px,0);
+      cTensor_H.SetElement(z,hy+py,hx+px,value);
      }
     }
     //значение ставим в первый элемент
-    cTensor_H.SetElement(z,hy,hx,value);
+    //cTensor_H.SetElement(z,hy,hx,value);
    }
   }
  }
@@ -350,10 +350,9 @@ void CNetLayerUpSampling<type_t>::TrainingBackward(void)
    {
     size_t ix=x*UpSampling_X;
     size_t iy=y*UpSampling_Y;
-    type_t e=cTensor_Delta.GetElement(z,iy,ix);
-    cTensor_PrevLayerError.SetElement(z,y,x,e);
+    //type_t e=cTensor_Delta.GetElement(z,iy,ix);
+    //cTensor_PrevLayerError.SetElement(z,y,x,e);
     type_t res=0;
-    /*
     for(size_t py=0;py<UpSampling_Y;py++)
     {
      for(size_t px=0;px<UpSampling_X;px++)
@@ -362,8 +361,8 @@ void CNetLayerUpSampling<type_t>::TrainingBackward(void)
       res+=e;
      }
     }
+    res/=(UpSampling_X*UpSampling_Y);
     cTensor_PrevLayerError.SetElement(z,y,x,res);
-    */
    }
   }
  }

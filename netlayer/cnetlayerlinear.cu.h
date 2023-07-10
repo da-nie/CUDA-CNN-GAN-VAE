@@ -400,9 +400,9 @@ void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed)
 {
+ //speed/=static_cast<double>(cTensor_H.GetSizeX()*cTensor_H.GetSizeY()*cTensor_H.GetSizeZ());
  //CTensorMath<type_t>::Mul(cTensor_dW,speed,cTensor_dW);
  CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed);
-
  //CTensorMath<type_t>::Mul(cTensor_dB,speed,cTensor_dB);
  CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed);
 }

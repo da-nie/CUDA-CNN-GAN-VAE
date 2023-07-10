@@ -141,6 +141,7 @@ class CTensor
   void SetHostOnChange(void) const;///<установить, что данные изменились
 
   void Print(const std::string &name,bool print_value=true) const;///<вывод тензора на экран
+  void PrintToFile(const std::string &file_name,const std::string &name,bool print_value=true) const;///<вывод тензора в файл
   bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="") const;///<сравнение тензоров
 
   void Clip(type_t min,type_t max);///<ограничить диапазон значений элементов тензора
@@ -633,9 +634,9 @@ void CTensor<type_t>::SetDeviceOnChange(void) const
 template<class type_t>
 void CTensor<type_t>::Print(const std::string &name,bool print_value) const
 {
- CopyFromDevice();
-
  char str[255];
+
+ CopyFromDevice();
 
  sprintf(str,"***** %s *****",name.c_str());
  SYSTEM::PutMessageToConsole(str);
@@ -661,11 +662,41 @@ void CTensor<type_t>::Print(const std::string &name,bool print_value) const
  SYSTEM::PutMessageToConsole("");
 }
 //----------------------------------------------------------------------------------------------------
+///!вывод тензора в файл
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensor<type_t>::PrintToFile(const std::string &file_name,const std::string &name,bool print_value) const
+{
+ CopyFromDevice();
+ FILE *file=fopen(file_name.c_str(),"wb");
+ if (file==NULL) return;
+
+ fprintf(file,"***** %s *****\r\n",name.c_str());
+ fprintf(file,"Z:%i Y:%i X:%i\r\n",Size_Z,Size_Y,Size_X);
+ if (print_value==false) return;
+ for(size_t z=0;z<GetSizeZ();z++)
+ {
+  fprintf(file,"-----%i-----\r\n",z);
+  for(size_t y=0;y<GetSizeY();y++)
+  {
+   for(size_t x=0;x<GetSizeX();x++)
+   {
+    type_t e1=GetElement(z,y,x);
+    fprintf(file,"%f ",e1);
+   }
+   fprintf(file,"\r\n");
+  }
+ }
+ fclose(file);
+}
+//----------------------------------------------------------------------------------------------------
 ///!сравнение тензоров
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
 bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::string &name) const
 {
+ char str[255];
+
  CopyFromDevice();
  cTensor_Control.CopyFromDevice();
 
@@ -673,23 +704,29 @@ bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::
 
  bool ret=true;
 
- printf("***** %s *****\r\n",name.c_str());
+ sprintf(str,"***** %s *****",name.c_str());
+ SYSTEM::PutMessageToConsole(str);
+ sprintf(str,"Z:%i Y:%i X:%i",Size_Z,Size_Y,Size_X);
+ SYSTEM::PutMessageToConsole(str);
  for(size_t z=0;z<GetSizeZ();z++)
  {
-  printf("-----%i-----\r\n",z);
+  sprintf(str,"-----%i-----",z);
+  SYSTEM::PutMessageToConsole(str);
   for(size_t y=0;y<GetSizeY();y++)
   {
+   std::string line;
    for(size_t x=0;x<GetSizeX();x++)
    {
     type_t e1=GetElement(z,y,x);
     type_t e2=cTensor_Control.GetElement(z,y,x);
-    printf("%f[%f] ",e1,e2);
+    sprintf(str,"%f[%f] ",e1,e2);
+	line+=str;
     if (fabs(e1-e2)>EPS) ret=false;
    }
-   printf("\r\n");
+   SYSTEM::PutMessageToConsole(line);
   }
  }
- printf("\r\n");
+ SYSTEM::PutMessageToConsole("");
  return(ret);
 }
 

@@ -335,6 +335,7 @@ bool CNetLayerBackConvolution<type_t>::Save(IDataStream *iDataStream_Ptr)
  {
   cTensor_Kernel[n].Save(iDataStream_Ptr);
   iDataStream_Ptr->SaveDouble(Bias[n]);
+  //cTensor_Kernel[n].Print("BackKernel",true);
  }
  iDataStream_Ptr->SaveInt32(Stride_X);
  iDataStream_Ptr->SaveInt32(Stride_Y);
@@ -440,6 +441,10 @@ template<class type_t>
 void CNetLayerBackConvolution<type_t>::TrainingUpdateWeight(double speed)
 {
  //speed/=cTensor_Kernel.size();//TODO: странно, вроде бы не должно зависеть от количества ядер
+ //speed/=(double)(cTensor_dKernel[0].GetSizeX()*cTensor_dKernel[0].GetSizeY()*cTensor_dKernel[0].GetSizeZ());
+ //speed/=(double)(InputSize_X*InputSize_Y*InputSize_Z);
+ //speed/=static_cast<double>(cTensor_H.GetSizeX()*cTensor_H.GetSizeY()*cTensor_H.GetSizeZ());
+ //double speed_b=speed/static_cast<double>(cTensor_H.GetSizeX()*cTensor_H.GetSizeY()*cTensor_H.GetSizeZ());
  for(size_t n=0;n<cTensor_Kernel.size();n++)
  {
   //CTensorMath<type_t>::Mul(cTensor_dKernel[n],speed,cTensor_dKernel[n]);
@@ -487,6 +492,7 @@ void CNetLayerBackConvolution<type_t>::SetOutputError(CTensor<type_t>& error)
 template<class type_t>
 void CNetLayerBackConvolution<type_t>::ClipWeight(type_t min,type_t max)
 {
+ return;
  for(size_t n=0;n<cTensor_Kernel.size();n++) cTensor_Kernel[n].Clip(min,max);
  for(size_t n=0;n<Bias.size();n++)
  {

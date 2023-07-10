@@ -638,12 +638,13 @@ template<class type_t>
 void CModelMain<type_t>::SaveRandomImage(void)
 {
  CreateFakeImage(cTensor_Generator_Output);
- //SaveImage(cTensor_Generator_Output[0],"Test/test.tga");
  for(size_t n=0;n<BATCH_SIZE;n++)
  {
   char str[255];
   sprintf(str,"Test/test%03i.tga",n);
   SaveImage(cTensor_Generator_Output[n],str);
+  sprintf(str,"Test/test%03i.txt",n);
+  cTensor_Generator_Output[n].PrintToFile(str,"Изображение",true);
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -666,7 +667,6 @@ void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor_Generator_Output,con
     r=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*0];
     g=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*1];
     b=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*2];
-
     r+=1.0;
     r/=2.0;
 
@@ -731,6 +731,7 @@ void CModelMain<type_t>::Training(void)
  const double gen_speed=SPEED_GENERATOR;
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
  uint32_t iteration=0;
+ const double clip=0.01;
 
  size_t image_amount=RealImage.size();
 
@@ -744,7 +745,7 @@ void CModelMain<type_t>::Training(void)
   {
    if (IsExit()==true) throw("Стоп");
 
-   if (batch%50==0)
+   if (batch%50==0 && iteration%50==0)
    {
     SYSTEM::PutMessageToConsole("Save net.");
     SaveNet();
@@ -772,7 +773,7 @@ void CModelMain<type_t>::Training(void)
     for(size_t n=0;n<DiscriminatorNet.size();n++)
     {
      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)));
-     DiscriminatorNet[n]->ClipWeight(-0.1,0.1);
+     DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
 
@@ -784,7 +785,7 @@ void CModelMain<type_t>::Training(void)
     for(size_t n=0;n<DiscriminatorNet.size();n++)
     {
      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)));
-     DiscriminatorNet[n]->ClipWeight(-0.1,0.1);
+     DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
 
@@ -803,7 +804,7 @@ void CModelMain<type_t>::Training(void)
     for(size_t n=0;n<GeneratorNet.size();n++)
     {
      GeneratorNet[n]->TrainingUpdateWeight(gen_speed/(static_cast<double>(BATCH_SIZE)));
-     GeneratorNet[n]->ClipWeight(-0.1,0.1);
+     //GeneratorNet[n]->ClipWeight(-clip,clip);//не нужно делать для генератора!
     }
    }
 
