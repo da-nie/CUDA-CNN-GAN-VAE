@@ -477,13 +477,13 @@
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 
-1687793637 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensormath.cu.h
+1689430532 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensormath.cu.h
 	"ctensor.cu.h"
 
 1687793484 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu
 	"ctensorconv.cu.h"
 
-1688909911 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu.h
+1689433880 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu.h
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 	<vector>
@@ -690,7 +690,7 @@
 1687793484 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerupsampling.cu
 	"cnetlayerupsampling.cu.h"
 
-1689008138 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gray.cu.h
+1689010727 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gray.cu.h
 	"cmodelmain.cu.h"
 
 1688907093 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodelmain.cu.h

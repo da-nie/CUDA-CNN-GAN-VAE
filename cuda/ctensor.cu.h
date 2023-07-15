@@ -90,9 +90,6 @@ class CTensor
   mutable bool HostOnChange;///<изменились данные на хосте
   mutable bool DeviceOnChange;///<изменились данные на устройстве
 
-  mutable std::shared_ptr<CTensor<type_t>> TmpTensor_A_Ptr;///<вспомогательный тензор (нужен для свёрток)
-  mutable std::shared_ptr<CTensor<type_t>> TmpTensor_B_Ptr;///<вспомогательный тензор (нужен для свёрток)
-  mutable std::shared_ptr<CTensor<type_t>> TmpTensor_C_Ptr;///<вспомогательный тензор (нужен для свёрток)
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CTensor<type_t>(size_t size_z=1,size_t size_y=1,size_t size_x=1);
@@ -145,49 +142,6 @@ class CTensor
   bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="") const;///<сравнение тензоров
 
   void Clip(type_t min,type_t max);///<ограничить диапазон значений элементов тензора
-
-  CTensor<type_t>& GetCUDATmpTensorA(size_t size_z=1,size_t size_y=1,size_t size_x=1) const
-  {
-   if (TmpTensor_A_Ptr.get()!=NULL)
-   {
-    if (TmpTensor_A_Ptr->GetSizeX()*TmpTensor_A_Ptr->GetSizeY()*TmpTensor_A_Ptr->GetSizeZ()!=size_x*size_y*size_z)
-    {
-     TmpTensor_A_Ptr.reset();
-    }
-    else TmpTensor_A_Ptr->ReinterpretSize(size_z,size_y,size_x);
-   }
-   if (TmpTensor_A_Ptr.get()==NULL) TmpTensor_A_Ptr.reset(new CTensor<type_t>(size_z,size_y,size_x));
-   return(*(TmpTensor_A_Ptr.get()));
-  }
-
-  CTensor<type_t>& GetCUDATmpTensorB(size_t size_z=1,size_t size_y=1,size_t size_x=1) const
-  {
-   if (TmpTensor_B_Ptr.get()!=NULL)
-   {
-    if (TmpTensor_B_Ptr->GetSizeX()*TmpTensor_B_Ptr->GetSizeY()*TmpTensor_B_Ptr->GetSizeZ()!=size_x*size_y*size_z)
-    {
-     TmpTensor_B_Ptr.reset();
-    }
-    else TmpTensor_B_Ptr->ReinterpretSize(size_z,size_y,size_x);
-   }
-   if (TmpTensor_B_Ptr.get()==NULL) TmpTensor_B_Ptr.reset(new CTensor<type_t>(size_z,size_y,size_x));
-   return(*(TmpTensor_B_Ptr.get()));
-  }
-
-  CTensor<type_t>& GetCUDATmpTensorC(size_t size_z=1,size_t size_y=1,size_t size_x=1) const
-  {
-   if (TmpTensor_C_Ptr.get()!=NULL)
-   {
-    if (TmpTensor_C_Ptr->GetSizeX()*TmpTensor_C_Ptr->GetSizeY()*TmpTensor_C_Ptr->GetSizeZ()!=size_x*size_y*size_z)
-    {
-     TmpTensor_C_Ptr.reset();
-    }
-    else TmpTensor_C_Ptr->ReinterpretSize(size_z,size_y,size_x);
-   }
-   if (TmpTensor_C_Ptr.get()==NULL) TmpTensor_C_Ptr.reset(new CTensor<type_t>(size_z,size_y,size_x));
-   return(*(TmpTensor_C_Ptr.get()));
-  }
-
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -407,14 +361,6 @@ void CTensor<type_t>::Move(CTensor<type_t> &cTensor)
 
  HostOnChange=cTensor.HostOnChange;
  DeviceOnChange=cTensor.DeviceOnChange;
-
- TmpTensor_A_Ptr=cTensor.TmpTensor_A_Ptr;
- TmpTensor_B_Ptr=cTensor.TmpTensor_B_Ptr;
- TmpTensor_C_Ptr=cTensor.TmpTensor_C_Ptr;
-
- cTensor.TmpTensor_A_Ptr.reset(NULL);
- cTensor.TmpTensor_B_Ptr.reset(NULL);
- cTensor.TmpTensor_C_Ptr.reset(NULL);
 
  cTensor.Size_X=0;
  cTensor.Size_Y=0;

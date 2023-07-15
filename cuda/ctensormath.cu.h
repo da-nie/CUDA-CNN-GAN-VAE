@@ -52,6 +52,10 @@ class CTensorMath
   //-открытые функции-----------------------------------------------------------------------------------
   static void Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры
   static void Sub(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<вычесть тензоры
+
+  template<class kernel_output_t,class kernel_left_t,class kernel_right_t>
+  static void MulAbstract(CTensor<type_t> &cTensor_Output,kernel_output_t &sTensorKernel_Output,const CTensor<type_t> &cTensor_Left,kernel_left_t &sTensorKernel_Left,const CTensor<type_t> &cTensor_Right,kernel_right_t &sTensorKernel_Right);///<умножить тензоры
+
   static void Mul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить тензоры
   static void TransponseMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить транспонированный левый тензор на правый
   static void Mul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const type_t &value_right);///<умножить тензор на число
@@ -379,9 +383,10 @@ void CTensorMath<type_t>::Sub(CTensor<type_t> &cTensor_Output,const CTensor<type
  cTensor_Output.SetOnChange();
 */
 }
-
-template<class type_t>
-__global__ void CUDATensorMulTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_left,STensorKernel<type_t> tensor_right)
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+template<class type_t,class kernel_output_t,class kernel_left_t,class kernel_right_t>
+__global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel_left_t tensor_left,kernel_right_t tensor_right)
 {
  //блок TENSOR_OPERATION_BLOCK_SIZE x TENSOR_OPERATION_BLOCK_SIZE в выходном тензоре
  size_t blockCol=blockIdx.x;
@@ -404,9 +409,9 @@ __global__ void CUDATensorMulTensorFunction(STensorKernel<type_t> tensor_output,
   __shared__ type_t Bs[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
 
   // Get sub-tensor Asub of A
-  STensorKernel<type_t> Asub=tensor_left.GetSubTensor(z,blockRow,m);
+  kernel_left_t Asub=tensor_left.GetSubTensor(z,blockRow,m);
   // Get sub-tensor Bsub of B
-  STensorKernel<type_t> Bsub=tensor_right.GetSubTensor(z,m,blockCol);
+  kernel_right_t Bsub=tensor_right.GetSubTensor(z,m,blockCol);
   // Shared memory used to store Asub and Bsub respectively
   // Load Asub and Bsub from device memory to shared memory
   // Each thread loads one element of each sub-tensor
@@ -433,40 +438,35 @@ __global__ void CUDATensorMulTensorFunction(STensorKernel<type_t> tensor_output,
 //----------------------------------------------------------------------------------------------------
 //умножить тензоры
 //----------------------------------------------------------------------------------------------------
-template<class type_t>
-__host__ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
+template<class type_t> template<class kernel_output_t,class kernel_left_t,class kernel_right_t>
+__host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,kernel_output_t &sTensorKernel_Output,const CTensor<type_t> &cTensor_Left,kernel_left_t &sTensorKernel_Left,const CTensor<type_t> &cTensor_Right,kernel_right_t &sTensorKernel_Right)
 {
- if (cTensor_Left.Size_X!=cTensor_Right.Size_Y  || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
-     cTensor_Output.Size_Y!=cTensor_Left.Size_Y || cTensor_Output.Size_X!=cTensor_Right.Size_X ||
-     cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
+ if (sTensorKernel_Left.Size_X!=sTensorKernel_Right.Size_Y  || sTensorKernel_Left.Size_Z!=sTensorKernel_Right.Size_Z ||
+     sTensorKernel_Output.Size_Y!=sTensorKernel_Left.Size_Y || sTensorKernel_Output.Size_X!=sTensorKernel_Right.Size_X ||
+     sTensorKernel_Output.Size_Z!=sTensorKernel_Right.Size_Z)
  {
-  throw "CTensor::Mul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
+  throw "CTensor::MulAbstract: Размерности тензоров не совпадают!";
  }
  //копируем данные с устройство
  cTensor_Left.CopyToDevice();
  cTensor_Right.CopyToDevice();
-
-
- STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
- STensorKernel<type_t> sTensorKernel_Left(cTensor_Left);
- STensorKernel<type_t> sTensorKernel_Right(cTensor_Right);
 
  //разбиваем выходной тензор на блоки по TENSOR_OPERATION_BLOCK_SIZExTENSOR_OPERATION_BLOCK_SIZE элементов
  //для каждого из этих элементов запускаем по нити (всего TENSOR_OPERATION_BLOCK_SIZExTENSOR_OPERATION_BLOCK_SIZE нитей)
 
  dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
 
- size_t block_x=cTensor_Right.Size_X/thread.x;
- if (cTensor_Right.Size_X%thread.x) block_x++;
- size_t block_y=cTensor_Left.Size_Y/thread.y;
- if (cTensor_Left.Size_Y%thread.y) block_y++;
- size_t block_z=cTensor_Output.Size_Z;
+ size_t block_x=sTensorKernel_Right.Size_X/thread.x;
+ if (sTensorKernel_Right.Size_X%thread.x) block_x++;
+ size_t block_y=sTensorKernel_Left.Size_Y/thread.y;
+ if (sTensorKernel_Left.Size_Y%thread.y) block_y++;
+ size_t block_z=sTensorKernel_Output.Size_Z;
 
  dim3 blocks(block_x,block_y,block_z);
  if (blocks.x==0) blocks.x=1;
  if (blocks.y==0) blocks.y=1;
  if (blocks.z==0) blocks.z=1;
- CUDATensorMulTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right);
+ CUDATensorMulTensorFunction<type_t,kernel_output_t,kernel_left_t,kernel_right_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
@@ -492,7 +492,17 @@ __host__ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTe
  */
 }
 
-
+//----------------------------------------------------------------------------------------------------
+//умножить тензоры
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__host__ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
+{
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Left(cTensor_Left);
+ STensorKernel<type_t> sTensorKernel_Right(cTensor_Right);
+ MulAbstract<STensorKernel<type_t>,STensorKernel<type_t>,STensorKernel<type_t>>(cTensor_Output,sTensorKernel_Output,cTensor_Left,sTensorKernel_Left,cTensor_Right,sTensorKernel_Right);
+}
 
 
 template<class type_t>
