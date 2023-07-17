@@ -739,20 +739,17 @@ void CModelMain<type_t>::Training(void)
  while(iteration<max_iteration)
  {
   SYSTEM::PutMessageToConsole("----------");
-  SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration));
+  SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
+
+  SYSTEM::PutMessageToConsole("Save net.");
+  SaveNet();
+  SYSTEM::PutMessageToConsole("Save image.");
+  SaveRandomImage();
+  SYSTEM::PutMessageToConsole("");
 
   for(uint32_t batch=0;batch<BATCH_AMOUNT;batch++)
   {
    if (IsExit()==true) throw("Стоп");
-
-   if (batch%50==0 && iteration%50==0)
-   {
-    SYSTEM::PutMessageToConsole("Save net.");
-    SaveNet();
-    SYSTEM::PutMessageToConsole("Save image.");
-    SaveRandomImage();
-    SYSTEM::PutMessageToConsole("");
-   }
 
    str="Итерация:";
    str+=std::to_string((long double)iteration+1);

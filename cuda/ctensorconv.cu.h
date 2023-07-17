@@ -166,7 +166,9 @@ struct STensorKernel_ForwardConvolution_Image
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
 
-  return(sTensorKernel_Image.GetElement(sz,sy,sx));
+  return(sTensorKernel_Image.TensorData_Ptr[sz*sTensorKernel_Image.StrideZ+sy*sTensorKernel_Image.StrideX+sx]);
+
+  //return(sTensorKernel_Image.GetElement(sz,sy,sx));
  }
  __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
@@ -187,7 +189,8 @@ struct STensorKernel_ForwardConvolution_Image
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
 
-  sTensorKernel_Image.SetElement(sz,sy,sx,value);
+  //sTensorKernel_Image.SetElement(sz,sy,sx,value);
+  sTensorKernel_Image.TensorData_Ptr[sz*sTensorKernel_Image.StrideZ+sy*sTensorKernel_Image.StrideX+sx]=value;
  }
 
  __host__ __device__ size_t GetSizeX(void)

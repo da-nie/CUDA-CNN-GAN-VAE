@@ -221,34 +221,10 @@ void CNetLayerUpSampling<type_t>::Forward(void)
  size_t basic_input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
 
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
-
  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
- size_t input_x=input.GetSizeX();
- size_t input_y=input.GetSizeY();
- size_t input_z=input.GetSizeZ();
 
- for(size_t z=0;z<input_z;z++)
- {
-  for(size_t y=0;y<input_y;y++)
-  {
-   for(size_t x=0;x<input_x;x++)
-   {
-    type_t value=input.GetElement(z,y,x);
-    //выставляем всем точкам блока увеличения разрешения значение value
-    size_t hx=x*UpSampling_X;
-    size_t hy=y*UpSampling_Y;
-    for(size_t py=0;py<UpSampling_Y;py++)
-    {
-     for(size_t px=0;px<UpSampling_X;px++)
-     {
-      cTensor_H.SetElement(z,hy+py,hx+px,value);
-     }
-    }
-    //значение ставим в первый элемент
-    //cTensor_H.SetElement(z,hy,hx,value);
-   }
-  }
- }
+ CTensorMath<type_t>::UpSampling(cTensor_H,input,UpSampling_X,UpSampling_Y);
+
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(basic_input_z,basic_input_y,basic_input_x);
 }
 //----------------------------------------------------------------------------------------------------
@@ -333,39 +309,8 @@ void CNetLayerUpSampling<type_t>::TrainingBackward(void)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
  cTensor_PrevLayerError.ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
 
- size_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- size_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- size_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ CTensorMath<type_t>::DownSampling(cTensor_PrevLayerError,cTensor_Delta,UpSampling_X,UpSampling_Y);
 
- //размер выходного тензора
- size_t output_x=cTensor_Delta.GetSizeX();
- size_t output_y=cTensor_Delta.GetSizeY();
- size_t output_z=cTensor_Delta.GetSizeZ();
-
- for(size_t z=0;z<input_z;z++)
- {
-  for(size_t y=0;y<input_y;y++)
-  {
-   for(size_t x=0;x<input_x;x++)
-   {
-    size_t ix=x*UpSampling_X;
-    size_t iy=y*UpSampling_Y;
-    //type_t e=cTensor_Delta.GetElement(z,iy,ix);
-    //cTensor_PrevLayerError.SetElement(z,y,x,e);
-    type_t res=0;
-    for(size_t py=0;py<UpSampling_Y;py++)
-    {
-     for(size_t px=0;px<UpSampling_X;px++)
-     {
-      type_t e=cTensor_Delta.GetElement(z,iy+py,ix+px);
-      res+=e;
-     }
-    }
-    res/=(UpSampling_X*UpSampling_Y);
-    cTensor_PrevLayerError.SetElement(z,y,x,res);
-   }
-  }
- }
  //задаём ошибку предыдущего слоя
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(basic_input_z,basic_input_y,basic_input_x);
  cTensor_PrevLayerError.ReinterpretSize(basic_input_z,basic_input_y,basic_input_x);
