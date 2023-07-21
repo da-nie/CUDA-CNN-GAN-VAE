@@ -452,8 +452,8 @@ void CNetLayerLinear<type_t>::SetOutputError(CTensor<type_t>& error)
 template<class type_t>
 void CNetLayerLinear<type_t>::ClipWeight(type_t min,type_t max)
 {
- cTensor_W.Clip(min,max);
- cTensor_B.Clip(min,max);
+ CTensorMath<type_t>::Clip(cTensor_W,min,max);
+ CTensorMath<type_t>::Clip(cTensor_B,min,max);
 }
 
 #endif

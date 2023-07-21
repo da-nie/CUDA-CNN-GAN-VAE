@@ -119,7 +119,7 @@ struct STensorKernel_ForwardConvolution_Image
   return(NULL);
  }
 
- __host__ __device__ STensorKernel_ForwardConvolution_Image GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __host__ __device__ STensorKernel_ForwardConvolution_Image<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
  {
   if (z>=Size_Z) z=0;
   STensorKernel_ForwardConvolution_Image<type_t> sub_tensor;
@@ -355,7 +355,7 @@ struct STensorKernel_BackwardConvolution_Delta
   return(NULL);
  }
 
- __host__ __device__ STensorKernel_BackwardConvolution_Delta GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __host__ __device__ STensorKernel_BackwardConvolution_Delta<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
  {
   if (z>=Size_Z) z=0;
   STensorKernel_BackwardConvolution_Delta<type_t> sub_tensor;
@@ -548,7 +548,6 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
 	 *d_ptr=s_ptr[nkx+nky*kernel_x];
 	}
    }
-   //for(size_t n=0;n<kernel_x*kernel_y;n++,s_ptr++,d_ptr++) *d_ptr=*s_ptr;
   }
  }
 
@@ -607,7 +606,7 @@ struct STensorKernel_DeltaWeightAndBias_Image
   return(NULL);
  }
 
- __host__ __device__ STensorKernel_DeltaWeightAndBias_Image GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __host__ __device__ STensorKernel_DeltaWeightAndBias_Image<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
  {
   if (z>=Size_Z) z=0;
   STensorKernel_DeltaWeightAndBias_Image<type_t> sub_tensor;

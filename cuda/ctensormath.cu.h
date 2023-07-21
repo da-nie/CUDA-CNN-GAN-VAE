@@ -74,6 +74,7 @@ class CTensorMath
 
   static void MaxPooling(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<уменьшение разрешения тензора выборкой большего элемента
   static void MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<обратный проход при увеличении разрешения тензора выборкой большего элемента
+  static void Clip(CTensor<type_t> &cTensor,type_t min_value,type_t max_value);///<выполнить отсечку значений тензора
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -407,18 +408,18 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
  size_t x=threadIdx.x;
  size_t y=threadIdx.y;
  //получаем подматрицу выходной матрицы
- STensorKernel<type_t> Csub=tensor_output.GetSubTensor(z,blockRow,blockCol);
+ kernel_output_t Csub=tensor_output.GetSubTensor(z,blockRow,blockCol);
 
  type_t Cvalue=0;
 
  size_t m_max=tensor_left.Size_X/CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
  if (tensor_left.Size_X%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE) m_max++;
 
+ __shared__ type_t As[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
+ __shared__ type_t Bs[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
+
  for(size_t m=0;m<m_max;m++)
  {
-  __shared__ type_t As[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
-  __shared__ type_t Bs[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
-
   // Get sub-tensor Asub of A
   kernel_left_t Asub=tensor_left.GetSubTensor(z,blockRow,m);
   // Get sub-tensor Bsub of B
@@ -432,8 +433,12 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
   // before starting the computation
   __syncthreads();
 
+  type_t *a_ptr=&As[y][0];
+  type_t *b_ptr=&Bs[0][x];
+
   // Multiply Asub and Bsub together
-  for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;e++) Cvalue+=As[y][e]*Bs[e][x];
+  for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;e++,a_ptr++,b_ptr+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE) Cvalue+=(*a_ptr)*(*b_ptr);
+  //for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;e++) Cvalue+=As[y][e]*Bs[e][x];
   // Synchronize to make sure that the preceding
   // computation is done before loading two new
   // sub-matrices of A and B in the next iteration
@@ -1210,5 +1215,63 @@ void CTensorMath<type_t>::MaxPoolingBackward(CTensor<type_t> &cTensor_Output,con
  cTensor_Output.SetDeviceOnChange();
  cTensor_Position.SetDeviceOnChange();
 }
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для выполнения отсечки значений тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDAClipTensor(STensorKernel<type_t> tensor,type_t min_value,type_t max_value)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+ //получаем подтензоры
+ size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+
+ if (xp>=tensor.GetSizeX() || yp>=tensor.GetSizeY()) return;
+
+ type_t value=tensor.GetElement(z,yp,xp);
+ if (value>max_value) value=max_value;
+ if (value<min_value) value=min_value;
+ tensor.SetElement(z,yp,xp,value);
+
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+///!выполнить отсечку значений тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Clip(CTensor<type_t> &cTensor,type_t min_value,type_t max_value)
+{
+ cTensor.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel(cTensor);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor.Size_X/thread.x;
+ if (cTensor.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor.Size_Y/thread.y;
+ if (cTensor.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDAClipTensor<type_t><<<blocks,thread>>>(sTensorKernel,min_value,max_value);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor.SetDeviceOnChange();
+}
+
 
 #endif
