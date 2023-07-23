@@ -286,17 +286,13 @@ void CNetLayerBackConvolution<type_t>::Forward(void)
  //выполняем обратную свёртку
  CTensorConv<type_t>::BackwardConvolution(cTensor_Z,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
  //применяем функцию активации нейронов
- for(size_t z=0;z<cTensor_Z.GetSizeZ();z++)
- {
-  for(size_t y=0;y<cTensor_Z.GetSizeY();y++)
-  {
-   for(size_t x=0;x<cTensor_Z.GetSizeX();x++)
-   {
-    type_t v=cTensor_Z.GetElement(z,y,x);
-    cTensor_H.SetElement(z,y,x,NNeuron::GetNeuronFunctionPtr(NeuronFunction)(v));
-   }
-  }
- }
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplySigmoid(cTensor_H,cTensor_Z);
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyReLU(cTensor_H,cTensor_Z);
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyLeakyReLU(cTensor_H,cTensor_Z);
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyLinear(cTensor_H,cTensor_Z);
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyTangence(cTensor_H,cTensor_Z);
+ //if (NeuronFunction==NNeuron::NEURON_FUNCTION_SOFTMAX) CTensorApplyFunc<type_t>::ApplySoftMax(cTensor_H,cTensor_Z);
+
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(input_z,input_y,input_x);
 }
 //----------------------------------------------------------------------------------------------------
@@ -470,18 +466,14 @@ CTensor<type_t>& CNetLayerBackConvolution<type_t>::GetDeltaTensor(void)
 template<class type_t>
 void CNetLayerBackConvolution<type_t>::SetOutputError(CTensor<type_t>& error)
 {
- for(size_t z=0;z<error.GetSizeZ();z++)
- {
-  for(size_t y=0;y<error.GetSizeY();y++)
-  {
-   for(size_t x=0;x<error.GetSizeX();x++)
-   {
-    type_t e=error.GetElement(z,y,x);
-    type_t v=cTensor_Z.GetElement(z,y,x);
-    cTensor_Delta.SetElement(z,y,x,e*NNeuron::GetNeuronFunctionDifferencialPtr(NeuronFunction)(v));
-   }
-  }
- }
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(cTensor_Delta,cTensor_Z);
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialReLU(cTensor_Delta,cTensor_Z);
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(cTensor_Delta,cTensor_Z);
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyDifferentialLinear(cTensor_Delta,cTensor_Z);
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyDifferentialTangence(cTensor_Delta,cTensor_Z);
+ //if (NeuronFunction==NNeuron::NEURON_FUNCTION_SOFTMAX) CTensorApplyFunc<type_t>::ApplyDifferentialSoftMax(cTensor_Delta,cTensor_Z);
+
+ CTensorMath<type_t>::TensorItemProduction(cTensor_Delta,error,cTensor_Delta);
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон

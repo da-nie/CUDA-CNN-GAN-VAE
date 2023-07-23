@@ -57,6 +57,7 @@ class CTensorMath
   //-открытые функции-----------------------------------------------------------------------------------
   static void Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры
   static void Sub(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<вычесть тензоры
+  static void AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias);///<добавить смещения к элементам тензора (смещения одинаковы для x и y, но по z смещения разные)
 
   template<class kernel_output_t,class kernel_left_t,class kernel_right_t>
   static void MulAbstract(CTensor<type_t> &cTensor_Output,kernel_output_t &sTensorKernel_Output,const CTensor<type_t> &cTensor_Left,kernel_left_t &sTensorKernel_Left,const CTensor<type_t> &cTensor_Right,kernel_right_t &sTensorKernel_Right);///<умножить тензоры
@@ -265,7 +266,7 @@ void CTensorMath<type_t>::Add(CTensor<type_t> &cTensor_Output,const CTensor<type
  if (cTensor_Left.Size_X!=cTensor_Right.Size_X || cTensor_Left.Size_Y!=cTensor_Right.Size_Y || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
-  throw "CTensor::Add(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
+  throw "CTensor::Add: Размерности тензоров не совпадают!";
  }
 
  cTensor_Left.CopyToDevice();
@@ -293,21 +294,6 @@ void CTensorMath<type_t>::Add(CTensor<type_t> &cTensor_Output,const CTensor<type
  HANDLE_ERROR(cudaDeviceSynchronize());
 
  cTensor_Output.SetDeviceOnChange();
-
- /*
- const type_t *left_ptr=&cTensor_Left.Item[0];
- const type_t *right_ptr=&cTensor_Right.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
-
- for(size_t z=0;z<cTensor_Left.Size_Z;z++)
- {
-  for(size_t y=0;y<cTensor_Left.Size_Y;y++)
-  {
-   for(size_t x=0;x<cTensor_Left.Size_X;x++,o_ptr++,left_ptr++,right_ptr++) *o_ptr=(*left_ptr)+(*right_ptr);
-  }
- }
- cTensor_Output.SetOnChange();
- */
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -347,7 +333,7 @@ void CTensorMath<type_t>::Sub(CTensor<type_t> &cTensor_Output,const CTensor<type
  if (cTensor_Left.Size_X!=cTensor_Right.Size_X || cTensor_Left.Size_Y!=cTensor_Right.Size_Y || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
-  throw "CTensor::Sub(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
+  throw "CTensor::Sub: Размерности тензоров не совпадают!";
  }
 
  cTensor_Left.CopyToDevice();
@@ -376,26 +362,74 @@ void CTensorMath<type_t>::Sub(CTensor<type_t> &cTensor_Output,const CTensor<type
  HANDLE_ERROR(cudaDeviceSynchronize());
 
  cTensor_Output.SetDeviceOnChange();
-
- /*
- const type_t *left_ptr=&cTensor_Left.Item[0];
- const type_t *right_ptr=&cTensor_Right.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
-
- for(size_t z=0;z<cTensor_Left.Size_Z;z++)
- {
-  for(size_t y=0;y<cTensor_Left.Size_Y;y++)
-  {
-   for(size_t x=0;x<cTensor_Left.Size_X;x++,o_ptr++,left_ptr++,right_ptr++)
-   {
-    *o_ptr=(*left_ptr)-(*right_ptr);
-   }
-  }
- }
- cTensor_Output.SetOnChange();
-*/
 }
+
 //----------------------------------------------------------------------------------------------------
+//функция CUDA для добавления смещения к элементам тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorAddBiasFunction(STensorKernel<type_t> tensor_working,STensorKernel<type_t> tensor_bias)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+ //получаем подтензоры
+ size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+
+ if (xp>=tensor_working.GetSizeX() || yp>=tensor_working.GetSizeY()) return;
+
+ size_t offset=xp+yp*tensor_working.GetSizeX();
+ type_t *a_ptr=tensor_working.GetTensorDataPtr(z)+offset;
+ type_t *b_ptr=tensor_bias.GetTensorDataPtr(z);
+
+ *a_ptr=(*a_ptr)+(*b_ptr);
+
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+//добавить смещения к элементам тензора (смещения одинаковы для x и y, но по z смещения разные)
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias)
+{
+ if (cTensor_Working.Size_Z!=cTensor_Bias.Size_Z)
+ {
+  throw "CTensor::AddBias: Размерности тензоров не совпадают!";
+ }
+ cTensor_Bias.CopyToDevice();
+ cTensor_Working.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Bias(cTensor_Bias);
+ STensorKernel<type_t> sTensorKernel_Working(cTensor_Working);
+ //запускаем процесс
+
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor_Working.Size_X/thread.x;
+ if (cTensor_Working.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor_Working.Size_Y/thread.y;
+ if (cTensor_Working.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor_Working.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorAddBiasFunction<type_t><<<blocks,thread>>>(sTensorKernel_Working,sTensorKernel_Bias);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Working.SetDeviceOnChange();
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для умножения тензоров
 //----------------------------------------------------------------------------------------------------
 template<class type_t,class kernel_output_t,class kernel_left_t,class kernel_right_t>
 __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel_left_t tensor_left,kernel_right_t tensor_right)
@@ -487,25 +521,6 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  HANDLE_ERROR(cudaDeviceSynchronize());
 
  cTensor_Output.SetDeviceOnChange();
- /*
- for(size_t z=0;z<cTensor_Left.Size_Z;z++)
- {
-  type_t *m=cTensor_Output.GetColumnPtr(z,0);
-  for(size_t y=0;y<cTensor_Left.Size_Y;y++)
-  {
-   const type_t *m1_begin=cTensor_Left.GetColumnPtr(z,0)+y*cTensor_Left.Size_X;
-   for(size_t x=0;x<cTensor_Right.Size_X;x++,m++)
-   {
-    type_t s=0;
-    const type_t *m2=cTensor_Right.GetColumnPtr(z,0)+x;
-    const type_t *m1=m1_begin;
-    for(size_t n=0;n<cTensor_Left.Size_X;n++,m1++,m2+=cTensor_Right.Size_X) s+=(*m1)*(*m2);
-    *m=s;
-   }
-  }
- }
- cTensor_Output.SetOnChange();
- */
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -618,26 +633,6 @@ void CTensorMath<type_t>::TransponseMul(CTensor<type_t> &cTensor_Output,const CT
  HANDLE_ERROR(cudaDeviceSynchronize());
 
  cTensor_Output.SetDeviceOnChange();
-
- /*
- for(size_t z=0;z<cTensor_Left.Size_Z;z++)
- {
-  type_t *m=cTensor_Output.GetColumnPtr(z,0);
-  for(size_t y=0;y<cTensor_Left.Size_X;y++)
-  {
-   const type_t *m1_begin=cTensor_Left.GetColumnPtr(z,0)+y;
-   for(size_t x=0;x<cTensor_Right.Size_X;x++,m++)
-   {
-    type_t s=0;
-    const type_t *m2=cTensor_Right.GetColumnPtr(z,0)+x;
-    const type_t *m1=m1_begin;
-    for(size_t n=0;n<cTensor_Left.Size_Y;n++,m1+=cTensor_Left.Size_X,m2+=cTensor_Right.Size_X) s+=(*m1)*(*m2);
-    *m=s;
-   }
-  }
- }
- cTensor_Output.SetOnChange();
- */
 }
 
 
@@ -702,24 +697,6 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
  HANDLE_ERROR(cudaDeviceSynchronize());
 
  cTensor_Output.SetDeviceOnChange();
-
-/*
- const type_t *left_ptr=&cTensor_Left.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
-
- for(size_t z=0;z<cTensor_Left.Size_Z;z++)
- {
-  for(size_t y=0;y<cTensor_Left.Size_Y;y++)
-  {
-   for(size_t x=0;x<cTensor_Left.Size_X;x++,o_ptr++,left_ptr++)
-   {
-    *o_ptr=(*left_ptr)*value_right;
-   }
-  }
- }
-
- cTensor_Output.SetOnChange();
- */
 }
 //----------------------------------------------------------------------------------------------------
 //умножить тензор на число
@@ -756,23 +733,6 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const type_t &valu
  HANDLE_ERROR(cudaDeviceSynchronize());
 
  cTensor_Output.SetDeviceOnChange();
-
- /*
- const type_t *right_ptr=&cTensor_Right.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
-
- for(size_t z=0;z<cTensor_Right.Size_Z;z++)
- {
-  for(size_t y=0;y<cTensor_Right.Size_Y;y++)
-  {
-   for(size_t x=0;x<cTensor_Right.Size_X;x++,o_ptr++,right_ptr++)
-   {
-    *o_ptr=(*right_ptr)*value_left;
-   }
-  }
- }
- cTensor_Output.SetOnChange();
- */
 }
 //----------------------------------------------------------------------------------------------------
 //транспонировать тензор
@@ -867,29 +827,6 @@ void CTensorMath<type_t>::TensorItemProduction(CTensor<type_t> &cTensor_Output,C
  HANDLE_ERROR(cudaDeviceSynchronize());
 
  cTensor_Output.SetDeviceOnChange();
-
- /*
- type_t *right_ptr=cTensor_Right.GetColumnPtr(0,0);
- type_t *output_ptr=cTensor_Output.GetColumnPtr(0,0);
- type_t *left_ptr=cTensor_Left.GetColumnPtr(0,0);
-
- size_t size_y=cTensor_Left.GetSizeY();
- size_t size_x=cTensor_Left.GetSizeX();
- size_t size_z=cTensor_Left.GetSizeZ();
- for(size_t z=0;z<size_z;z++)
- {
-  for(size_t y=0;y<size_y;y++)
-  {
-   for(size_t x=0;x<size_x;x++,left_ptr++,right_ptr++,output_ptr++)
-   {
-    type_t a=*left_ptr;
-    type_t b=*right_ptr;
-   *output_ptr=a*b;
-   }
-  }
- }
- cTensor_Output.SetOnChange();
- */
 }
 
 //----------------------------------------------------------------------------------------------------

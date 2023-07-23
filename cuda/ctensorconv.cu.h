@@ -294,6 +294,12 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
   type_t *d_ptr=cTensor_NewKernel.GetColumnPtr(0,k);
   for(size_t n=0;n<kernel_x*kernel_y*kernel_z;n++,s_ptr++,d_ptr++) *d_ptr=*s_ptr;
  }
+ //перестроим смещения
+ CTensor<type_t> cTensor_Bias(bias.size(),1,1);
+ for(size_t b=0;b<bias.size();b++)
+ {
+  cTensor_Bias.SetElement(b,0,0,bias[b]);
+ }
 
  //умножаем матрицы
  cTensor_Output.ReinterpretSize(1,output_z,new_input_x);
@@ -303,15 +309,8 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
 
  CTensorMath<type_t>::MulAbstract(cTensor_Output,sTensorKernel_Output,cTensor_NewKernel,sTensorKernel_NewKernel,cTensor_Image,sTensorKernel_Image);
  cTensor_Output.RestoreSize();
- cTensor_Output.CopyFromDevice(true);
- //добавляем смещения
- type_t *o_ptr=cTensor_Output.GetColumnPtr(0,0);
- for(size_t z=0;z<output_z;z++)
- {
-  type_t b=bias[z];
-  for(size_t n=0;n<output_y*output_x;n++,o_ptr++) *o_ptr+=b;
- }
- cTensor_Output.SetHostOnChange();
+
+ CTensorMath<type_t>::AddBias(cTensor_Output,cTensor_Bias);
 }
 
 
@@ -527,7 +526,6 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
  int32_t new_input_z=1;
  int32_t new_input_y=kernel_y*kernel_x*input_z;
  int32_t new_input_x=dst_x*dst_y;
-
 
  //перестроим тензоры ядер в строку по глубине и переворачиваем их на 180
  CTensor<type_t> cTensor_NewKernel(1,kernel_z,kernel_x*kernel_y*input_z);
