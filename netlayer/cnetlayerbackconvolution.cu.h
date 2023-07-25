@@ -404,10 +404,10 @@ void CNetLayerBackConvolution<type_t>::TrainingBackward(void)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
  cTensor_PrevLayerError.ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
 
- CTensorConv<type_t>::CreateBackDeltaWeightAndBias(cTensor_dKernel,dBias,PrevLayerPtr->GetOutputTensor(),cTensor_Delta,Stride_X,Stride_Y,Padding_X,Padding_Y);
  //вычисляем ошибку предшествующего слоя
  std::vector<type_t> bias(cTensor_dKernel.size(),0);
  CTensorConv<type_t>::ForwardConvolution(cTensor_PrevLayerError,cTensor_Delta,cTensor_Kernel,bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
+ CTensorConv<type_t>::CreateBackDeltaWeightAndBias(cTensor_dKernel,dBias,PrevLayerPtr->GetOutputTensor(),cTensor_Delta,Stride_X,Stride_Y,Padding_X,Padding_Y);
  //задаём ошибку предыдущего слоя
 
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(input_z,input_y,input_x);
@@ -436,14 +436,8 @@ void CNetLayerBackConvolution<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerBackConvolution<type_t>::TrainingUpdateWeight(double speed)
 {
- //speed/=cTensor_Kernel.size();//TODO: странно, вроде бы не должно зависеть от количества ядер
- //speed/=(double)(cTensor_dKernel[0].GetSizeX()*cTensor_dKernel[0].GetSizeY()*cTensor_dKernel[0].GetSizeZ());
- //speed/=(double)(InputSize_X*InputSize_Y*InputSize_Z);
- //speed/=static_cast<double>(cTensor_H.GetSizeX()*cTensor_H.GetSizeY()*cTensor_H.GetSizeZ());
- //double speed_b=speed/static_cast<double>(cTensor_H.GetSizeX()*cTensor_H.GetSizeY()*cTensor_H.GetSizeZ());
  for(size_t n=0;n<cTensor_Kernel.size();n++)
  {
-  //CTensorMath<type_t>::Mul(cTensor_dKernel[n],speed,cTensor_dKernel[n]);
   CTensorMath<type_t>::Sub(cTensor_Kernel[n],cTensor_Kernel[n],cTensor_dKernel[n],1,speed);
   Bias[n]-=dBias[n]*speed;
  }

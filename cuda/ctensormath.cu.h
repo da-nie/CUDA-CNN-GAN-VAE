@@ -58,6 +58,7 @@ class CTensorMath
   static void Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры
   static void Sub(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<вычесть тензоры
   static void AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias);///<добавить смещения к элементам тензора (смещения одинаковы для x и y, но по z смещения разные)
+  static void SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input);///<вычислить сумму элементов по X и Y для каждого Z
 
   template<class kernel_output_t,class kernel_left_t,class kernel_right_t>
   static void MulAbstract(CTensor<type_t> &cTensor_Output,kernel_output_t &sTensorKernel_Output,const CTensor<type_t> &cTensor_Left,kernel_left_t &sTensorKernel_Left,const CTensor<type_t> &cTensor_Right,kernel_right_t &sTensorKernel_Right);///<умножить тензоры
@@ -76,6 +77,8 @@ class CTensorMath
   static void MaxPooling(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<уменьшение разрешения тензора выборкой большего элемента
   static void MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<обратный проход при увеличении разрешения тензора выборкой большего элемента
   static void Clip(CTensor<type_t> &cTensor,type_t min_value,type_t max_value);///<выполнить отсечку значений тензора
+
+
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -428,6 +431,127 @@ void CTensorMath<type_t>::AddBias(CTensor<type_t> &cTensor_Working,const CTensor
 }
 
 
+
+
+
+template<class type_t,uint32_t blockSize>
+__global__ void CUDASummXYTensorFunction(int32_t size,STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
+{
+ size_t z=blockIdx.z;
+
+ size_t tid=threadIdx.x;
+ size_t i=blockDim.x*2*blockIdx.x+threadIdx.x;
+ size_t gridSize=blockSize*2*gridDim.x;
+
+ __shared__ type_t sdata[blockSize];
+ sdata[tid]=0;
+
+ type_t *d_xin=tensor_input.GetTensorDataPtr(z);
+
+ while (i<size)
+ {
+  if (i+blockDim.x<size) sdata[tid]+=d_xin[i]+d_xin[i+blockDim.x];
+  else
+  {
+   if (i<size) sdata[tid]+=d_xin[i];
+  }
+  i+=gridSize;
+ }
+ __syncthreads();
+
+ if (blockSize>=512)
+ {
+  if (tid<256) sdata[tid]+=sdata[tid+256];
+ }
+ __syncthreads();
+ if (blockSize>=256)
+ {
+  if (tid<128) sdata[tid]+=sdata[tid+128];
+ }
+ __syncthreads();
+ if (blockSize>=128)
+ {
+  if (tid<64) sdata[tid]+=sdata[tid+64];
+ }
+ __syncthreads();
+
+ if (tid<32)
+ {
+  if (blockSize>=64) sdata[tid]+=sdata[tid+32];
+  __syncthreads();
+  if (blockSize>=32) sdata[tid]+=sdata[tid+16];
+  __syncthreads();
+  if (blockSize>=16) sdata[tid]+=sdata[tid+8];
+  __syncthreads();
+  if (blockSize>=8) sdata[tid]+=sdata[tid+4];
+  __syncthreads();
+  if (blockSize>=4) sdata[tid]+=sdata[tid+2];
+  __syncthreads();
+  if (blockSize>=2) sdata[tid]+=sdata[tid+1];
+  __syncthreads();
+ }
+
+ if (tid==0)
+ {
+  d_xin[blockIdx.x]=sdata[0];
+  if (blockIdx.x==0) *(tensor_output.GetTensorDataPtr(z))=sdata[0];
+ }
+ __syncthreads();
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//вычислить сумму элементов по X и Y для каждого Z
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input)
+{
+ const int32_t B_SIZE=6;
+ const int32_t BLOCK_SIZE=1<<B_SIZE;
+
+ if (cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::SummXY: Размерности тензоров не совпадают!";
+ }
+ cTensor_Input.CopyToDevice();
+
+ size_t input_x=cTensor_Input.GetSizeX();
+ size_t input_y=cTensor_Input.GetSizeY();
+ size_t input_z=cTensor_Input.GetSizeZ();
+
+ cTensor_Input.ReinterpretSize(input_z,1,input_y*input_x);
+
+ int32_t amount=input_y*input_x;
+
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+
+ int32_t size=amount;
+ while (size>1)
+ {
+  dim3 block((size+BLOCK_SIZE-1)/BLOCK_SIZE,1,input_z);
+  dim3 thread(BLOCK_SIZE);
+
+  CUDASummXYTensorFunction<type_t,BLOCK_SIZE><<<block,thread>>>(size,sTensorKernel_Output,sTensorKernel_Input);
+  HANDLE_ERROR(cudaGetLastError());
+  HANDLE_ERROR(cudaDeviceSynchronize());
+  size=(size+BLOCK_SIZE-1)>>B_SIZE;
+ }
+ cTensor_Output.SetDeviceOnChange();
+ cTensor_Input.ReinterpretSize(input_z,input_y,input_x);
+}
+
+
+
+
+
+
+
+
+
+
+
+
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для умножения тензоров
 //----------------------------------------------------------------------------------------------------
@@ -602,7 +726,7 @@ void CTensorMath<type_t>::TransponseMul(CTensor<type_t> &cTensor_Output,const CT
      cTensor_Output.Size_Y!=cTensor_Left.Size_X || cTensor_Output.Size_X!=cTensor_Right.Size_X ||
      cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
-  throw "CTensor::TransponseMul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
+  throw "CTensor::TransponseMul: Размерности тензоров не совпадают!";
  }
 
  //копируем данные на устройство
@@ -671,7 +795,7 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
 {
  if (cTensor_Output.Size_X!=cTensor_Left.Size_X || cTensor_Output.Size_Y!=cTensor_Left.Size_Y || cTensor_Output.Size_Z!=cTensor_Left.Size_Z)
  {
-  throw "CTensor::Mul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const type_t &value_right): Размерности тензоров не совпадают!";
+  throw "CTensor::Mul: Размерности тензоров не совпадают!";
  }
 
  cTensor_Left.CopyToDevice();
@@ -706,7 +830,7 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const type_t &valu
 {
  if (cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
-  throw "CTensor::Mul(CTensor &cTensor_Output,const type_t &value_left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
+  throw "CTensor::Mul: Размерности тензоров не совпадают!";
  }
 
  cTensor_Right.CopyToDevice();
@@ -742,7 +866,7 @@ void CTensorMath<type_t>::Transponse(CTensor<type_t> &cTensor_Output,const CTens
 {
  if (cTensor_Output.Size_Y!=cTensor_Input.Size_X || cTensor_Output.Size_X!=cTensor_Input.Size_Y || cTensor_Output.Size_Z!=cTensor_Input.Size_Z)
  {
-  throw "void CTensor::Transponse(CTensor &cTensor_Output,const CTensor &cTensor_Input): Размерности матриц не совпадают!";
+  throw "void CTensor::Transponse: Размерности матриц не совпадают!";
  }
  cTensor_Input.CopyFromDevice(true);
 

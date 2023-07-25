@@ -278,8 +278,8 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  if (input_z!=kernel_z) throw("Для прямой свёртки требуется чтобы глубина фильтров и входного тензора совпадали");
 
  //перестроим входной тензор для выполнения умножения
- int32_t dst_y=output_x;
- int32_t dst_x=output_y;
+ int32_t dst_y=output_y;
+ int32_t dst_x=output_x;
 
  int32_t new_input_z=1;
  int32_t new_input_y=kernel_y*kernel_x*kernel_z;
@@ -784,6 +784,7 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
  cTensor_Delta.ReinterpretSize(delta_z,delta_y,delta_x);
  cTensor_Output.CopyFromDevice();
  cTensor_Output.ReinterpretSize(dkernel_z*delta_z,dkernel_y,dkernel_x);
+
  //копируем результаты в поправки ядер
  for(size_t k=0;k<dkernel_amount;k++)
  {
@@ -793,8 +794,20 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
   for(size_t n=0;n<dkernel_x*dkernel_y*dkernel_z;n++,s_ptr++,d_ptr++) *d_ptr+=*s_ptr;
   cTensor_dKernel[k].SetHostOnChange();
   //считаем поправку к вектору сдвига
+  /*
   const type_t *ds_ptr=cTensor_Delta.GetColumnPtr(k,0);
-  for(int32_t n=0;n<delta_y*delta_x;n++,ds_ptr++) dbias[k]+=*ds_ptr;
+  type_t summ=0;
+  for(int32_t n=0;n<delta_y*delta_x;n++,ds_ptr++) summ+=*ds_ptr;
+  dbias[k]+=summ;
+  */
+ }
+
+ //считаем поправку к вектору сдвига
+ CTensor<type_t> cTensor_dBias(dbias.size(),1,1);
+ CTensorMath<type_t>::SummXY(cTensor_dBias,cTensor_Delta);
+ for(size_t b=0;b<dbias.size();b++)
+ {
+  dbias[b]+=cTensor_dBias.GetElement(b,0,0);
  }
 }
 
