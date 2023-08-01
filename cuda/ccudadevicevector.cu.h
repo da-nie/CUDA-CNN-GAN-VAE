@@ -227,6 +227,4 @@ __host__ void CCUDADeviceVector<type_t>::copy_device_to_host(type_t *item_ptr,si
  }
 }
 
-
-
 #endif

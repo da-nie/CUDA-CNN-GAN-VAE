@@ -23,6 +23,7 @@
 #include "../ctimestamp.cu.h"
 
 #include "../../netlayer/cnetlayerlinear.cu.h"
+#include "../../netlayer/cnetlayerdropout.cu.h"
 #include "../../netlayer/cnetlayerconvolution.cu.h"
 #include "../../netlayer/cnetlayerconvolutioninput.cu.h"
 #include "../../netlayer/cnetlayerbackconvolution.cu.h"
@@ -104,6 +105,7 @@ class CModelMain
   void TrainingGenerator(double &cost);//обучение генератора
   void ExchangeRealImageIndex(void);//перемешать индексы изображений
   void SaveRandomImage(void);//сохранить случайное изображение с генератора
+  void SaveKitImage(void);//сохранить изображение из набора
   void SaveImage(CTensor<type_t> &cTensor_Generator_Output,const std::string &name);//сохранить изображение
   void Training(void);//обучение нейросети
   virtual void TrainingNet(bool mnist);//запуск обучения нейросети
@@ -293,6 +295,8 @@ bool CModelMain<type_t>::LoadRealImage(void)
 
   RealImage.push_back(CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH));
   RealImageIndex.push_back(index);
+  //зеркальное по ширине изображение
+  CTensor<type_t> FlipImage=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
 
   double dx=static_cast<double>(width)/static_cast<double>(IMAGE_WIDTH);
   double dy=static_cast<double>(height)/static_cast<double>(IMAGE_HEIGHT);
@@ -328,16 +332,29 @@ bool CModelMain<type_t>::LoadRealImage(void)
     b*=2.0;
 	b-=1.0;
 
-	if (IMAGE_DEPTH==1) RealImage[index].SetElement(0,y,x,gray);
+	if (IMAGE_DEPTH==1)
+	{
+	 RealImage[index].SetElement(0,y,x,gray);
+	 FlipImage.SetElement(0,y,IMAGE_WIDTH-x-1,gray);
+	}
     if (IMAGE_DEPTH==3)
 	{
 	 RealImage[index].SetElement(0,y,x,r);
 	 RealImage[index].SetElement(1,y,x,g);
 	 RealImage[index].SetElement(2,y,x,b);
+
+	 FlipImage.SetElement(0,y,IMAGE_WIDTH-x-1,r);
+	 FlipImage.SetElement(1,y,IMAGE_WIDTH-x-1,g);
+	 FlipImage.SetElement(2,y,IMAGE_WIDTH-x-1,b);
 	}
    }
   }
   index++;
+  /*
+  RealImage.push_back(FlipImage);
+  RealImageIndex.push_back(index);
+  index++;
+  */
   delete[](img_ptr);
  }
  char str[STRING_BUFFER_SIZE];
@@ -611,6 +628,7 @@ void CModelMain<type_t>::TrainingGenerator(double &cost)
    for(size_t m=0,n=GeneratorNet.size()-1;m<GeneratorNet.size();m++,n--) GeneratorNet[n]->TrainingBackward();
   }
  }
+
 }
 //----------------------------------------------------------------------------------------------------
 //перемешать индексы изображений
@@ -647,6 +665,20 @@ void CModelMain<type_t>::SaveRandomImage(void)
   cTensor_Generator_Output[n].PrintToFile(str,"Изображение",true);
  }
 }
+//----------------------------------------------------------------------------------------------------
+//сохранить изображение из набора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelMain<type_t>::SaveKitImage(void)
+{
+ for(size_t n=0;n<BATCH_SIZE;n++)
+ {
+  char str[255];
+  sprintf(str,"Test/real%03i.tga",n);
+  SaveImage(RealImage[n],str);
+ }
+}
+
 //----------------------------------------------------------------------------------------------------
 //сохранить изображение
 //----------------------------------------------------------------------------------------------------
@@ -741,11 +773,15 @@ void CModelMain<type_t>::Training(void)
   SYSTEM::PutMessageToConsole("----------");
   SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
 
+  if (iteration%250==0)
+  {
   SYSTEM::PutMessageToConsole("Save net.");
   SaveNet();
   SYSTEM::PutMessageToConsole("Save image.");
   SaveRandomImage();
+  SaveKitImage();
   SYSTEM::PutMessageToConsole("");
+  }
 
   for(uint32_t batch=0;batch<BATCH_AMOUNT;batch++)
   {
@@ -764,24 +800,26 @@ void CModelMain<type_t>::Training(void)
 
    for(size_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingResetDeltaWeight();
    TrainingDiscriminatorFake(disc_cost);
+  /*
    //корректируем веса дискриминатора
    {
     CTimeStamp cTimeStamp("Обновление весов дискриминатора на фальшивых изображениях:");
     for(size_t n=0;n<DiscriminatorNet.size();n++)
     {
      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)));
-     DiscriminatorNet[n]->ClipWeight(-clip,clip);
+    // DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
 
    for(size_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingResetDeltaWeight();
+  */
    TrainingDiscriminatorReal(batch,disc_cost);
    //корректируем веса дискриминатора
    {
     CTimeStamp cTimeStamp("Обновление весов дискриминатора на настоящих изображениях:");
     for(size_t n=0;n<DiscriminatorNet.size();n++)
     {
-     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)));
+     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE*2.0)));
      DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
@@ -1072,7 +1110,7 @@ void CModelMain<type_t>::SpeedTest(void)
   CTensor<type_t> cTensor_ImageMax(3,300,300);
   //выходной тензор свёртки
   CTensor<type_t> cTensor_OutputMax(256,299,299);
-  CTimeStamp cTimeStamp("Скорость прямой свёрти:");
+  CTimeStamp cTimeStamp("Скорость прямой свёртки:");
   {
    for(size_t n=0;n<1;n++)
    {
@@ -1086,7 +1124,7 @@ void CModelMain<type_t>::SpeedTest(void)
   CTensor<type_t> cTensor_DeltaMax(256,299,299);
   //выходной тензор свёртки
   CTensor<type_t> cTensor_OutputDeltaMax(3,300,300);
-  CTimeStamp cTimeStamp("Скорость обратной свёрти:");
+  CTimeStamp cTimeStamp("Скорость обратной свёртки:");
   {
    for(size_t n=0;n<1;n++)
    {
@@ -1102,6 +1140,5 @@ void CModelMain<type_t>::SpeedTest(void)
 }
 
 #endif
-
 
 

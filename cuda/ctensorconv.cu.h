@@ -166,9 +166,7 @@ struct STensorKernel_ForwardConvolution_Image
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
 
-  return(sTensorKernel_Image.TensorData_Ptr[sz*sTensorKernel_Image.StrideZ+sy*sTensorKernel_Image.StrideX+sx]);
-
-  //return(sTensorKernel_Image.GetElement(sz,sy,sx));
+  return(sTensorKernel_Image.GetElement(sz,sy,sx));
  }
  __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
@@ -189,8 +187,7 @@ struct STensorKernel_ForwardConvolution_Image
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
 
-  //sTensorKernel_Image.SetElement(sz,sy,sx,value);
-  sTensorKernel_Image.TensorData_Ptr[sz*sTensorKernel_Image.StrideZ+sy*sTensorKernel_Image.StrideX+sx]=value;
+  sTensorKernel_Image.SetElement(sz,sy,sx,value);
  }
 
  __host__ __device__ size_t GetSizeX(void)
@@ -308,7 +305,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  STensorKernel_ForwardConvolution_Image<type_t> sTensorKernel_Image(cTensor_Image,new_input_y,new_input_x,kernel_y,kernel_x,stride_y,stride_x,padding_y,padding_x,dst_y,dst_x);
 
  CTensorMath<type_t>::MulAbstract(cTensor_Output,sTensorKernel_Output,cTensor_NewKernel,sTensorKernel_NewKernel,cTensor_Image,sTensorKernel_Image);
- cTensor_Output.RestoreSize();
+ cTensor_Output.ReinterpretSize(output_z,output_y,output_x);
 
  CTensorMath<type_t>::AddBias(cTensor_Output,cTensor_Bias);
 }

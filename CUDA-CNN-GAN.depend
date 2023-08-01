@@ -459,7 +459,7 @@
 	<vector>
 	<string>
 
-1687793484 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ccudadevicevector.cu.h
+1690821126 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ccudadevicevector.cu.h
 	<stdio.h>
 	<stdint.h>
 	<cuda_runtime.h>
@@ -477,13 +477,13 @@
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 
-1690296726 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensormath.cu.h
+1690821263 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensormath.cu.h
 	"ctensor.cu.h"
 
 1687793484 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu
 	"ctensorconv.cu.h"
 
-1690296764 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu.h
+1690812987 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu.h
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 	<vector>
@@ -585,7 +585,7 @@
 	"../netlayer/cnetlayermaxpooling.cu.h"
 	"tensor.cu.h"
 
-1689784328 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu.h
+1690745429 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -690,10 +690,10 @@
 1687793484 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerupsampling.cu
 	"cnetlayerupsampling.cu.h"
 
-1690296984 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gray.cu.h
+1690825465 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gray.cu.h
 	"cmodelmain.cu.h"
 
-1690098904 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodelmain.cu.h
+1690823662 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodelmain.cu.h
 	<string>
 	<vector>
 	<array>
@@ -705,6 +705,7 @@
 	"../../common/tga.h"
 	"../ctimestamp.cu.h"
 	"../../netlayer/cnetlayerlinear.cu.h"
+	"../../netlayer/cnetlayerdropout.cu.h"
 	"../../netlayer/cnetlayerconvolution.cu.h"
 	"../../netlayer/cnetlayerconvolutioninput.cu.h"
 	"../../netlayer/cnetlayerbackconvolution.cu.h"
@@ -712,4 +713,15 @@
 	"../../netlayer/cnetlayermaxdepooling.cu.h"
 	"../../netlayer/cnetlayerupsampling.cu.h"
 	"../tensor.cu.h"
+
+1690735183 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerdropout.cu.h
+	<stdio.h>
+	<fstream>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/tensor.cu.h"
+	"neuron.cu.h"
+
+1690696937 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerdropout.cu
+	"cnetlayerdropout.cu.h"
 

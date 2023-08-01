@@ -32,7 +32,6 @@
 		<Unit filename="common/tga.cpp" />
 		<Unit filename="common/tga.h" />
 		<Unit filename="cuda/ccudadevicevector.cu.h" />
-		<Unit filename="cuda/ccudafunction.cu.h" />
 		<Unit filename="cuda/ccudatimespent.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -98,6 +97,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayerconvolutioninput.cu.h" />
+		<Unit filename="netlayer/cnetlayerdropout.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerdropout.cu.h" />
 		<Unit filename="netlayer/cnetlayerlinear.cu">
 			<Option compile="1" />
 			<Option link="1" />

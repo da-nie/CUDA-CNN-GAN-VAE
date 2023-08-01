@@ -1334,5 +1334,4 @@ void CTensorMath<type_t>::Clip(CTensor<type_t> &cTensor,type_t min_value,type_t 
  cTensor.SetDeviceOnChange();
 }
 
-
 #endif

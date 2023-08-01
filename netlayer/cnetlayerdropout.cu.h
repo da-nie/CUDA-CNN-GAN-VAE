@@ -1,8 +1,8 @@
-#ifndef C_NET_LAYER_LINEAR_H
-#define C_NET_LAYER_LINEAR_H
+#ifndef C_NET_LAYER_DROP_OUT_H
+#define C_NET_LAYER_DROP_OUT_H
 
 //****************************************************************************************************
-//\file Линейный слой нейронов
+//\file Вероятностное исключение нейронов линейного слоя из обучения
 //****************************************************************************************************
 
 //****************************************************************************************************
@@ -29,10 +29,10 @@
 //****************************************************************************************************
 
 //****************************************************************************************************
-//!Линейный слой нейронов
+//!Вероятностное исключение нейронов линейного слоя из обучения
 //****************************************************************************************************
 template<class type_t>
-class CNetLayerLinear:public INetLayer<type_t>
+class CNetLayerDropOut:public INetLayer<type_t>
 {
  public:
   //-перечисления---------------------------------------------------------------------------------------
@@ -40,29 +40,25 @@ class CNetLayerLinear:public INetLayer<type_t>
   //-константы------------------------------------------------------------------------------------------
  private:
   //-переменные-----------------------------------------------------------------------------------------
-  CTensor<type_t> cTensor_W;///<тензор весов слоя
-  CTensor<type_t> cTensor_B;///<тензор сдвигов слоя
-  CTensor<type_t> cTensor_Z;///<тензор значений нейронов до функции активации
-  CTensor<type_t> cTensor_H;///<тензор значений нейронов после функции активации
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
-  NNeuron::NEURON_FUNCTION NeuronFunction;///<функция активации нейронов слоя
 
+  double DropOut;///<вероятность исключения нейронов
+  bool Training;///<включён ли режим обучения
   //тензоры, используемые при обучении
-  CTensor<type_t> cTensor_dW;///<тензор поправок весов слоя
-  CTensor<type_t> cTensor_dB;///<тензор поправок сдвигов слоя
-  CTensor<type_t> cTensor_Delta;///<тензор дельты слоя
-  CTensor<type_t> cTensor_TmpdW;///<вспомогательный тензор поправок весов слоя
+  CTensor<type_t> cTensor_H;///<тензор выхода слоя
+  CTensor<type_t> cTensor_H_DropOut;///<тензор исключения выхода слоя
+  CTensor<type_t> cTensor_Delta;///<тензор ошибки предыдущего слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerLinear(size_t neurons,NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL);
-  CNetLayerLinear(void);
+  CNetLayerDropOut(double drop_out,INetLayer<type_t> *prev_layer_ptr=NULL);
+  CNetLayerDropOut(void);
   //-деструктор-----------------------------------------------------------------------------------------
-  ~CNetLayerLinear();
+  ~CNetLayerDropOut();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(size_t neurons,NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL);///<создать слой
+  void Create(double drop_out,INetLayer<type_t> *prev_layer_ptr=NULL);///<создать слой
   void Reset(void);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -95,15 +91,15 @@ class CNetLayerLinear:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerLinear<type_t>::CNetLayerLinear(size_t neurons,NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr)
+CNetLayerDropOut<type_t>::CNetLayerDropOut(double drop_out,INetLayer<type_t> *prev_layer_ptr)
 {
- Create(neurons,neuron_function,prev_layer_ptr);
+ Create(drop_out,prev_layer_ptr);
 }
 //----------------------------------------------------------------------------------------------------
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerLinear<type_t>::CNetLayerLinear(void)
+CNetLayerDropOut<type_t>::CNetLayerDropOut(void)
 {
  Create(1);
 }
@@ -111,7 +107,7 @@ CNetLayerLinear<type_t>::CNetLayerLinear(void)
 //!деструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerLinear<type_t>::~CNetLayerLinear()
+CNetLayerDropOut<type_t>::~CNetLayerDropOut()
 {
 }
 
@@ -127,7 +123,7 @@ CNetLayerLinear<type_t>::~CNetLayerLinear()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-type_t CNetLayerLinear<type_t>::GetRandValue(type_t max_value)
+type_t CNetLayerDropOut<type_t>::GetRandValue(type_t max_value)
 {
  return((static_cast<type_t>(rand())*max_value)/static_cast<type_t>(RAND_MAX));
 }
@@ -145,63 +141,27 @@ type_t CNetLayerLinear<type_t>::GetRandValue(type_t max_value)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::Create(size_t neurons,NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr)
+void CNetLayerDropOut<type_t>::Create(double drop_out,INetLayer<type_t> *prev_layer_ptr)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
- NeuronFunction=neuron_function;
- cTensor_H=CTensor<type_t>(1,neurons,1);
- cTensor_Z=CTensor<type_t>(1,neurons,1);
+ DropOut=drop_out;
+ Training=false;
 
  if (prev_layer_ptr==NULL)//слой без предшествующего считается входным
  {
-  cTensor_W=CTensor<type_t>(1,1,1);
-  cTensor_B=CTensor<type_t>(1,1,1);
+  throw("Слой DropOut не может быть входным!");
  }
- else
- {
-  size_t size_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
-  size_t size_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
-  size_t size_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
-
-  cTensor_W=CTensor<type_t>(1,neurons,size_x*size_y*size_z);
-  cTensor_B=CTensor<type_t>(1,neurons,1);
-  //задаём предшествующему слою, что мы его последующий слой
-  prev_layer_ptr->SetNextLayerPtr(this);
- }
+ //задаём предшествующему слою, что мы его последующий слой
+ prev_layer_ptr->SetNextLayerPtr(this);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить инициализацию весов и сдвигов
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::Reset(void)
+void CNetLayerDropOut<type_t>::Reset(void)
 {
- if (PrevLayerPtr==NULL) return;
-
- type_t size=static_cast<type_t>(cTensor_W.GetSizeX());//нормируется только по количеству входов нейрона
- type_t koeff=static_cast<type_t>(sqrt(2.0/size));
- //веса
- for(size_t y=0;y<cTensor_W.GetSizeY();y++)
- {
-  for(size_t x=0;x<cTensor_W.GetSizeX();x++)
-  {
-   //используем метод инициализации He (Ге)
-   type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
-   type_t init=rnd*koeff;
-   cTensor_W.SetElement(0,y,x,init);
-  }
- }
- //сдвиги
- size=static_cast<type_t>(cTensor_B.GetSizeY());
- koeff=static_cast<type_t>(sqrt(2.0/size));
- for(size_t y=0;y<cTensor_B.GetSizeY();y++)
- {
-  //используем метод инициализации He (Ге)
-  type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
-  type_t init=rnd*koeff;
-  cTensor_B.SetElement(0,y,0,init);
- }
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать выход слоя
@@ -210,12 +170,9 @@ void CNetLayerLinear<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output)
+void CNetLayerDropOut<type_t>::SetOutput(CTensor<type_t> &output)
 {
- //if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
- //if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
- //if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
- cTensor_H.CopyItem(output);
+ throw("Слою DropOut нельзя задать выходное значение!");
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать выход слоя
@@ -224,48 +181,34 @@ void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::GetOutput(CTensor<type_t> &output)
+void CNetLayerDropOut<type_t>::GetOutput(CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerLinear<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
- if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerLinear<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
- if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerLinear<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
- output=cTensor_H;
+ throw("От слоя DropOut нельзя получить выходное значение!");
 }
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::Forward(void)
+void CNetLayerDropOut<type_t>::Forward(void)
 {
- if (PrevLayerPtr==NULL) return;//для входного слоя ничего делать не нужно
- //Z=WxZprev
- //приводим входной тензор к линии
- size_t size_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- size_t size_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- size_t size_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
- PrevLayerPtr->GetOutputTensor().ReinterpretSize(1,size_x*size_y*size_z,1);
-
- CTensorMath<type_t>::Mul(cTensor_Z,cTensor_W,PrevLayerPtr->GetOutputTensor());
-
- PrevLayerPtr->GetOutputTensor().RestoreSize();
-
- CTensorMath<type_t>::Add(cTensor_Z,cTensor_Z,cTensor_B);
- //применим функцию активации
-
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplySigmoid(cTensor_H,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyReLU(cTensor_H,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyLeakyReLU(cTensor_H,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyLinear(cTensor_H,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyTangence(cTensor_H,cTensor_Z);
- //if (NeuronFunction==NNeuron::NEURON_FUNCTION_SOFTMAX) CTensorApplyFunc<type_t>::ApplySoftMax(cTensor_H,cTensor_Z);
-
-/*
- for(size_t y=0;y<cTensor_Z.GetSizeY();y++)
+ if (Training==false) return;
+ //создаём матрицу исключения
+ size_t size_x=cTensor_H_DropOut.GetSizeX();
+ size_t size_y=cTensor_H_DropOut.GetSizeY();
+ size_t size_z=cTensor_H_DropOut.GetSizeZ();
+ cTensor_H_DropOut.Zero();
+ for(size_t z=0;z<size_z;z++)
  {
-  type_t v=cTensor_Z.GetElement(0,y,0);
-  cTensor_H.SetElement(0,y,0,NNeuron::GetNeuronFunctionPtr(NeuronFunction)(v));
+  for(size_t y=0;y<size_y;y++)
+  {
+   for(size_t x=0;x<size_x;x++)
+   {
+    if (GetRandValue(1)<DropOut) cTensor_H_DropOut.SetElement(z,y,x,1);
+   }
+  }
  }
-*/
+ //умножаем входной тензор на тензор исключения поэлементно
+ CTensorMath<type_t>::TensorItemProduction(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_H_DropOut);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -273,9 +216,10 @@ void CNetLayerLinear<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerLinear<type_t>::GetOutputTensor(void)
+CTensor<type_t>& CNetLayerDropOut<type_t>::GetOutputTensor(void)
 {
- return(cTensor_H);
+ if (Training==true) return(cTensor_H);
+ return(PrevLayerPtr->GetOutputTensor());
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать указатель на последующий слой
@@ -284,7 +228,7 @@ CTensor<type_t>& CNetLayerLinear<type_t>::GetOutputTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
+void CNetLayerDropOut<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
 {
  NextLayerPtr=next_layer_ptr;
 }
@@ -295,11 +239,9 @@ void CNetLayerLinear<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerLinear<type_t>::Save(IDataStream *iDataStream_Ptr)
+bool CNetLayerDropOut<type_t>::Save(IDataStream *iDataStream_Ptr)
 {
- iDataStream_Ptr->SaveUInt32(NeuronFunction);
- cTensor_W.Save(iDataStream_Ptr);
- cTensor_B.Save(iDataStream_Ptr);
+ iDataStream_Ptr->SaveDouble(DropOut);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -309,11 +251,9 @@ bool CNetLayerLinear<type_t>::Save(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerLinear<type_t>::Load(IDataStream *iDataStream_Ptr)
+bool CNetLayerDropOut<type_t>::Load(IDataStream *iDataStream_Ptr)
 {
- NeuronFunction=iDataStream_Ptr->LoadUInt32();
- cTensor_W.Load(iDataStream_Ptr);
- cTensor_B.Load(iDataStream_Ptr);
+ DropOut=iDataStream_Ptr->LoadDouble();
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -321,30 +261,27 @@ bool CNetLayerLinear<type_t>::Load(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::TrainingStart(void)
+void CNetLayerDropOut<type_t>::TrainingStart(void)
 {
+ Training=true;
  //создаём все вспомогательные тензоры
- cTensor_dW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
- cTensor_TmpdW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
- cTensor_dB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
- cTensor_Delta=CTensor<type_t>(1,cTensor_H.GetSizeY(),cTensor_H.GetSizeX());
- if (PrevLayerPtr!=NULL)
- {
-  CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor();
-  cTensor_PrevLayerError=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
- }
+ CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor();
+ cTensor_H=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+ cTensor_H_DropOut=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+ cTensor_Delta=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+ cTensor_PrevLayerError=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::TrainingStop(void)
+void CNetLayerDropOut<type_t>::TrainingStop(void)
 {
+ Training=false;
  //удаляем все вспомогательные тензоры
- cTensor_dW=CTensor<type_t>(1,1,1);
- cTensor_TmpdW=CTensor<type_t>(1,1,1);
- cTensor_dB=CTensor<type_t>(1,1,1);
+ cTensor_H=CTensor<type_t>(1,1,1);
+ cTensor_H_DropOut=CTensor<type_t>(1,1,1);
  cTensor_Delta=CTensor<type_t>(1,1,1);
  cTensor_PrevLayerError=CTensor<type_t>(1,1,1);
 }
@@ -353,44 +290,20 @@ void CNetLayerLinear<type_t>::TrainingStop(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::TrainingBackward(void)
+void CNetLayerDropOut<type_t>::TrainingBackward(void)
 {
- //вычисляем ошибку предыдущего слоя (D=tr(W)xDnext)
- if (PrevLayerPtr!=NULL)//это не входной слой
- {
-  //считаем ошибку предыдущего слоя
-  size_t size_x=cTensor_PrevLayerError.GetSizeX();
-  size_t size_y=cTensor_PrevLayerError.GetSizeY();
-  size_t size_z=cTensor_PrevLayerError.GetSizeZ();
-  cTensor_PrevLayerError.ReinterpretSize(1,size_x*size_y*size_z,1);
-
-  CTensorMath<type_t>::TransponseMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta);
-  cTensor_PrevLayerError.RestoreSize();
-  //задаём ошибку предыдущего слоя
-  PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
-  CTensor<type_t> &h=PrevLayerPtr->GetOutputTensor();
-  size_x=h.GetSizeX();
-  size_y=h.GetSizeY();
-  size_z=h.GetSizeZ();
-  h.ReinterpretSize(1,1,size_x*size_y*size_z);
-
-  CTensorMath<type_t>::Mul(cTensor_TmpdW,cTensor_Delta,h);
-
-  h.RestoreSize();
-
-  CTensorMath<type_t>::Add(cTensor_dW,cTensor_dW,cTensor_TmpdW);
-  CTensorMath<type_t>::Add(cTensor_dB,cTensor_dB,cTensor_Delta);
- }
+ //умножаем тензор ошибки на тензор исключения поэлементно
+ CTensorMath<type_t>::TensorItemProduction(cTensor_PrevLayerError,cTensor_Delta,cTensor_H_DropOut);
+ //задаём ошибку предыдущего слоя
+ PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
+void CNetLayerDropOut<type_t>::TrainingResetDeltaWeight(void)
 {
- cTensor_dW.Zero();
- cTensor_dB.Zero();
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обновления весов
@@ -398,13 +311,8 @@ void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed)
+void CNetLayerDropOut<type_t>::TrainingUpdateWeight(double speed)
 {
- //speed/=static_cast<double>(cTensor_H.GetSizeX()*cTensor_H.GetSizeY()*cTensor_H.GetSizeZ());
- //CTensorMath<type_t>::Mul(cTensor_dW,speed,cTensor_dW);
- CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed);
- //CTensorMath<type_t>::Mul(cTensor_dB,speed,cTensor_dB);
- CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на тензор дельты слоя
@@ -412,7 +320,7 @@ void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerLinear<type_t>::GetDeltaTensor(void)
+CTensor<type_t>& CNetLayerDropOut<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
 }
@@ -422,25 +330,9 @@ CTensor<type_t>& CNetLayerLinear<type_t>::GetDeltaTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::SetOutputError(CTensor<type_t>& error)
+void CNetLayerDropOut<type_t>::SetOutputError(CTensor<type_t>& error)
 {
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(cTensor_Delta,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialReLU(cTensor_Delta,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(cTensor_Delta,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyDifferentialLinear(cTensor_Delta,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyDifferentialTangence(cTensor_Delta,cTensor_Z);
- //if (NeuronFunction==NNeuron::NEURON_FUNCTION_SOFTMAX) CTensorApplyFunc<type_t>::ApplyDifferentialSoftMax(cTensor_Delta,cTensor_Z);
-
- CTensorMath<type_t>::TensorItemProduction(cTensor_Delta,error,cTensor_Delta);
-
-/*
- for(size_t y=0;y<error.GetSizeY();y++)
- {
-  type_t e=error.GetElement(0,y,0);
-  type_t v=cTensor_Z.GetElement(0,y,0);
-  cTensor_Delta.SetElement(0,y,0,e*NNeuron::GetNeuronFunctionDifferencialPtr(NeuronFunction)(v));
- }
- */
+ cTensor_Delta=error;
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -450,10 +342,8 @@ void CNetLayerLinear<type_t>::SetOutputError(CTensor<type_t>& error)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::ClipWeight(type_t min,type_t max)
+void CNetLayerDropOut<type_t>::ClipWeight(type_t min,type_t max)
 {
- CTensorMath<type_t>::Clip(cTensor_W,min,max);
- CTensorMath<type_t>::Clip(cTensor_B,min,max);
 }
 
 #endif
