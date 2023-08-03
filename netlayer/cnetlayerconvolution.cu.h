@@ -477,7 +477,7 @@ void CNetLayerConvolution<type_t>::SetOutputError(CTensor<type_t>& error)
 template<class type_t>
 void CNetLayerConvolution<type_t>::ClipWeight(type_t min,type_t max)
 {
- return;
+ //return;
  for(size_t n=0;n<cTensor_Kernel.size();n++) CTensorMath<type_t>::Clip(cTensor_Kernel[n],min,max);
  for(size_t n=0;n<Bias.size();n++)
  {

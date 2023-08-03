@@ -70,9 +70,9 @@ class CModelMain
   std::vector<std::shared_ptr<INetLayer<type_t> > > GeneratorNet;///<сеть генератора
   std::vector<std::shared_ptr<INetLayer<type_t> > > DiscriminatorNet;///<сеть дискриминатора
 
-  std::vector<CTensor<type_t>> cTensor_Generator_Output;
-  std::vector<CTensor<type_t>> cTensor_Discriminator_Output;
-  std::vector<CTensor<type_t>> cTensor_Discriminator_Error;
+  CTensor<type_t> cTensor_Generator_Output;
+  CTensor<type_t> cTensor_Discriminator_Output;
+  CTensor<type_t> cTensor_Discriminator_Error;
 
   std::vector<CTensor<type_t>> RealImage;//образы истинных изображений
   std::vector<size_t> RealImageIndex;//индексы изображений в обучающем наборе
@@ -99,7 +99,7 @@ class CModelMain
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить слои сети
   void LoadNet(void);//загрузить сети
   void SaveNet(void);//сохранить сети
-  void CreateFakeImage(std::vector<CTensor<type_t>> &cTensor_Generator_Output);//создать мнимое изображение с помощью генератора
+  void CreateFakeImage(CTensor<type_t> &cTensor_Generator_Image);//создать мнимое изображение с помощью генератора
   void TrainingDiscriminatorFake(double &cost);//обучение дискриминатора на фальшивом изображения
   void TrainingDiscriminatorReal(size_t mini_batch_index,double &cost);//обучение дискриминатора на настоящих изображениях
   void TrainingGenerator(double &cost);//обучение генератора
@@ -314,6 +314,23 @@ bool CModelMain<type_t>::LoadRealImage(void)
     float g=(color>>8)&0xff;
     float b=(color>>16)&0xff;
 
+    float cy=0.299*r+0.587*g+0.144*b;
+	float cb=-0.1687*r-0.3313*g+0.5*b+128;
+	float cr=0.5*r-0.4187*g-0.0813*b+128;
+
+	cy/=255.0;
+	cb/=255.0;
+	cr/=255.0;
+
+	cy*=2.0;
+	cy-=1.0;
+
+	cb*=2.0;
+	cb-=1.0;
+
+	cr*=2.0;
+	cr-=1.0;
+
     float gray=(r+g+b)/3.0f;
     gray/=255.0;
 	r/=255.0;
@@ -339,6 +356,10 @@ bool CModelMain<type_t>::LoadRealImage(void)
 	}
     if (IMAGE_DEPTH==3)
 	{
+     r=cy;
+     g=cb;
+     b=cr;
+
 	 RealImage[index].SetElement(0,y,x,r);
 	 RealImage[index].SetElement(1,y,x,g);
 	 RealImage[index].SetElement(2,y,x,b);
@@ -424,24 +445,21 @@ void CModelMain<type_t>::SaveNet(void)
 //создать мнимое изображение с помощью генератора
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::CreateFakeImage(std::vector<CTensor<type_t>> &cTensor_Generator_Output)
+void CModelMain<type_t>::CreateFakeImage(CTensor<type_t> &cTensor_Generator_Image)
 {
  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
- for(uint32_t b=0;b<BATCH_SIZE;b++)
+ if (IsExit()==true) throw("Стоп");
+ type_t *ptr=cTensor_Generator_Input.GetColumnPtr(0,0);
+ for(uint32_t n=0;n<NOISE_LAYER_SIZE;n++,ptr++)
  {
-  if (IsExit()==true) throw("Стоп");
-  type_t *ptr=cTensor_Generator_Input.GetColumnPtr(0,0);
-  for(uint32_t n=0;n<NOISE_LAYER_SIZE;n++,ptr++)
-  {
-   type_t r=GetRandValue(20.0)-10.0;
-   *ptr=r;
-  }
-  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
-  //выполняем прямой проход по сети
-  for(size_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
-  //получаем ответ сети
-  cTensor_Generator_Output[b]=GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor();
+  type_t r=GetRandValue(20.0)-10.0;
+  *ptr=r;
  }
+ GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
+ //выполняем прямой проход по сети
+ for(size_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
+ //получаем ответ сети
+ cTensor_Generator_Image=GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -450,22 +468,23 @@ void CModelMain<type_t>::CreateFakeImage(std::vector<CTensor<type_t>> &cTensor_G
 template<class type_t>
 void CModelMain<type_t>::TrainingDiscriminatorFake(double &cost)
 {
+ char str[STRING_BUFFER_SIZE];
  double fake_output=0;
- //создаём изображения с генератора
- {
-  CTimeStamp cTimeStamp("Создание шума:");
-  CreateFakeImage(cTensor_Generator_Output);
- }
 
  for(size_t b=0;b<BATCH_SIZE;b++)
  {
   if (IsExit()==true) throw("Стоп");
+  //создаём изображение с генератора
+  {
+   CTimeStamp cTimeStamp("Создание шума:");
+   CreateFakeImage(cTensor_Generator_Output);
+  }
 
   //подаём на вход дискриминатора мнимое изображение
   {
    CTimeStamp cTimeStamp("Задание шума:");
    //дискриминатор подключён к выходу генератора
-   GeneratorNet[GeneratorNet.size()-1]->SetOutput(cTensor_Generator_Output[b]);
+   GeneratorNet[GeneratorNet.size()-1]->SetOutput(cTensor_Generator_Output);
   }
   //вычисляем сеть
   {
@@ -475,28 +494,27 @@ void CModelMain<type_t>::TrainingDiscriminatorFake(double &cost)
   //вычисляем ошибку последнего слоя
   {
    CTimeStamp cTimeStamp("Получение ответа дискриминатора:");
-   DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutput(cTensor_Discriminator_Output[b]);
+   DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutput(cTensor_Discriminator_Output);
 
    if (b==0)
    {
-    char str[255];
-    sprintf(str,"Ответ дискриминатора на фальшивку [%i]:%f",b,cTensor_Discriminator_Output[b].GetElement(0,0,0));
+    sprintf(str,"Ответ дискриминатора на фальшивку [%i]:%f",b,cTensor_Discriminator_Output.GetElement(0,0,0));
     SYSTEM::PutMessageToConsole(str);
    }
   }
   {
    CTimeStamp cTimeStamp("Расчёт ошибки:");
-   fake_output=cTensor_Discriminator_Output[b].GetElement(0,0,0);
+   fake_output=cTensor_Discriminator_Output.GetElement(0,0,0);
    //double disc_fake_error=-SafeLog(1.0-fake_output);
    //cost+=disc_fake_error*disc_fake_error;
-   double disc_fake_error=(fake_output-0);
+   double disc_fake_error=-(-fake_output);
    cost+=disc_fake_error*disc_fake_error;
-   cTensor_Discriminator_Error[b].SetElement(0,0,0,disc_fake_error);
+   cTensor_Discriminator_Error.SetElement(0,0,0,disc_fake_error);
   }
   //задаём ошибку дискриминатору
   {
    CTimeStamp cTimeStamp("Задание ошибки:");
-   DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error[b]);
+   DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error);
   }
   //выполняем вычисление весов
   {
@@ -512,6 +530,7 @@ void CModelMain<type_t>::TrainingDiscriminatorFake(double &cost)
 template<class type_t>
 void CModelMain<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,double &cost)
 {
+ char str[STRING_BUFFER_SIZE];
  double real_output=0;
  for(size_t b=0;b<BATCH_SIZE;b++)
  {
@@ -531,27 +550,26 @@ void CModelMain<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,doubl
   //вычисляем ошибку последнего слоя
   {
    CTimeStamp cTimeStamp("Получение ответа дискриминатора:");
-   DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutput(cTensor_Discriminator_Output[b]);
+   DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutput(cTensor_Discriminator_Output);
    if (b==0)
    {
-    char str[255];
-    sprintf(str,"Ответ дискриминатора на истину [%i]:%f",b,cTensor_Discriminator_Output[b].GetElement(0,0,0));
+    sprintf(str,"Ответ дискриминатора на истину [%i]:%f",b,cTensor_Discriminator_Output.GetElement(0,0,0));
     SYSTEM::PutMessageToConsole(str);
    }
   }
   {
    CTimeStamp cTimeStamp("Вычисление ошибки:");
-   real_output=cTensor_Discriminator_Output[b].GetElement(0,0,0);
+   real_output=cTensor_Discriminator_Output.GetElement(0,0,0);
    //double disc_real_error=SafeLog(real_output);
    //cost+=disc_real_error*disc_real_error;
-   double disc_real_error=(real_output-1);
+   double disc_real_error=-(real_output);
    cost+=disc_real_error*disc_real_error;
-   cTensor_Discriminator_Error[b].SetElement(0,0,0,disc_real_error);
+   cTensor_Discriminator_Error.SetElement(0,0,0,disc_real_error);
   }
   {
    CTimeStamp cTimeStamp("Задание ошибки:");
    //задаём ошибку дискриминатору
-   DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error[b]);
+   DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error);
   }
   //выполняем вычисление весов
   {
@@ -571,6 +589,7 @@ void CModelMain<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,doubl
 template<class type_t>
 void CModelMain<type_t>::TrainingGenerator(double &cost)
 {
+ char str[STRING_BUFFER_SIZE];
  double fake_output=0;
  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
 
@@ -596,26 +615,25 @@ void CModelMain<type_t>::TrainingGenerator(double &cost)
   //вычисляем ошибку
   {
    CTimeStamp cTimeStamp("Получение ответа:");
-   DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutput(cTensor_Discriminator_Output[b]);
+   DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutput(cTensor_Discriminator_Output);
    if (b==0)
    {
-    char str[255];
-    sprintf(str,"Ответ дискриминатора для генератора [%i]:%f",b,cTensor_Discriminator_Output[b].GetElement(0,0,0));
+    sprintf(str,"Ответ дискриминатора для генератора [%i]:%f",b,cTensor_Discriminator_Output.GetElement(0,0,0));
     SYSTEM::PutMessageToConsole(str);
    }
   }
   {
    CTimeStamp cTimeStamp("Расчёт ошибки дискриминатора:");
-   fake_output=cTensor_Discriminator_Output[b].GetElement(0,0,0);
+   fake_output=cTensor_Discriminator_Output.GetElement(0,0,0);
    // double disc_error=SafeLog(fake_output);
    //cost+=disc_error*disc_error;
-   double disc_error=(fake_output-1);
+   double disc_error=-(fake_output);
    cost+=disc_error*disc_error;
-   cTensor_Discriminator_Error[b].SetElement(0,0,0,disc_error);
+   cTensor_Discriminator_Error.SetElement(0,0,0,disc_error);
   }
   {
    CTimeStamp cTimeStamp("Задание ошибки:");
-   DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error[b]);
+   DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error);
   }
   //выполняем вычисление весов дискриминатора
   {
@@ -655,14 +673,14 @@ void CModelMain<type_t>::ExchangeRealImageIndex(void)
 template<class type_t>
 void CModelMain<type_t>::SaveRandomImage(void)
 {
- CreateFakeImage(cTensor_Generator_Output);
+ char str[STRING_BUFFER_SIZE];
  for(size_t n=0;n<BATCH_SIZE;n++)
  {
-  char str[255];
+  CreateFakeImage(cTensor_Generator_Output);
   sprintf(str,"Test/test%03i.tga",n);
-  SaveImage(cTensor_Generator_Output[n],str);
+  SaveImage(cTensor_Generator_Output,str);
   sprintf(str,"Test/test%03i.txt",n);
-  cTensor_Generator_Output[n].PrintToFile(str,"Изображение",true);
+  cTensor_Generator_Output.PrintToFile(str,"Изображение",true);
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -671,11 +689,11 @@ void CModelMain<type_t>::SaveRandomImage(void)
 template<class type_t>
 void CModelMain<type_t>::SaveKitImage(void)
 {
+ char str[STRING_BUFFER_SIZE];
  for(size_t n=0;n<BATCH_SIZE;n++)
  {
-  char str[255];
   sprintf(str,"Test/real%03i.tga",n);
-  SaveImage(RealImage[n],str);
+  SaveImage(RealImage[RealImageIndex[n]],str);
  }
 }
 
@@ -694,11 +712,22 @@ void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor_Generator_Output,con
    float r=0;
    float g=0;
    float b=0;
+
+   float ir=0;
+   float ig=0;
+   float ib=0;
+
    if (IMAGE_DEPTH==3)
    {
-    r=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*0];
-    g=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*1];
-    b=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*2];
+    ir=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*0];
+    ig=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*1];
+    ib=ptr[x+y*IMAGE_WIDTH+(IMAGE_HEIGHT*IMAGE_WIDTH)*2];
+
+
+    r=ir;
+    g=ib;
+    b=ir;
+
     r+=1.0;
     r/=2.0;
 
@@ -719,6 +748,37 @@ void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor_Generator_Output,con
     if (b<0) b=0;
     if (b>1) b=1;
     b*=255.0;
+
+    float cy=ir;
+    float cb=ig;
+    float cr=ib;
+
+    cy+=1.0;
+    cy/=2.0;
+
+    cb+=1.0;
+    cb/=2.0;
+
+    cr+=1.0;
+    cr/=2.0;
+
+    cy*=255.0;
+    cb*=255.0;
+    cr*=255.0;
+
+    r=cy+1.402*(cr-128);
+    g=cy-0.3441*(cb-128)-0.7141*(cr-128);
+    b=cy+1.772*(cb-128);
+
+    if (r<0) r=0;
+    if (r>255) r=255;
+
+    if (g<0) g=0;
+    if (g>255) g=255;
+
+    if (b<0) b=0;
+    if (b>255) b=255;
+
    }
    if (IMAGE_DEPTH==1)
    {
@@ -759,11 +819,13 @@ void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor_Generator_Output,con
 template<class type_t>
 void CModelMain<type_t>::Training(void)
 {
+ char str_b[STRING_BUFFER_SIZE];
+
  const double disc_speed=SPEED_DISCRIMINATOR;
  const double gen_speed=SPEED_GENERATOR;
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
  uint32_t iteration=0;
- const double clip=0.01;
+ const double clip=0.05;
 
  size_t image_amount=RealImage.size();
 
@@ -791,10 +853,15 @@ void CModelMain<type_t>::Training(void)
    str+=std::to_string((long double)iteration+1);
    str+=" минипакет:";
    str+=std::to_string((long double)batch+1);
+   str+=" из ";
+   str+=std::to_string((long double)BATCH_AMOUNT);
    SYSTEM::PutMessageToConsole(str);
 
    long double begin_time=SYSTEM::GetSecondCounter();
 
+
+   //for(size_t r=0;r<5;r++)
+   {
    //обучаем дискриминатор
    double disc_cost=0;
 
@@ -827,6 +894,7 @@ void CModelMain<type_t>::Training(void)
    str="Ошибка дискриминатора:";
    str+=std::to_string((long double)disc_cost);
    SYSTEM::PutMessageToConsole(str);
+   }
 
    //обучаем генератор
    double gen_cost=0;
@@ -850,9 +918,8 @@ void CModelMain<type_t>::Training(void)
    long double end_time=SYSTEM::GetSecondCounter();
    float cpu_time=static_cast<float>((end_time-begin_time)*1000.0);
 
-   char str[255];
-   sprintf(str,"На минипакет ушло: %.2f мс.\r\n",cpu_time);
-   SYSTEM::PutMessageToConsole(str);
+   sprintf(str_b,"На минипакет ушло: %.2f мс.\r\n",cpu_time);
+   SYSTEM::PutMessageToConsole(str_b);
    SYSTEM::PutMessageToConsole("");
   }
   ExchangeRealImageIndex();
@@ -892,15 +959,10 @@ void CModelMain<type_t>::TrainingNet(bool mnist)
  sprintf(str,"Изображений:%i Минипакетов:%i",image_amount,BATCH_AMOUNT);
  SYSTEM::PutMessageToConsole(str);
 
- cTensor_Generator_Output=std::vector<CTensor<type_t>>(BATCH_SIZE);
- cTensor_Discriminator_Output=std::vector<CTensor<type_t>>(BATCH_SIZE);
- cTensor_Discriminator_Error=std::vector<CTensor<type_t>>(BATCH_SIZE);
- for(size_t n=0;n<BATCH_SIZE;n++)
- {
-  cTensor_Generator_Output[n]=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
-  cTensor_Discriminator_Output[n]=CTensor<type_t>(1,1,1);
-  cTensor_Discriminator_Error[n]=CTensor<type_t>(1,1,1);
- }
+ cTensor_Discriminator_Output=CTensor<type_t>(1,1,1);
+ cTensor_Discriminator_Error=CTensor<type_t>(1,1,1);
+ cTensor_Generator_Output=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+
  CreateGenerator();
  CreateDiscriminator();
 
@@ -1140,5 +1202,4 @@ void CModelMain<type_t>::SpeedTest(void)
 }
 
 #endif
-
 
