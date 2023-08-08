@@ -112,14 +112,14 @@ class CModelSorter
 template<class type_t>
 CModelSorter<type_t>::CModelSorter(void)
 {
- IMAGE_WIDTH=224;
- IMAGE_HEIGHT=224;
+ IMAGE_WIDTH=200;
+ IMAGE_HEIGHT=200;
  IMAGE_DEPTH=3;
  BATCH_SIZE=10;
 
  GROUP_SIZE=10;
 
- SPEED=0.01;
+ SPEED=0.05;
  END_COST=0.1;
 }
 //----------------------------------------------------------------------------------------------------
@@ -390,17 +390,16 @@ void CModelSorter<type_t>::TrainingSorter(size_t mini_batch_index,double &cost)
   {
    CTimeStamp cTimeStamp("Вычисление ошибки:");
    size_t group=TrainingImage[TrainingImageIndex[b+mini_batch_index*BATCH_SIZE]].Group;
-   type_t local_cost=0;
    for(size_t n=0;n<cTensor_Sorter_Output.GetSizeY();n++)
    {
     type_t real=0;
     if (n==group) real=1;
 	type_t answer=cTensor_Sorter_Output.GetElement(0,n,0);
 	type_t error=(answer-real);
-	local_cost=error*error;
+	type_t local_cost=error*error;
+	if (local_cost>cost) cost=local_cost;
 	cTensor_Sorter_Output.SetElement(0,n,0,error);
    }
-   if (local_cost>cost) cost=local_cost;
   }
   {
    CTimeStamp cTimeStamp("Задание ошибки:");
@@ -516,10 +515,9 @@ void CModelSorter<type_t>::Training(void)
 {
  char str_b[STRING_BUFFER_SIZE];
 
- const double speed=SPEED;
+ double speed=SPEED;
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
  uint32_t iteration=0;
- const double clip=0.01;
 
  size_t image_amount=TrainingImage.size();
 
@@ -562,18 +560,21 @@ void CModelSorter<type_t>::Training(void)
     for(size_t n=0;n<SorterNet.size();n++)
     {
      SorterNet[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)));
-     //SorterNet[n]->ClipWeight(-clip,clip);
     }
    }
+   if (cost>full_cost) full_cost=cost;
+   long double end_time=SYSTEM::GetSecondCounter();
+   float cpu_time=static_cast<float>((end_time-begin_time)*1000.0);
 
    str="Ошибка сортировщика:";
    str+=std::to_string((long double)cost);
    SYSTEM::PutMessageToConsole(str);
-
-   if (cost>full_cost) full_cost=cost;
-
-   long double end_time=SYSTEM::GetSecondCounter();
-   float cpu_time=static_cast<float>((end_time-begin_time)*1000.0);
+   str="Достигнута ошибка сортировщика:";
+   str+=std::to_string((long double)full_cost);
+   SYSTEM::PutMessageToConsole(str);
+   str="Скорость обучения:";
+   str+=std::to_string((long double)speed);
+   SYSTEM::PutMessageToConsole(str);
 
    sprintf(str_b,"На минипакет ушло: %.2f мс.",cpu_time);
    SYSTEM::PutMessageToConsole(str_b);
@@ -582,6 +583,8 @@ void CModelSorter<type_t>::Training(void)
   str="Общая ошибка сортировщика для итерации:";
   str+=std::to_string((long double)full_cost);
   SYSTEM::PutMessageToConsole(str);
+  if (full_cost<0.3) speed=0.01;
+  if (full_cost<0.15) speed=0.005;
 
   if (full_cost<END_COST) break;
   ExchangeTrainingImageIndex();

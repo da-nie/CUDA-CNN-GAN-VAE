@@ -81,7 +81,7 @@ struct cudaDeviceProp
  HANDLE_ERROR(cudaDeviceReset());
  HANDLE_ERROR(cudaGetLastError());
 
- //CModelSorter<float> cModelSorter;
+// CModelSorter<float> cModelSorter;
  //cModelSorter.Execute();
 
  CModelGray<float> cModelGray;
