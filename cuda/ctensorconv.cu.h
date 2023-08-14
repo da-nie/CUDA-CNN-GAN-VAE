@@ -752,7 +752,7 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
  int32_t delta_y=cTensor_Delta.Size_Y;
  int32_t delta_z=cTensor_Delta.Size_Z;
 
- int32_t dkernel_x=(image_x-delta_x+2*padding_x)/stride_x+1;
+ int32_t dkernel_x=(image_x-delta_x+2*padding_x)/stride_x+1;//TODO: при шаге отличном от 1 результат неверный
  int32_t dkernel_y=(image_y-delta_y+2*padding_y)/stride_y+1;
 
  int32_t dkernel_z=image_z;

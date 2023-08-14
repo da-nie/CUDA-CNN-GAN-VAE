@@ -18,6 +18,7 @@
 
 #include "../../system/system.h"
 #include "../../common/tga.h"
+#include "../../common/ccolormodel.h"
 #include "../ctimestamp.cu.h"
 
 #include "../../netlayer/cnetlayerlinear.cu.h"
@@ -119,7 +120,7 @@ CModelSorter<type_t>::CModelSorter(void)
 
  GROUP_SIZE=10;
 
- SPEED=0.05;
+ SPEED=0.001;
  END_COST=0.1;
 }
 //----------------------------------------------------------------------------------------------------
@@ -142,18 +143,18 @@ void CModelSorter<type_t>::CreateSorter(void)
  SorterNet.clear();
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolutionInput<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(IMAGE_DEPTH,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxPooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxPooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(32,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxPooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(16,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxPooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(8,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerMaxPooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1024,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.8,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerAveragePooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(16,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerAveragePooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(32,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerAveragePooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerAveragePooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(256,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
+ /*SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.8,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.8,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(128,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
@@ -161,7 +162,8 @@ void CModelSorter<type_t>::CreateSorter(void)
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(64,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.8,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(32,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.8,SorterNet[SorterNet.size()-1].get())));
+ //SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.8,SorterNet[SorterNet.size()-1].get())));
+ */
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(GROUP_SIZE,NNeuron::NEURON_FUNCTION_SIGMOID,SorterNet[SorterNet.size()-1].get())));
 }
 
@@ -239,6 +241,16 @@ bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_
 
     float gray=(r+g+b)/3.0f;
     gray/=255.0;
+
+	float sl;
+	float sa;
+	float sb;
+
+    CColorModel::RGB2Lab(r,g,b,sl,sa,sb);
+
+    sl*=2.0;
+    sl-=1.0;
+
 	r/=255.0;
 	g/=255.0;
 	b/=255.0;
@@ -262,6 +274,18 @@ bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_
 	}
     if (IMAGE_DEPTH==3)
 	{
+     r=sl;
+     g=sa;
+     b=sb;
+
+     if (r<-1) r=-1;
+     if (g<-1) g=-1;
+     if (b<-1) b=-1;
+
+     if (r>1) r=1;
+     if (g>1) g=1;
+     if (b>1) b=1;
+
 	 sTrainingImage_Based.Image.SetElement(0,y,x,r);
 	 sTrainingImage_Based.Image.SetElement(1,y,x,g);
 	 sTrainingImage_Based.Image.SetElement(2,y,x,b);
@@ -367,6 +391,8 @@ void CModelSorter<type_t>::SaveNet(void)
 template<class type_t>
 void CModelSorter<type_t>::TrainingSorter(size_t mini_batch_index,double &cost)
 {
+ char str[STRING_BUFFER_SIZE];
+
  double real_output=0;
  for(size_t b=0;b<BATCH_SIZE;b++)
  {
@@ -390,16 +416,20 @@ void CModelSorter<type_t>::TrainingSorter(size_t mini_batch_index,double &cost)
   {
    CTimeStamp cTimeStamp("Вычисление ошибки:");
    size_t group=TrainingImage[TrainingImageIndex[b+mini_batch_index*BATCH_SIZE]].Group;
+   std::string answer_str;
    for(size_t n=0;n<cTensor_Sorter_Output.GetSizeY();n++)
    {
-    type_t real=0;
-    if (n==group) real=1;
+    type_t necessities=0;
+    if (n==group) necessities=1;
 	type_t answer=cTensor_Sorter_Output.GetElement(0,n,0);
-	type_t error=(answer-real);
+	type_t error=-(necessities-answer);
 	type_t local_cost=error*error;
 	if (local_cost>cost) cost=local_cost;
 	cTensor_Sorter_Output.SetElement(0,n,0,error);
+	sprintf(str,"%.2f[%.2f] ",answer,necessities);
+	answer_str+=str;
    }
+   //SYSTEM::PutMessageToConsole(answer_str);
   }
   {
    CTimeStamp cTimeStamp("Задание ошибки:");
@@ -527,7 +557,7 @@ void CModelSorter<type_t>::Training(void)
   SYSTEM::PutMessageToConsole("----------");
   SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
 
-  //if (iteration%250==0)
+  if (iteration%250==0)
   {
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();
@@ -583,8 +613,11 @@ void CModelSorter<type_t>::Training(void)
   str="Общая ошибка сортировщика для итерации:";
   str+=std::to_string((long double)full_cost);
   SYSTEM::PutMessageToConsole(str);
-  if (full_cost<0.3) speed=0.01;
-  if (full_cost<0.15) speed=0.005;
+
+  FILE *file=fopen("test.csv","ab");
+  fprintf(file,"%i;%f\r\n",iteration,full_cost);
+  fclose(file);
+
 
   if (full_cost<END_COST) break;
   ExchangeTrainingImageIndex();

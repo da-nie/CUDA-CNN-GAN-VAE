@@ -985,13 +985,19 @@ __global__ void CUDAUpSamplingTensor(STensorKernel<type_t> tensor_output,STensor
  size_t ixp=xp/upsampling_x;
  size_t iyp=yp/upsampling_y;
 
- //if (ixp>=tensor_input.GetSizeX() || iyp>=tensor_input.GetSizeY()) return;
-
  size_t offset_output=xp+yp*tensor_output.GetSizeX();
+ type_t *o_ptr=tensor_output.GetTensorDataPtr(z)+offset_output;
+
+ if (ixp>=tensor_input.GetSizeX() || iyp>=tensor_input.GetSizeY())
+ {
+  *o_ptr=0;
+  __syncthreads();
+  return;
+ }
+
  size_t offset_input=ixp+iyp*tensor_input.GetSizeX();
 
  type_t *i_ptr=tensor_input.GetTensorDataPtr(z)+offset_input;
- type_t *o_ptr=tensor_output.GetTensorDataPtr(z)+offset_output;
 
  *o_ptr=*i_ptr;
 
@@ -1004,7 +1010,7 @@ __global__ void CUDAUpSamplingTensor(STensorKernel<type_t> tensor_output,STensor
 template<class type_t>
 void CTensorMath<type_t>::UpSampling(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,size_t upsampling_x,size_t upsampling_y)
 {
- if (cTensor_Input.Size_X*upsampling_x!=cTensor_Output.Size_X || cTensor_Input.Size_Y*upsampling_y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X/upsampling_x || cTensor_Input.Size_Y!=cTensor_Output.Size_Y/upsampling_y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::UpSampling: Размерности тензоров не совпадают!";
  }
@@ -1078,12 +1084,12 @@ __global__ void CUDADownSamplingTensor(STensorKernel<type_t> tensor_output,STens
 }
 
 //----------------------------------------------------------------------------------------------------
-///!увеличение разрешения тензора
+///!уменьшение разрешения тензора
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
 void CTensorMath<type_t>::DownSampling(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,size_t downsampling_x,size_t downsampling_y)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X*downsampling_x || cTensor_Input.Size_Y!=cTensor_Output.Size_Y*downsampling_y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ if (cTensor_Input.Size_X/downsampling_x!=cTensor_Output.Size_X || cTensor_Input.Size_Y/downsampling_y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::DownSampling: Размерности тензоров не совпадают!";
  }
@@ -1112,7 +1118,6 @@ void CTensorMath<type_t>::DownSampling(CTensor<type_t> &cTensor_Output,const CTe
 
  cTensor_Output.SetDeviceOnChange();
 }
-
 
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для уменьшение разрешения тензора выборкой большего элемента

@@ -21,6 +21,8 @@
 				</Compiler>
 			</Target>
 		</Build>
+		<Unit filename="common/ccolormodel.cpp" />
+		<Unit filename="common/ccolormodel.h" />
 		<Unit filename="common/cdatastreamfile.cpp" />
 		<Unit filename="common/cdatastreamfile.h" />
 		<Unit filename="common/craiifilein.cpp" />
@@ -73,7 +75,7 @@
 		</Unit>
 		<Unit filename="cuda/cuda.cu.h" />
 		<Unit filename="cuda/handle_error.cu.h" />
-		<Unit filename="cuda/netmodel/cmodel_gray.cu.h" />
+		<Unit filename="cuda/netmodel/cmodel_gan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_sorter.cu.h" />
 		<Unit filename="cuda/netmodel/cmodelmain.cu.h" />
 		<Unit filename="cuda/tensor.cu">
@@ -82,11 +84,21 @@
 		</Unit>
 		<Unit filename="cuda/tensor.cu.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="netlayer/cnetlayeraveragepooling.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayeraveragepooling.cu.h" />
 		<Unit filename="netlayer/cnetlayerbackconvolution.cu">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayerbackconvolution.cu.h" />
+		<Unit filename="netlayer/cnetlayerbatchnormalization.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerbatchnormalization.cu.h" />
 		<Unit filename="netlayer/cnetlayerconvolution.cu">
 			<Option compile="1" />
 			<Option link="1" />

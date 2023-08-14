@@ -1,8 +1,8 @@
-#ifndef C_NET_LAYER_CONVOLUTION_INPUT_H
-#define C_NET_LAYER_CONVOLUTION_INPUT_H
+#ifndef C_NET_LAYER_BATCH_NORMALIZATION_H
+#define C_NET_LAYER_BATCH_NORMALIZATION_H
 
 //****************************************************************************************************
-//\file Входной слой для сверточного слоя
+//\file Пакетная нормализация
 //****************************************************************************************************
 
 //****************************************************************************************************
@@ -29,10 +29,10 @@
 //****************************************************************************************************
 
 //****************************************************************************************************
-//!Входной слой для сверточного слоя
+//!Пакетная нормализация
 //****************************************************************************************************
 template<class type_t>
-class CNetLayerConvolutionInput:public INetLayer<type_t>
+class CNetLayerBatchNormalization:public INetLayer<type_t>
 {
  public:
   //-перечисления---------------------------------------------------------------------------------------
@@ -40,18 +40,26 @@ class CNetLayerConvolutionInput:public INetLayer<type_t>
   //-константы------------------------------------------------------------------------------------------
  private:
   //-переменные-----------------------------------------------------------------------------------------
-  CTensor<type_t> cTensor_H;///<тензор значений нейронов после функции активации
-  CTensor<type_t> *cTensor_H_Ptr;///<тензор значений нейронов после функции активации
+  INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
+
+  type_t Beta;///<параметр сдвига
+  type_t Gamma;///<параметр масштабирования
+
+  CTensor<type_t> cTensor_H;///<тензор выхода слоя
+
+  //тензоры, используемые при обучении
+  CTensor<type_t> cTensor_Delta;///<тензор ошибки предыдущего слоя
+  CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerConvolutionInput(size_t size_z,size_t size_y,size_t size_x);
-  CNetLayerConvolutionInput(void);
+  CNetLayerBatchNormalization(INetLayer<type_t> *prev_layer_ptr=NULL);
+  CNetLayerBatchNormalization(void);
   //-деструктор-----------------------------------------------------------------------------------------
-  ~CNetLayerConvolutionInput();
+  ~CNetLayerBatchNormalization();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(size_t size_z,size_t size_y,size_t size_x);///<создать слой
+  void Create(INetLayer<type_t> *prev_layer_ptr=NULL);///<создать слой
   void Reset(void);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -73,6 +81,7 @@ class CNetLayerConvolutionInput:public INetLayer<type_t>
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
+  type_t GetRandValue(type_t max_value);///<получить случайное число
 };
 
 //****************************************************************************************************
@@ -83,23 +92,23 @@ class CNetLayerConvolutionInput:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerConvolutionInput<type_t>::CNetLayerConvolutionInput(size_t size_z,size_t size_y,size_t size_x)
+CNetLayerBatchNormalization<type_t>::CNetLayerBatchNormalization(INetLayer<type_t> *prev_layer_ptr)
 {
- Create(size_z,size_y,size_x);
+ Create(prev_layer_ptr);
 }
 //----------------------------------------------------------------------------------------------------
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerConvolutionInput<type_t>::CNetLayerConvolutionInput(void)
+CNetLayerBatchNormalization<type_t>::CNetLayerBatchNormalization(void)
 {
- Create(1,1,1);
+ Create();
 }
 //----------------------------------------------------------------------------------------------------
 //!деструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerConvolutionInput<type_t>::~CNetLayerConvolutionInput()
+CNetLayerBatchNormalization<type_t>::~CNetLayerBatchNormalization()
 {
 }
 
@@ -107,32 +116,54 @@ CNetLayerConvolutionInput<type_t>::~CNetLayerConvolutionInput()
 //закрытые функции
 //****************************************************************************************************
 
+
+//----------------------------------------------------------------------------------------------------
+/*!получить случайное число
+\param[in] max_value Максимальное значение случайного числа
+\return Случайное число в диапазоне [0...max_value]
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+type_t CNetLayerBatchNormalization<type_t>::GetRandValue(type_t max_value)
+{
+ return((static_cast<type_t>(rand())*max_value)/static_cast<type_t>(RAND_MAX));
+}
+
 //****************************************************************************************************
 //открытые функции
 //****************************************************************************************************
 
 //----------------------------------------------------------------------------------------------------
 /*!создать слой
-\param[in] size_z Глубина выходного слоя (количество каналов цвета)
-\param[in] size_y Высота выходного слоя
-\param[in] size_x Ширина выходного слоя
+\param[in] neurons Количество нейронов слоя
+\param[in] neuron_function Функция активации нейронов
+\param[in] prev_layer_ptr Указатель на класс предшествующего слоя (NULL-слой входной)
 \return Ничего не возвращается
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::Create(size_t size_z,size_t size_y,size_t size_x)
+void CNetLayerBatchNormalization<type_t>::Create(INetLayer<type_t> *prev_layer_ptr)
 {
+ PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
- cTensor_H=CTensor<type_t>(size_z,size_y,size_x);
- cTensor_H_Ptr=NULL;
+
+ cTensor_H=CTensor<type_t>(PrevLayerPtr->GetOutputTensor().GetSizeZ(),PrevLayerPtr->GetOutputTensor().GetSizeY(),PrevLayerPtr->GetOutputTensor().GetSizeX());
+ if (prev_layer_ptr==NULL)//слой без предшествующего считается входным
+ {
+  throw("Слой BatchNormalization не может быть входным!");
+ }
+ //задаём предшествующему слою, что мы его последующий слой
+ prev_layer_ptr->SetNextLayerPtr(this);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить инициализацию весов и сдвигов
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::Reset(void)
+void CNetLayerBatchNormalization<type_t>::Reset(void)
 {
+ Beta=0;
+ Gamma=1;
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать выход слоя
@@ -141,36 +172,76 @@ void CNetLayerConvolutionInput<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::SetOutput(CTensor<type_t> &output)
+void CNetLayerBatchNormalization<type_t>::SetOutput(CTensor<type_t> &output)
 {
- //cTensor_H.CopyItem(output);
- cTensor_H_Ptr=&output;
+ throw("Слою BatchNormalization нельзя задать выходное значение!");
 }
 //----------------------------------------------------------------------------------------------------
-/*!получить выход слоя
+/*!задать выход слоя
 \param[out] output Матрица возвращаемых выходных значений (H)
 \return Ничего не возвращается
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output)
+void CNetLayerBatchNormalization<type_t>::GetOutput(CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (cTensor_H_Ptr==NULL)
- {
-  output=cTensor_H;
-  return;
- }
- output=*cTensor_H_Ptr;
+ throw("От слоя BatchNormalization нельзя получить выходное значение!");
 }
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::Forward(void)
+void CNetLayerBatchNormalization<type_t>::Forward(void)
 {
+ static const double EPSILON=0.001;
+
+ CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
+
+ size_t input_x=input.GetSizeX();
+ size_t input_y=input.GetSizeY();
+ size_t input_z=input.GetSizeZ();
+ //считаем среднее
+ double middle=0;
+ for(size_t z=0;z<input_z;z++)
+ {
+  for(size_t y=0;y<input_y;y++)
+  {
+   for(size_t x=0;x<input_x;x++)
+   {
+	middle+=input.GetElement(z,y,x);
+   }
+  }
+ }
+ middle/=static_cast<double>(input_x*input_y*input_z);
+ //считаем стандартное отклонение по пакету (дисперсию)
+ double sigma=0;
+ for(size_t z=0;z<input_z;z++)
+ {
+  for(size_t y=0;y<input_y;y++)
+  {
+   for(size_t x=0;x<input_x;x++)
+   {
+    type_t e=input.GetElement(z,y,x);
+	sigma+=(e-middle)*(e-middle);
+   }
+  }
+ }
+ sigma/=static_cast<double>(input_x*input_y*input_z);
+ //выполняем нормализацию
+ double k=1.0/sqrt(sigma+EPSILON);
+ for(size_t z=0;z<input_z;z++)
+ {
+  for(size_t y=0;y<input_y;y++)
+  {
+   for(size_t x=0;x<input_x;x++)
+   {
+	type_t e=input.GetElement(z,y,x);
+	e=(e-middle)/k;//нормировка
+	e=e*Gamma+Beta;//сдвиг и масштабирование
+	cTensor_H.SetElement(z,y,x,e);
+   }
+  }
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -178,10 +249,9 @@ void CNetLayerConvolutionInput<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerConvolutionInput<type_t>::GetOutputTensor(void)
+CTensor<type_t>& CNetLayerBatchNormalization<type_t>::GetOutputTensor(void)
 {
- if (cTensor_H_Ptr==NULL) return(cTensor_H);
- return(*cTensor_H_Ptr);
+ return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать указатель на последующий слой
@@ -190,7 +260,7 @@ CTensor<type_t>& CNetLayerConvolutionInput<type_t>::GetOutputTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
+void CNetLayerBatchNormalization<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
 {
  NextLayerPtr=next_layer_ptr;
 }
@@ -201,9 +271,10 @@ void CNetLayerConvolutionInput<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerConvolutionInput<type_t>::Save(IDataStream *iDataStream_Ptr)
+bool CNetLayerBatchNormalization<type_t>::Save(IDataStream *iDataStream_Ptr)
 {
- cTensor_H.Save(iDataStream_Ptr);
+ iDataStream_Ptr->SaveDouble(Beta);
+ iDataStream_Ptr->SaveDouble(Gamma);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -213,9 +284,10 @@ bool CNetLayerConvolutionInput<type_t>::Save(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerConvolutionInput<type_t>::Load(IDataStream *iDataStream_Ptr)
+bool CNetLayerBatchNormalization<type_t>::Load(IDataStream *iDataStream_Ptr)
 {
- cTensor_H.Load(iDataStream_Ptr);
+ Beta=iDataStream_Ptr->LoadDouble();
+ Gamma=iDataStream_Ptr->LoadDouble();
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -223,31 +295,42 @@ bool CNetLayerConvolutionInput<type_t>::Load(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::TrainingStart(void)
+void CNetLayerBatchNormalization<type_t>::TrainingStart(void)
 {
+ //создаём все вспомогательные тензоры
+ CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor();
+ cTensor_Delta=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+ cTensor_PrevLayerError=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::TrainingStop(void)
+void CNetLayerBatchNormalization<type_t>::TrainingStop(void)
 {
+ //удаляем все вспомогательные тензоры
+ cTensor_Delta=CTensor<type_t>(1,1,1);
+ cTensor_PrevLayerError=CTensor<type_t>(1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::TrainingBackward(void)
+void CNetLayerBatchNormalization<type_t>::TrainingBackward(void)
 {
+ //умножаем тензор ошибки на тензор исключения поэлементно
+ //CTensorMath<type_t>::TensorItemProduction(cTensor_PrevLayerError,cTensor_Delta,cTensor_H_BatchNormalization);
+ //задаём ошибку предыдущего слоя
+ PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::TrainingResetDeltaWeight(void)
+void CNetLayerBatchNormalization<type_t>::TrainingResetDeltaWeight(void)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -256,7 +339,7 @@ void CNetLayerConvolutionInput<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::TrainingUpdateWeight(double speed)
+void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -265,9 +348,9 @@ void CNetLayerConvolutionInput<type_t>::TrainingUpdateWeight(double speed)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerConvolutionInput<type_t>::GetDeltaTensor(void)
+CTensor<type_t>& CNetLayerBatchNormalization<type_t>::GetDeltaTensor(void)
 {
- return(cTensor_H);//TODO: возвращаем H, так как больше возвращать нечего
+ return(cTensor_Delta);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать ошибку и расчитать дельту
@@ -275,9 +358,11 @@ CTensor<type_t>& CNetLayerConvolutionInput<type_t>::GetDeltaTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::SetOutputError(CTensor<type_t>& error)
+void CNetLayerBatchNormalization<type_t>::SetOutputError(CTensor<type_t>& error)
 {
+ cTensor_Delta=error;
 }
+
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон
 \param[in] min Минимальное значение веса
@@ -285,7 +370,7 @@ void CNetLayerConvolutionInput<type_t>::SetOutputError(CTensor<type_t>& error)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::ClipWeight(type_t min,type_t max)
+void CNetLayerBatchNormalization<type_t>::ClipWeight(type_t min,type_t max)
 {
 }
 
