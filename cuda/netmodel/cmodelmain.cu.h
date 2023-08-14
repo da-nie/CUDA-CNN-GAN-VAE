@@ -891,7 +891,7 @@ void CModelMain<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов дискриминатора на фальшивых изображениях:");
     for(size_t n=0;n<DiscriminatorNet.size();n++)
     {
-     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)));
+     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)),iteration+1);
     // DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
@@ -904,7 +904,7 @@ void CModelMain<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов дискриминатора на настоящих изображениях:");
     for(size_t n=0;n<DiscriminatorNet.size();n++)
     {
-     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE*2.0)));
+     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE*2.0)),iteration+1);
      //DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
@@ -928,7 +928,7 @@ void CModelMain<type_t>::Training(void)
      CTimeStamp cTimeStamp("Обновление весов генератора:");
      for(size_t n=0;n<GeneratorNet.size();n++)
      {
-      GeneratorNet[n]->TrainingUpdateWeight(gen_speed/(static_cast<double>(BATCH_SIZE)));
+      GeneratorNet[n]->TrainingUpdateWeight(gen_speed/(static_cast<double>(BATCH_SIZE)),iteration+1);
       //GeneratorNet[n]->ClipWeight(-clip,clip);//не нужно делать для генератора!
      }
     }

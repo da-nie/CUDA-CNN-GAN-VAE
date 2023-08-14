@@ -78,6 +78,8 @@ class CTensorMath
   static void MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<обратный проход при увеличении разрешения тензора выборкой большего элемента
   static void Clip(CTensor<type_t> &cTensor,type_t min_value,type_t max_value);///<выполнить отсечку значений тензора
 
+  static void Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,double speed,double beta1,double beta2,double epsilon,double iteration);///<выполнить алгоритм Adam к весовому тензору
+
 
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
@@ -1338,5 +1340,94 @@ void CTensorMath<type_t>::Clip(CTensor<type_t> &cTensor,type_t min_value,type_t 
 
  cTensor.SetDeviceOnChange();
 }
+
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для выполнения алгоритма Adam
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_t> tensor_dweight,STensorKernel<type_t> tensor_m,STensorKernel<type_t> tensor_v,double speed,double beta1,double beta2,double epsilon,double iteration)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+ //получаем подтензоры
+ size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+
+ if (xp>=tensor_weight.GetSizeX() || yp>=tensor_weight.GetSizeY()) return;
+
+ type_t dw=tensor_dweight.GetElement(z,yp,xp);
+ type_t m=tensor_m.GetElement(z,yp,xp);
+ type_t v=tensor_v.GetElement(z,yp,xp);
+
+ m=beta1*m+(1.0-beta1)*dw;
+ type_t mc=m/(1.0-pow(beta1,iteration));
+
+ v=beta2*v+(1.0-beta2)*dw*dw;
+ type_t vc=v/(1.0-pow(beta2,iteration));
+
+ dw=speed*mc/sqrt(vc+epsilon);
+
+ tensor_m.SetElement(z,yp,xp,m);
+ tensor_v.SetElement(z,yp,xp,v);
+
+ //корректируем веса
+ type_t w=tensor_weight.GetElement(z,yp,xp);
+ tensor_weight.SetElement(z,yp,xp,w-dw);
+
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+//!выполнить алгоритм Adam к весовому тензору
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,double speed,double beta1,double beta2,double epsilon,double iteration)
+{
+ if (cTensor_Weight.Size_X!=cTensor_dWeight.Size_X || cTensor_Weight.Size_Y!=cTensor_dWeight.Size_Y || cTensor_Weight.Size_Z!=cTensor_dWeight.Size_Z ||
+     cTensor_Weight.Size_X!=cTensor_M.Size_X || cTensor_Weight.Size_Y!=cTensor_M.Size_Y || cTensor_Weight.Size_Z!=cTensor_M.Size_Z ||
+     cTensor_Weight.Size_X!=cTensor_V.Size_X || cTensor_Weight.Size_Y!=cTensor_V.Size_Y || cTensor_Weight.Size_Z!=cTensor_V.Size_Z)
+ {
+  throw "CTensor::Adam: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Weight.CopyToDevice();
+ cTensor_dWeight.CopyToDevice();
+ cTensor_M.CopyToDevice();
+ cTensor_V.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Weight(cTensor_Weight);
+ STensorKernel<type_t> sTensorKernel_dWeight(cTensor_dWeight);
+ STensorKernel<type_t> sTensorKernel_M(cTensor_M);
+ STensorKernel<type_t> sTensorKernel_V(cTensor_V);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor_Weight.Size_X/thread.x;
+ if (cTensor_Weight.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor_Weight.Size_Y/thread.y;
+ if (cTensor_Weight.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor_Weight.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+
+ CUDAAdam<type_t><<<blocks,thread>>>(sTensorKernel_Weight,sTensorKernel_dWeight,sTensorKernel_M,sTensorKernel_V,speed,beta1,beta2,epsilon,iteration);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Weight.SetDeviceOnChange();
+ cTensor_M.SetDeviceOnChange();
+ cTensor_V.SetDeviceOnChange();
+}
+
 
 #endif

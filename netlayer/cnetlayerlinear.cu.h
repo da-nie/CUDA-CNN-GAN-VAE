@@ -54,6 +54,13 @@ class CNetLayerLinear:public INetLayer<type_t>
   CTensor<type_t> cTensor_Delta;///<тензор дельты слоя
   CTensor<type_t> cTensor_TmpdW;///<вспомогательный тензор поправок весов слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
+
+  //для оптимизации Adam
+  CTensor<type_t> cTensor_MW;///<тензор фильтра 1
+  CTensor<type_t> cTensor_VW;///<тензор фильтра 2
+  CTensor<type_t> cTensor_MB;///<тензор фильтра 1 сдвигов
+  CTensor<type_t> cTensor_VB;///<тензор фильтра 2 сдвигов
+
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerLinear(size_t neurons,NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL);
@@ -76,7 +83,7 @@ class CNetLayerLinear:public INetLayer<type_t>
   void TrainingStop(void);///<завершить процесс обучения
   void TrainingBackward(void);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
-  void TrainingUpdateWeight(double speed);///<выполнить обновления весов
+  void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
   void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
@@ -328,6 +335,18 @@ void CNetLayerLinear<type_t>::TrainingStart(void)
  cTensor_TmpdW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
  cTensor_dB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
  cTensor_Delta=CTensor<type_t>(1,cTensor_H.GetSizeY(),cTensor_H.GetSizeX());
+
+
+ cTensor_MW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
+ cTensor_VW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
+ cTensor_MB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
+ cTensor_VB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
+
+ cTensor_MW.Zero();
+ cTensor_VW.Zero();
+ cTensor_MB.Zero();
+ cTensor_VB.Zero();
+
  if (PrevLayerPtr!=NULL)
  {
   CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor();
@@ -347,6 +366,12 @@ void CNetLayerLinear<type_t>::TrainingStop(void)
  cTensor_dB=CTensor<type_t>(1,1,1);
  cTensor_Delta=CTensor<type_t>(1,1,1);
  cTensor_PrevLayerError=CTensor<type_t>(1,1,1);
+
+ cTensor_MW=CTensor<type_t>(1,1,1);
+ cTensor_VW=CTensor<type_t>(1,1,1);
+ cTensor_MB=CTensor<type_t>(1,1,1);
+ cTensor_VB=CTensor<type_t>(1,1,1);
+
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -398,13 +423,18 @@ void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed)
+void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
- //speed/=static_cast<double>(cTensor_H.GetSizeX()*cTensor_H.GetSizeY()*cTensor_H.GetSizeZ());
- //CTensorMath<type_t>::Mul(cTensor_dW,speed,cTensor_dW);
- CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed);
- //CTensorMath<type_t>::Mul(cTensor_dB,speed,cTensor_dB);
- CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed);
+ double beta1=0.9;
+ double beta2=0.999;
+ static const double epsilon=1E-8;
+
+ //применяем алгоритм Adam
+ CTensorMath<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,speed,beta1,beta2,epsilon,iteration);
+ CTensorMath<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,speed,beta1,beta2,epsilon,iteration);
+
+ //CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed);
+ //CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на тензор дельты слоя

@@ -78,10 +78,10 @@ CModelGAN<type_t>::CModelGAN(void)
 // SPEED_DISCRIMINATOR=0.0002;
 // SPEED_GENERATOR=0.001;
 
- SPEED_DISCRIMINATOR=0.001;
- SPEED_GENERATOR=0.001*20;
+ SPEED_DISCRIMINATOR=0.00001;
+ SPEED_GENERATOR=0.00001*20;
 
- BATCH_SIZE=10;
+ BATCH_SIZE=1;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор

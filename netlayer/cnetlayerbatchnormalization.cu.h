@@ -73,7 +73,7 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   void TrainingStop(void);///<завершить процесс обучения
   void TrainingBackward(void);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
-  void TrainingUpdateWeight(double speed);///<выполнить обновления весов
+  void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
   void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
@@ -339,7 +339,7 @@ void CNetLayerBatchNormalization<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed)
+void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
 }
 //----------------------------------------------------------------------------------------------------

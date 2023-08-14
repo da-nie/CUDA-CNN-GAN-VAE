@@ -27,6 +27,7 @@
 #include "../../netlayer/cnetlayerconvolutioninput.cu.h"
 #include "../../netlayer/cnetlayerbackconvolution.cu.h"
 #include "../../netlayer/cnetlayermaxpooling.cu.h"
+#include "../../netlayer/cnetlayeraveragepooling.cu.h"
 #include "../../netlayer/cnetlayermaxdepooling.cu.h"
 #include "../../netlayer/cnetlayerupsampling.cu.h"
 
@@ -120,7 +121,7 @@ CModelSorter<type_t>::CModelSorter(void)
 
  GROUP_SIZE=10;
 
- SPEED=0.001;
+ SPEED=0.0001;
  END_COST=0.1;
 }
 //----------------------------------------------------------------------------------------------------
@@ -153,6 +154,7 @@ void CModelSorter<type_t>::CreateSorter(void)
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerAveragePooling<type_t>(2,2,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(256,3,1,1,0,0,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Output tensor",false);
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
  /*SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.8,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256,NNeuron::NEURON_FUNCTION_LEAKY_RELU,SorterNet[SorterNet.size()-1].get())));
@@ -557,7 +559,7 @@ void CModelSorter<type_t>::Training(void)
   SYSTEM::PutMessageToConsole("----------");
   SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
 
-  if (iteration%250==0)
+  if (iteration%1==0)
   {
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();
@@ -589,7 +591,7 @@ void CModelSorter<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов сортировщика:");
     for(size_t n=0;n<SorterNet.size();n++)
     {
-     SorterNet[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)));
+     SorterNet[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)),iteration+1);
     }
    }
    if (cost>full_cost) full_cost=cost;
@@ -655,7 +657,7 @@ void CModelSorter<type_t>::TrainingNet(void)
  sprintf(str,"Изображений:%i Минипакетов:%i",image_amount,BATCH_AMOUNT);
  SYSTEM::PutMessageToConsole(str);
 
-  cTensor_Sorter_Output=CTensor<type_t>(1,GROUP_SIZE,1);
+ cTensor_Sorter_Output=CTensor<type_t>(1,GROUP_SIZE,1);
 
  CreateSorter();
  for(size_t n=0;n<SorterNet.size();n++) SorterNet[n]->Reset();
