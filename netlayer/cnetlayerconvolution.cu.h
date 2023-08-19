@@ -466,34 +466,41 @@ void CNetLayerConvolution<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerConvolution<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
- double beta1=0.9;
- double beta2=0.999;
- static const double epsilon=1E-8;
-
- for(size_t n=0;n<cTensor_Kernel.size();n++)
+ if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE::TRAINING_MODE_ADAM)
  {
+  double beta1=0.9;
+  double beta2=0.999;
+  static const double epsilon=1E-8;
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_Kernel[n],cTensor_dKernel[n],cTensor_MK[n],cTensor_VK[n],speed,beta1,beta2,epsilon,iteration);
+  for(size_t n=0;n<cTensor_Kernel.size();n++)
+  {
+   CTensorMath<type_t>::Adam(cTensor_Kernel[n],cTensor_dKernel[n],cTensor_MK[n],cTensor_VK[n],speed,beta1,beta2,epsilon,iteration);
 
-  type_t dw=dBias[n];
-  type_t m=MB[n];
-  type_t v=VB[n];
+   type_t dw=dBias[n];
+   type_t m=MB[n];
+   type_t v=VB[n];
 
-  m=beta1*m+(1-beta1)*dw;
-  v=beta2*v+(1-beta2)*dw*dw;
+   m=beta1*m+(1-beta1)*dw;
+   v=beta2*v+(1-beta2)*dw*dw;
 
-  type_t mc=m/(1.0-pow(beta1,iteration));
-  type_t vc=v/(1.0-pow(beta2,iteration));
+   type_t mc=m/(1.0-pow(beta1,iteration));
+   type_t vc=v/(1.0-pow(beta2,iteration));
 
-  dw=speed*mc/sqrt(vc+epsilon);
+   dw=speed*mc/sqrt(vc+epsilon);
 
-  MB[n]=m;
-  VB[n]=v;
+   MB[n]=m;
+   VB[n]=v;
 
-  Bias[n]-=dw;
-
-  //CTensorMath<type_t>::Sub(cTensor_Kernel[n],cTensor_Kernel[n],cTensor_dKernel[n],1,speed);
-  //Bias[n]-=dBias[n]*speed;
+   Bias[n]-=dw;
+  }
+ }
+ if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE::TRAINING_MODE_GRADIENT)
+ {
+  for(size_t n=0;n<cTensor_Kernel.size();n++)
+  {
+   CTensorMath<type_t>::Sub(cTensor_Kernel[n],cTensor_Kernel[n],cTensor_dKernel[n],1,speed);
+   Bias[n]-=dBias[n]*speed;
+  }
  }
 }
 //----------------------------------------------------------------------------------------------------

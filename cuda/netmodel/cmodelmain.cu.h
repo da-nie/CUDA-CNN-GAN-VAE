@@ -852,13 +852,13 @@ void CModelMain<type_t>::Training(void)
   SYSTEM::PutMessageToConsole("----------");
   SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
 
-  if (iteration%5==0)
+  if (iteration%1==0)
   {
    SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
   }
 
-  if (iteration%5==0)
+  if (iteration%1==0)
   {
   SYSTEM::PutMessageToConsole("Save net.");
   SaveNet();
@@ -960,6 +960,31 @@ void CModelMain<type_t>::TrainingNet(bool mnist)
 {
  char str[STRING_BUFFER_SIZE];
  SYSTEM::MakeDirectory("Test");
+
+ cTensor_Discriminator_Output=CTensor<type_t>(1,1,1);
+ cTensor_Discriminator_Error=CTensor<type_t>(1,1,1);
+ cTensor_Generator_Output=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+
+ CreateGenerator();
+ CreateDiscriminator();
+
+ for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->Reset();
+ for(size_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->Reset();
+ LoadNet();
+
+ //включаем обучение
+ for(size_t n=0;n<GeneratorNet.size();n++)
+ {
+  GeneratorNet[n]->TrainingModeAdam();
+  GeneratorNet[n]->TrainingStart();
+ }
+ for(size_t n=0;n<DiscriminatorNet.size();n++)
+ {
+  DiscriminatorNet[n]->TrainingModeAdam();
+  DiscriminatorNet[n]->TrainingStart();
+ }
+
+ //загружаем изображения
  //if (LoadRealMNISTImage()==false)
  if (LoadRealImage()==false)
  {
@@ -984,21 +1009,7 @@ void CModelMain<type_t>::TrainingNet(bool mnist)
  sprintf(str,"Изображений:%i Минипакетов:%i",image_amount,BATCH_AMOUNT);
  SYSTEM::PutMessageToConsole(str);
 
- cTensor_Discriminator_Output=CTensor<type_t>(1,1,1);
- cTensor_Discriminator_Error=CTensor<type_t>(1,1,1);
- cTensor_Generator_Output=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
-
- CreateGenerator();
- CreateDiscriminator();
-
- for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->Reset();
- for(size_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->Reset();
- LoadNet();
-
- //включаем обучение
- for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingStart();
- for(size_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingStart();
-
+ //запускаем обучение
  Training();
  //отключаем обучение
  for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingStop();

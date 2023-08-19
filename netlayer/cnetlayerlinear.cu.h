@@ -336,7 +336,7 @@ void CNetLayerLinear<type_t>::TrainingStart(void)
  cTensor_dB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
  cTensor_Delta=CTensor<type_t>(1,cTensor_H.GetSizeY(),cTensor_H.GetSizeX());
 
-
+ //для алгоритма Adam
  cTensor_MW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
  cTensor_VW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
  cTensor_MB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
@@ -425,16 +425,21 @@ void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
- double beta1=0.9;
- double beta2=0.999;
- static const double epsilon=1E-8;
+ if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE::TRAINING_MODE_ADAM)
+ {
+  double beta1=0.9;
+  double beta2=0.999;
+  static const double epsilon=1E-8;
 
- //применяем алгоритм Adam
- CTensorMath<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,speed,beta1,beta2,epsilon,iteration);
- CTensorMath<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,speed,beta1,beta2,epsilon,iteration);
-
- //CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed);
- //CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed);
+  //применяем алгоритм Adam
+  CTensorMath<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,speed,beta1,beta2,epsilon,iteration);
+  CTensorMath<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,speed,beta1,beta2,epsilon,iteration);
+ }
+ if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE::TRAINING_MODE_GRADIENT)
+ {
+  CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed);
+  CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed);
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на тензор дельты слоя

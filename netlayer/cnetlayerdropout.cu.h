@@ -193,6 +193,9 @@ void CNetLayerDropOut<type_t>::Forward(void)
 {
  if (Training==false) return;
  //создаём матрицу исключения
+
+ type_t mult=static_cast<type_t>(1.0/(1.0-DropOut));
+
  size_t size_x=cTensor_H_DropOut.GetSizeX();
  size_t size_y=cTensor_H_DropOut.GetSizeY();
  size_t size_z=cTensor_H_DropOut.GetSizeZ();
@@ -203,7 +206,7 @@ void CNetLayerDropOut<type_t>::Forward(void)
   {
    for(size_t x=0;x<size_x;x++)
    {
-    if (GetRandValue(1)<DropOut) cTensor_H_DropOut.SetElement(z,y,x,1);
+    if (GetRandValue(1)>=DropOut) cTensor_H_DropOut.SetElement(z,y,x,mult);
    }
   }
  }
