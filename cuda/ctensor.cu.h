@@ -111,6 +111,8 @@ class CTensor
   void Zero(void);///<обнулить тензор
   void Move(CTensor<type_t> &cTensor);///<переместить тензор
   void CopyItem(CTensor<type_t> &cTensor);///<скопировать только элементы
+  void CopyItemToHost(type_t *item_array,size_t size);///<скопировать элементы из массива в хост
+  void CopyItemToDevice(type_t *item_array,size_t size);///<скопировать элементы из массива в устройство
 
   CTensor<type_t>& operator=(const CTensor<type_t> &cTensor);///<оператор "="
 
@@ -382,6 +384,28 @@ void CTensor<type_t>::CopyItem(CTensor<type_t> &cTensor)
  Item=cTensor.Item;
  SetHostOnChange();
 }
+
+//----------------------------------------------------------------------------------------------------
+//скопировать элементы из массива в хост
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensor<type_t>::CopyItemToHost(type_t *item_array,size_t size)
+{
+ if (Item.size()<size) throw("Слишком большой массив для копирования на хост.");
+ memcpy(&Item[0],item_array,size*sizeof(type_t));
+ SetHostOnChange();
+}
+//----------------------------------------------------------------------------------------------------
+//скопировать элементы из массива в устройство
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensor<type_t>::CopyItemToDevice(type_t *item_array,size_t size)
+{
+ if (Item.size()<size) throw("Слишком большой массив для копирования на устройство.");
+ DeviceItem.copy_host_to_device(item_array,size);
+ SetDeviceOnChange();
+}
+
 //----------------------------------------------------------------------------------------------------
 //оператор "="
 //----------------------------------------------------------------------------------------------------

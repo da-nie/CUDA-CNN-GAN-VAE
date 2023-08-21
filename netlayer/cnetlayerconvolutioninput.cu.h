@@ -41,7 +41,6 @@ class CNetLayerConvolutionInput:public INetLayer<type_t>
  private:
   //-переменные-----------------------------------------------------------------------------------------
   CTensor<type_t> cTensor_H;///<тензор значений нейронов после функции активации
-  CTensor<type_t> *cTensor_H_Ptr;///<тензор значений нейронов после функции активации
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
  public:
   //-конструктор----------------------------------------------------------------------------------------
@@ -124,7 +123,6 @@ void CNetLayerConvolutionInput<type_t>::Create(size_t size_z,size_t size_y,size_
 {
  NextLayerPtr=NULL;
  cTensor_H=CTensor<type_t>(size_z,size_y,size_x);
- cTensor_H_Ptr=NULL;
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить инициализацию весов и сдвигов
@@ -143,8 +141,7 @@ void CNetLayerConvolutionInput<type_t>::Reset(void)
 template<class type_t>
 void CNetLayerConvolutionInput<type_t>::SetOutput(CTensor<type_t> &output)
 {
- //cTensor_H.CopyItem(output);
- cTensor_H_Ptr=&output;
+ cTensor_H.CopyItem(output);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить выход слоя
@@ -158,12 +155,7 @@ void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output)
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (cTensor_H_Ptr==NULL)
- {
-  output=cTensor_H;
-  return;
- }
- output=*cTensor_H_Ptr;
+ output=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
@@ -180,8 +172,7 @@ void CNetLayerConvolutionInput<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerConvolutionInput<type_t>::GetOutputTensor(void)
 {
- if (cTensor_H_Ptr==NULL) return(cTensor_H);
- return(*cTensor_H_Ptr);
+ return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать указатель на последующий слой

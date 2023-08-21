@@ -77,7 +77,7 @@ class CModelMain
   CTensor<type_t> cTensor_Discriminator_Output;
   CTensor<type_t> cTensor_Discriminator_Error;
 
-  std::vector<CTensor<type_t>> RealImage;//образы истинных изображений
+  std::vector< std::vector<type_t> > RealImage;//образы истинных изображений
   std::vector<size_t> RealImageIndex;//индексы изображений в обучающем наборе
  public:
   //-конструктор----------------------------------------------------------------------------------------
@@ -223,7 +223,8 @@ bool CModelMain<type_t>::LoadRealMNISTImage(void)
  amount/=5;
  for(uint32_t n=0;n<amount;n++)
  {
-  RealImage.push_back(CTensor<type_t>(3,IMAGE_HEIGHT,IMAGE_WIDTH));
+  RealImage.push_back(std::vector<type_t>(IMAGE_WIDTH*IMAGE_HEIGHT*IMAGE_DEPTH));
+
   RealImageIndex.push_back(n);
   SImage sImage;
   if (fread(&sImage,sizeof(SImage),1,file)<1) continue;
@@ -237,19 +238,26 @@ bool CModelMain<type_t>::LoadRealMNISTImage(void)
     size_t yp=y*dy;
 
     uint32_t offset=(xp+yp*sHeader.Width);
-    float c=sImage.Color[offset];
-    c/=255.0;
+    float gray=sImage.Color[offset];
+    gray/=255.0;
     //приведём к диапазону [-1,1]
-    c*=2.0;
-    c-=1.0;
+    gray*=2.0;
+    gray-=1.0;
 
-    float r=c;
-    float g=c;
-    float b=c;
+    float r=gray;
+    float g=gray;
+    float b=gray;
 
-    RealImage[n].SetElement(0,y,x,r);
-    RealImage[n].SetElement(1,y,x,g);
-    RealImage[n].SetElement(2,y,x,b);
+    if (IMAGE_DEPTH==1)
+	{
+	 RealImage[x+y*IMAGE_WIDTH]=gray;
+	}
+    if (IMAGE_DEPTH==3)
+	{
+	 RealImage[x+y*IMAGE_WIDTH+0*IMAGE_WIDTH*IMAGE_HEIGHT]=r;
+	 RealImage[x+y*IMAGE_WIDTH+1*IMAGE_WIDTH*IMAGE_HEIGHT]=g;
+	 RealImage[x+y*IMAGE_WIDTH+2*IMAGE_WIDTH*IMAGE_HEIGHT]=b;
+	}
    }
   }
  }
@@ -298,11 +306,10 @@ bool CModelMain<type_t>::LoadRealImage(void)
    continue;
   }
   */
-
-  RealImage.push_back(CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH));
-  RealImageIndex.push_back(index);
+  //изображение
+  std::vector<type_t> NormalImage=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
   //зеркальное по ширине изображение
-  CTensor<type_t> FlipImage=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+  std::vector<type_t> FlipImage=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
 
   double dx=static_cast<double>(width)/static_cast<double>(IMAGE_WIDTH);
   double dy=static_cast<double>(height)/static_cast<double>(IMAGE_HEIGHT);
@@ -348,22 +355,16 @@ bool CModelMain<type_t>::LoadRealImage(void)
     b*=2.0;
 	b-=1.0;
 
-	if (IMAGE_DEPTH==1)
+    if (IMAGE_DEPTH==1)
 	{
-	 RealImage[index].SetElement(0,y,x,gray);
-	 FlipImage.SetElement(0,y,IMAGE_WIDTH-x-1,gray);
+	 NormalImage[x+y*IMAGE_WIDTH]=gray;
+	 FlipImage[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH]=gray;
 	}
     if (IMAGE_DEPTH==3)
 	{
-/*     r=cy;
-     g=cb;
-     b=cr;
-     */
-
      r=sl;
      g=sa;
      b=sb;
-
 
      if (r<-1) r=-1;
      if (g<-1) g=-1;
@@ -373,21 +374,25 @@ bool CModelMain<type_t>::LoadRealImage(void)
      if (g>1) g=1;
      if (b>1) b=1;
 
-	 RealImage[index].SetElement(0,y,x,r);
-	 RealImage[index].SetElement(1,y,x,g);
-	 RealImage[index].SetElement(2,y,x,b);
+	 NormalImage[x+y*IMAGE_WIDTH+0*IMAGE_WIDTH*IMAGE_HEIGHT]=r;
+	 NormalImage[x+y*IMAGE_WIDTH+1*IMAGE_WIDTH*IMAGE_HEIGHT]=g;
+	 NormalImage[x+y*IMAGE_WIDTH+2*IMAGE_WIDTH*IMAGE_HEIGHT]=b;
 
-	 FlipImage.SetElement(0,y,IMAGE_WIDTH-x-1,r);
-	 FlipImage.SetElement(1,y,IMAGE_WIDTH-x-1,g);
-	 FlipImage.SetElement(2,y,IMAGE_WIDTH-x-1,b);
+	 FlipImage[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+0*IMAGE_WIDTH*IMAGE_HEIGHT]=r;
+	 FlipImage[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+1*IMAGE_WIDTH*IMAGE_HEIGHT]=g;
+	 FlipImage[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+2*IMAGE_WIDTH*IMAGE_HEIGHT]=b;
 	}
    }
   }
+
+  RealImage.push_back(NormalImage);
+  RealImageIndex.push_back(index);
   index++;
 /*
   RealImage.push_back(FlipImage);
   RealImageIndex.push_back(index);
-  index++;*/
+  index++;
+  */
 
   delete[](img_ptr);
  }
@@ -558,7 +563,9 @@ void CModelMain<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,doubl
   {
    CTimeStamp cTimeStamp("Задание изображения:");
    //дискриминатор подключён к изображению
-   GeneratorNet[GeneratorNet.size()-1]->SetOutput(RealImage[RealImageIndex[b+mini_batch_index*BATCH_SIZE]]);
+   size_t size=RealImage[RealImageIndex[b+mini_batch_index*BATCH_SIZE]].size();
+   type_t *ptr=&RealImage[RealImageIndex[b+mini_batch_index*BATCH_SIZE]][0];
+   GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().CopyItemToDevice(ptr,size);
   }
   //вычисляем сеть
   {
@@ -721,7 +728,10 @@ void CModelMain<type_t>::SaveKitImage(void)
  for(size_t n=0;n<BATCH_SIZE;n++)
  {
   sprintf(str,"Test/real%03i.tga",n);
-  SaveImage(RealImage[RealImageIndex[n]],str);
+  type_t *ptr=&RealImage[RealImageIndex[n]][0];
+  size_t size=RealImage[RealImageIndex[n]].size();
+  cTensor_Generator_Output.CopyItemToHost(ptr,size);
+  SaveImage(cTensor_Generator_Output,str);
  }
 }
 

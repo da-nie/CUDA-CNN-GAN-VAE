@@ -71,7 +71,7 @@ class CModelSorter
   CTensor<type_t> cTensor_Sorter_Output;//ответ сортировщика
   struct STrainingImage
   {
-   CTensor<type_t> Image;///<изображение
+   std::vector<type_t> Image;///<данные изображения
    size_t Group;///<группа классификации
   };
 
@@ -117,8 +117,8 @@ class CModelSorter
 template<class type_t>
 CModelSorter<type_t>::CModelSorter(void)
 {
- IMAGE_WIDTH=200;
- IMAGE_HEIGHT=200;
+ IMAGE_WIDTH=224;
+ IMAGE_HEIGHT=224;
  IMAGE_DEPTH=3;
  BATCH_SIZE=10;
 
@@ -237,9 +237,9 @@ bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_
   STrainingImage sTrainingImage_FlipHorizontal;//зеркальное по ширине изображение
 
   sTrainingImage_Based.Group=group;
-  sTrainingImage_Based.Image=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+  sTrainingImage_Based.Image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
   sTrainingImage_FlipHorizontal.Group=group;
-  sTrainingImage_FlipHorizontal.Image=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+  sTrainingImage_FlipHorizontal.Image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
 
   //sprintf(str,"Загружается %i:",index);
   //SYSTEM::PutMessageToConsole(str+name);
@@ -290,8 +290,8 @@ bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_
 
 	if (IMAGE_DEPTH==1)
 	{
-	 sTrainingImage_Based.Image.SetElement(0,y,x,gray);
-	 sTrainingImage_FlipHorizontal.Image.SetElement(0,y,IMAGE_WIDTH-x-1,gray);
+	 sTrainingImage_Based.Image[x+y*IMAGE_WIDTH]=gray;
+	 sTrainingImage_FlipHorizontal.Image[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH]=gray;
 	}
     if (IMAGE_DEPTH==3)
 	{
@@ -307,13 +307,13 @@ bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_
      if (g>1) g=1;
      if (b>1) b=1;
 
-	 sTrainingImage_Based.Image.SetElement(0,y,x,r);
-	 sTrainingImage_Based.Image.SetElement(1,y,x,g);
-	 sTrainingImage_Based.Image.SetElement(2,y,x,b);
+	 sTrainingImage_Based.Image[x+y*IMAGE_WIDTH+0*IMAGE_WIDTH*IMAGE_HEIGHT]=r;
+	 sTrainingImage_Based.Image[x+y*IMAGE_WIDTH+1*IMAGE_WIDTH*IMAGE_HEIGHT]=g;
+	 sTrainingImage_Based.Image[x+y*IMAGE_WIDTH+2*IMAGE_WIDTH*IMAGE_HEIGHT]=b;
 
-	 sTrainingImage_FlipHorizontal.Image.SetElement(0,y,IMAGE_WIDTH-x-1,r);
-	 sTrainingImage_FlipHorizontal.Image.SetElement(1,y,IMAGE_WIDTH-x-1,g);
-	 sTrainingImage_FlipHorizontal.Image.SetElement(2,y,IMAGE_WIDTH-x-1,b);
+	 sTrainingImage_FlipHorizontal.Image[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+0*IMAGE_WIDTH*IMAGE_HEIGHT]=r;
+	 sTrainingImage_FlipHorizontal.Image[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+1*IMAGE_WIDTH*IMAGE_HEIGHT]=g;
+	 sTrainingImage_FlipHorizontal.Image[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+2*IMAGE_WIDTH*IMAGE_HEIGHT]=b;
 	}
    }
   }
@@ -428,7 +428,7 @@ void CModelSorter<type_t>::TrainingSorter(size_t mini_batch_index,double &cost)
   //подаём на вход сортировщика изображение
   {
    CTimeStamp cTimeStamp("Задание изображения:");
-   SorterNet[0]->SetOutput(sTrainingImage.Image);
+   SorterNet[0]->GetOutputTensor().CopyItemToDevice(&sTrainingImage.Image[0],sTrainingImage.Image.size());
   }
   //вычисляем сеть
   {
@@ -866,9 +866,6 @@ void CModelSorter<type_t>::Sorting(void)
 
   delete[](img_ptr);
  }
-
-
-
 }
 
 
@@ -914,8 +911,8 @@ void CModelSorter<type_t>::Execute(void)
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
  if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
- Sorting();
- //TrainingNet();
+ //Sorting();
+ TrainingNet();
 }
 
 #endif
