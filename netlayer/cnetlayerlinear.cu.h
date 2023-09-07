@@ -425,7 +425,7 @@ void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
- if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE::TRAINING_MODE_ADAM)
+ if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   double beta1=0.9;
   double beta2=0.999;
@@ -435,7 +435,7 @@ void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration
   CTensorMath<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,speed,beta1,beta2,epsilon,iteration);
   CTensorMath<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,speed,beta1,beta2,epsilon,iteration);
  }
- if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE::TRAINING_MODE_GRADIENT)
+ if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
   CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed);
   CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed);

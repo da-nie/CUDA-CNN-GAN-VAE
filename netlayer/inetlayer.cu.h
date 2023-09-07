@@ -35,7 +35,7 @@ class INetLayer
  public:
   //-перечисления---------------------------------------------------------------------------------------
   //!режимы обучения
-  enum class TRAINING_MODE
+  enum TRAINING_MODE
   {
    TRAINING_MODE_GRADIENT,///<градиентный спуск
    TRAINING_MODE_ADAM///<обучение по алгоритму Adam
@@ -49,7 +49,7 @@ class INetLayer
   //-конструктор----------------------------------------------------------------------------------------
   INetLayer(void)
   {
-   TrainingMode=TRAINING_MODE::TRAINING_MODE_GRADIENT;
+   TrainingMode=TRAINING_MODE_GRADIENT;
   };
   //-деструктор-----------------------------------------------------------------------------------------
   virtual ~INetLayer() {};
@@ -73,11 +73,11 @@ class INetLayer
   virtual void ClipWeight(type_t min,type_t max)=0;///<ограничить веса в диапазон
   void TrainingModeGradient(void)///<включить режим обучения "градиентный спуск"
   {
-   TrainingMode=TRAINING_MODE::TRAINING_MODE_GRADIENT;
+   TrainingMode=TRAINING_MODE_GRADIENT;
   }
   void TrainingModeAdam(void)///<включить режим обучения "алгоритм Adam"
   {
-   TrainingMode=TRAINING_MODE::TRAINING_MODE_ADAM;
+   TrainingMode=TRAINING_MODE_ADAM;
   }
   TRAINING_MODE GetTrainingMode(void)///<получить выбранный режим обучения
   {

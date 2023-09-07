@@ -47,6 +47,7 @@ class CModelMain
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
   static const size_t STRING_BUFFER_SIZE=1024;///<размер буфера строки
+  static const size_t CUDA_PAUSE_MS=15;///<пауза для CUDA
  protected:
   //-структуры------------------------------------------------------------------------------------------
   struct SProtectedVariables
@@ -497,6 +498,7 @@ void CModelMain<type_t>::TrainingDiscriminatorFake(double &cost)
    CTimeStamp cTimeStamp("Создание шума:");
    CreateFakeImage(cTensor_Generator_Output);
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
 
   //подаём на вход дискриминатора мнимое изображение
   {
@@ -509,6 +511,7 @@ void CModelMain<type_t>::TrainingDiscriminatorFake(double &cost)
    CTimeStamp cTimeStamp("Вычисление дискриминатора:");
    for(size_t layer=0;layer<DiscriminatorNet.size();layer++) DiscriminatorNet[layer]->Forward();
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
   //вычисляем ошибку последнего слоя
   {
    CTimeStamp cTimeStamp("Получение ответа дискриминатора:");
@@ -544,6 +547,7 @@ void CModelMain<type_t>::TrainingDiscriminatorFake(double &cost)
    CTimeStamp cTimeStamp("Обучение дискриминатора:");
    for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward();
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
  }
 }
 
@@ -572,6 +576,7 @@ void CModelMain<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,doubl
    CTimeStamp cTimeStamp("Вычисление дискриминатора:");
    for(size_t layer=0;layer<DiscriminatorNet.size();layer++) DiscriminatorNet[layer]->Forward();
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
   //вычисляем ошибку последнего слоя
   {
    CTimeStamp cTimeStamp("Получение ответа дискриминатора:");
@@ -603,6 +608,7 @@ void CModelMain<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,doubl
    CTimeStamp cTimeStamp("Обучение дискриминатора:");
    for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward();
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
  }
 }
 
@@ -637,10 +643,12 @@ void CModelMain<type_t>::TrainingGenerator(double &cost,double &max_disc_answer)
    CTimeStamp cTimeStamp("Вычисление генератора:");
    for(size_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
   {
    CTimeStamp cTimeStamp("Вычисление дискриминатора:");
    for(size_t layer=0;layer<DiscriminatorNet.size();layer++) DiscriminatorNet[layer]->Forward();
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
   //вычисляем ошибку
   {
    CTimeStamp cTimeStamp("Получение ответа:");
@@ -671,11 +679,13 @@ void CModelMain<type_t>::TrainingGenerator(double &cost,double &max_disc_answer)
    CTimeStamp cTimeStamp("Обучение дискриминатора (получение ошибок):");
    for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward();
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
   //выполняем вычисление весов генератора
   {
    CTimeStamp cTimeStamp("Обучение генератора:");
    for(size_t m=0,n=GeneratorNet.size()-1;m<GeneratorNet.size();m++,n--) GeneratorNet[n]->TrainingBackward();
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
  }
 
 }
@@ -855,12 +865,16 @@ void CModelMain<type_t>::Training(void)
 
  std::string str;
 
+ CCUDATimeSpent cCUDATimeSpent;
+
  size_t get_training=0;
 
  while(iteration<max_iteration)
  {
   SYSTEM::PutMessageToConsole("----------");
   SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
+
+  ExchangeRealImageIndex();
 
   if (iteration%1==0)
   {
@@ -888,7 +902,11 @@ void CModelMain<type_t>::Training(void)
    str+=std::to_string((long double)BATCH_AMOUNT);
    SYSTEM::PutMessageToConsole(str);
 
-   long double begin_time=SYSTEM::GetSecondCounter();
+   {
+    cCUDATimeSpent.Start();
+
+
+   //long double begin_time=SYSTEM::GetSecondCounter();
 
    //обучаем дискриминатор
    double disc_cost=0;
@@ -918,6 +936,7 @@ void CModelMain<type_t>::Training(void)
      //DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
+   SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
 
    str="Ошибка дискриминатора:";
    str+=std::to_string((long double)disc_cost);
@@ -942,6 +961,7 @@ void CModelMain<type_t>::Training(void)
       //GeneratorNet[n]->ClipWeight(-clip,clip);//не нужно делать для генератора!
      }
     }
+    SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
 
     str="Ошибка генератора:";
     str+=std::to_string((long double)gen_cost);
@@ -950,14 +970,19 @@ void CModelMain<type_t>::Training(void)
     SYSTEM::PutMessageToConsole(str);
    }
 
-   long double end_time=SYSTEM::GetSecondCounter();
-   float cpu_time=static_cast<float>((end_time-begin_time)*1000.0);
+   //long double end_time=SYSTEM::GetSecondCounter();
+   //float cpu_time=static_cast<float>((end_time-begin_time)*1000.0);
 
-   sprintf(str_b,"На минипакет ушло: %.2f мс.\r\n",cpu_time);
+   //sprintf(str_b,"На минипакет ушло: %.2f мс.\r\n",cpu_time);
+   //SYSTEM::PutMessageToConsole(str_b);
+   }
+
+   float gpu_time=cCUDATimeSpent.Stop();
+   sprintf(str_b,"На минипакет ушло:%.2f мс.",gpu_time);
    SYSTEM::PutMessageToConsole(str_b);
    SYSTEM::PutMessageToConsole("");
+
   }
-  ExchangeRealImageIndex();
   iteration++;
  }
 }

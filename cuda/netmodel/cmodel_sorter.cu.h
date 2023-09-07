@@ -91,7 +91,9 @@ class CModelSorter
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
   void CreateSorter(void);///<создать сеть сортировщика
-  bool LoadTrainingImageInPath(const std::string &path,size_t group,bool added,size_t &index);///<загрузить образы изображений из каталога
+  bool LoadTrainingImageInPath(const std::string &path,size_t group);///<загрузить образы изображений из каталога
+  void CreateFlipHorizontalImage(void);///<создать изображения, отражённые по горизонтали
+  void CreateOffsetImage(int32_t offset_x,int32_t offset_y);///<создать смещённые изображения
   bool LoadTrainingImage(void);///<загрузить образы изображений
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить слои сети
@@ -102,7 +104,6 @@ class CModelSorter
   void SaveImage(CTensor<type_t> &cTensor_Image,const std::string &name);///<сохранить изображение
   void Training(void);///<обучение нейросети
   void TrainingNet(void);///<обучение нейросети
-
 
   void Sorting(void);///<выполнить сортировку
 };
@@ -122,7 +123,7 @@ CModelSorter<type_t>::CModelSorter(void)
  IMAGE_DEPTH=3;
  BATCH_SIZE=10;
 
- GROUP_SIZE=10;
+ GROUP_SIZE=2;
 
  SPEED=0.001;
  END_COST=0.1;
@@ -194,13 +195,18 @@ void CModelSorter<type_t>::CreateSorter(void)
 //загрузить образы изображений из каталога
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_t group,bool added,size_t &index)
+bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_t group)
 {
  char str[STRING_BUFFER_SIZE];
  SYSTEM::PutMessageToConsole("Загружается:"+path);
 
  std::vector<std::string> file_list;
  SYSTEM::CreateFileList(path,file_list);
+
+ STrainingImage sTrainingImage;
+ sTrainingImage.Group=group;
+ sTrainingImage.Image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
+
  //обрабатываем файлы
  size_t size=file_list.size();
  for(size_t n=0;n<size;n++)
@@ -225,23 +231,7 @@ bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_
    continue;
   }
   */
-  if (added==false)
-  {
-   index++;
-   //index++;
-   delete[](img_ptr);
-   continue;
-  }
-
-  STrainingImage sTrainingImage_Based;
-  STrainingImage sTrainingImage_FlipHorizontal;//зеркальное по ширине изображение
-
-  sTrainingImage_Based.Group=group;
-  sTrainingImage_Based.Image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
-  sTrainingImage_FlipHorizontal.Group=group;
-  sTrainingImage_FlipHorizontal.Image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
-
-  //sprintf(str,"Загружается %i:",index);
+//sprintf(str,"Загружается %i:",index);
   //SYSTEM::PutMessageToConsole(str+name);
 
   double dx=static_cast<double>(width)/static_cast<double>(IMAGE_WIDTH);
@@ -290,8 +280,7 @@ bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_
 
 	if (IMAGE_DEPTH==1)
 	{
-	 sTrainingImage_Based.Image[x+y*IMAGE_WIDTH]=gray;
-	 sTrainingImage_FlipHorizontal.Image[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH]=gray;
+	 sTrainingImage.Image[x+y*IMAGE_WIDTH]=gray;
 	}
     if (IMAGE_DEPTH==3)
 	{
@@ -307,26 +296,103 @@ bool CModelSorter<type_t>::LoadTrainingImageInPath(const std::string &path,size_
      if (g>1) g=1;
      if (b>1) b=1;
 
-	 sTrainingImage_Based.Image[x+y*IMAGE_WIDTH+0*IMAGE_WIDTH*IMAGE_HEIGHT]=r;
-	 sTrainingImage_Based.Image[x+y*IMAGE_WIDTH+1*IMAGE_WIDTH*IMAGE_HEIGHT]=g;
-	 sTrainingImage_Based.Image[x+y*IMAGE_WIDTH+2*IMAGE_WIDTH*IMAGE_HEIGHT]=b;
-
-	 sTrainingImage_FlipHorizontal.Image[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+0*IMAGE_WIDTH*IMAGE_HEIGHT]=r;
-	 sTrainingImage_FlipHorizontal.Image[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+1*IMAGE_WIDTH*IMAGE_HEIGHT]=g;
-	 sTrainingImage_FlipHorizontal.Image[(IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+2*IMAGE_WIDTH*IMAGE_HEIGHT]=b;
+	 sTrainingImage.Image[x+y*IMAGE_WIDTH+0*IMAGE_WIDTH*IMAGE_HEIGHT]=r;
+	 sTrainingImage.Image[x+y*IMAGE_WIDTH+1*IMAGE_WIDTH*IMAGE_HEIGHT]=g;
+	 sTrainingImage.Image[x+y*IMAGE_WIDTH+2*IMAGE_WIDTH*IMAGE_HEIGHT]=b;
 	}
    }
   }
-  TrainingImage[index]=sTrainingImage_Based;
-  TrainingImageIndex[index]=index;
-  index++;
-  TrainingImage[index]=sTrainingImage_FlipHorizontal;
-  TrainingImageIndex[index]=index;
-  index++;
+  TrainingImage.push_back(sTrainingImage);
+  TrainingImageIndex.push_back(TrainingImageIndex.size());
   delete[](img_ptr);
  }
  return(true);
 }
+
+//----------------------------------------------------------------------------------------------------
+//создать изображения, отражённые по горизонтали
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelSorter<type_t>::CreateFlipHorizontalImage(void)
+{
+ TrainingImage.reserve(TrainingImage.size()*2);
+
+ STrainingImage sTrainingImage;
+ sTrainingImage.Image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
+
+ size_t size=TrainingImage.size();
+ for(size_t n=0;n<size;n++)
+ {
+  STrainingImage &sTrainingImage_Input=TrainingImage[n];
+  sTrainingImage.Group=sTrainingImage_Input.Group;
+  for(uint32_t z=0;z<IMAGE_DEPTH;z++)
+  {
+   for(uint32_t y=0;y<IMAGE_HEIGHT;y++)
+   {
+    for(uint32_t x=0;x<IMAGE_WIDTH;x++)
+    {
+     uint32_t in_offset=(x+y*IMAGE_WIDTH+z*IMAGE_WIDTH*IMAGE_HEIGHT);
+     type_t value=sTrainingImage_Input.Image[in_offset];
+     uint32_t out_offset=((IMAGE_WIDTH-x-1)+y*IMAGE_WIDTH+z*IMAGE_WIDTH*IMAGE_HEIGHT);
+     sTrainingImage.Image[out_offset]=value;
+    }
+   }
+  }
+  TrainingImage.push_back(sTrainingImage);
+  TrainingImageIndex.push_back(TrainingImageIndex.size());
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//создать смещённые изображения
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelSorter<type_t>::CreateOffsetImage(int32_t offset_x,int32_t offset_y)
+{
+ TrainingImage.reserve(TrainingImage.size()*2);
+
+ STrainingImage sTrainingImage;
+ sTrainingImage.Image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
+
+ size_t size=TrainingImage.size();
+ for(size_t n=0;n<size;n++)
+ {
+  STrainingImage &sTrainingImage_Input=TrainingImage[n];
+  sTrainingImage.Group=sTrainingImage_Input.Group;
+  //for(int32_t dy=-offset_y;dy<offset_y;dy+=offset_y)
+  {
+   int32_t dy=0;
+   for(int32_t dx=-offset_x;dx<offset_x;dx+=offset_x)
+   {
+    if (dx==0 && dy==0) continue;
+    for(uint32_t z=0;z<IMAGE_DEPTH;z++)
+    {
+     for(uint32_t y=0;y<IMAGE_HEIGHT;y++)
+     {
+      for(uint32_t x=0;x<IMAGE_WIDTH;x++)
+      {
+       int32_t ix=x+dx;
+       if (ix<0) ix+=IMAGE_WIDTH;
+       ix%=IMAGE_WIDTH;
+
+       int32_t iy=y+dy;
+       if (iy<0) iy+=IMAGE_HEIGHT;
+       iy%=IMAGE_HEIGHT;
+
+       uint32_t in_offset=(ix+iy*IMAGE_WIDTH+z*IMAGE_WIDTH*IMAGE_HEIGHT);
+       type_t value=sTrainingImage_Input.Image[in_offset];
+       uint32_t out_offset=(x+y*IMAGE_WIDTH+z*IMAGE_WIDTH*IMAGE_HEIGHT);
+       sTrainingImage.Image[out_offset]=value;
+      }
+     }
+    }
+    TrainingImage.push_back(sTrainingImage);
+    TrainingImageIndex.push_back(TrainingImageIndex.size());
+   }
+  }
+ }
+}
+
 
 //----------------------------------------------------------------------------------------------------
 //загрузить образы изображений
@@ -338,28 +404,16 @@ bool CModelSorter<type_t>::LoadTrainingImage(void)
  TrainingImage.clear();
  TrainingImageIndex.clear();
  std::string path="TrainingImage";
- //считаем изображения
- size_t index=0;
+ //загружаем изображения
  for(size_t n=0;n<GROUP_SIZE;n++)
  {
   sprintf(str,"/%i",n);
-  LoadTrainingImageInPath(path+str,n,false,index);
- }
- sprintf(str,"Найдено изображений:%i",index);
- SYSTEM::PutMessageToConsole(str);
- //добавляем изображения
-
- index*=2;
-
- TrainingImage.resize(index);
- TrainingImageIndex.resize(index);
- index=0;
- for(size_t n=0;n<GROUP_SIZE;n++)
- {
-  sprintf(str,"/%i",n);
-  LoadTrainingImageInPath(path+str,n,true,index);
+  LoadTrainingImageInPath(path+str,n);
  }
  sprintf(str,"Загружено изображений:%i",TrainingImage.size());
+ CreateOffsetImage(32,0);
+ CreateFlipHorizontalImage();
+ sprintf(str,"Сгенерировано всего изображений:%i",TrainingImage.size());
  SYSTEM::PutMessageToConsole(str);
  return(true);
 }
@@ -911,8 +965,8 @@ void CModelSorter<type_t>::Execute(void)
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
  if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
- //Sorting();
- TrainingNet();
+ Sorting();
+ //TrainingNet();
 }
 
 #endif

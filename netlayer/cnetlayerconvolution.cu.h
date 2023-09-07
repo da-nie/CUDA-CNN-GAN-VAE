@@ -466,7 +466,7 @@ void CNetLayerConvolution<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerConvolution<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
- if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE::TRAINING_MODE_ADAM)
+ if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   double beta1=0.9;
   double beta2=0.999;
@@ -494,7 +494,7 @@ void CNetLayerConvolution<type_t>::TrainingUpdateWeight(double speed,double iter
    Bias[n]-=dw;
   }
  }
- if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE::TRAINING_MODE_GRADIENT)
+ if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
   for(size_t n=0;n<cTensor_Kernel.size();n++)
   {
