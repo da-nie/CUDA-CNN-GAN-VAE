@@ -83,6 +83,198 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="cuda/tensor.cu.h" />
+		<Unit filename="libjpeg/cderror.h" />
+		<Unit filename="libjpeg/cdjpeg.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/cdjpeg.h" />
+		<Unit filename="libjpeg/jaricom.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcapimin.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcapistd.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcarith.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jccoefct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jccolor.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcdctmgr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jchuff.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcinit.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcmainct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcmarker.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcmaster.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcomapi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jconfig.h" />
+		<Unit filename="libjpeg/jcparam.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcprepct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jcsample.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jctrans.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdapimin.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdapistd.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdarith.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdatadst.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdatasrc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdcoefct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdcolor.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdct.h" />
+		<Unit filename="libjpeg/jddctmgr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdhuff.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdinput.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdmainct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdmarker.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdmaster.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdmerge.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdpostct.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdsample.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jdtrans.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jerror.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jerror.h" />
+		<Unit filename="libjpeg/jfdctflt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jfdctfst.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jfdctint.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jidctflt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jidctfst.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jidctint.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jinclude.h" />
+		<Unit filename="libjpeg/jmemansi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jmemmgr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jmemsys.h" />
+		<Unit filename="libjpeg/jmorecfg.h" />
+		<Unit filename="libjpeg/jpegint.h" />
+		<Unit filename="libjpeg/jpeglib.h" />
+		<Unit filename="libjpeg/jquant1.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jquant2.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jutils.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/jversion.h" />
+		<Unit filename="libjpeg/rdbmp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/rdcolmap.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/rdgif.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/rdppm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/rdrle.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/rdswitch.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/rdtarga.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/transupp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/transupp.h" />
+		<Unit filename="libjpeg/wrbmp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/wrgif.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/wrppm.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/wrrle.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="libjpeg/wrtarga.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="main.cpp" />
 		<Unit filename="netlayer/cnetlayeraveragepooling.cu">
 			<Option compile="1" />

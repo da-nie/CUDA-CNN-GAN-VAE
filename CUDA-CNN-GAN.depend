@@ -455,7 +455,7 @@
 	"../system/system.h"
 	"ccudadevicevector.cu.h"
 
-1683909983 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/system/system.h
+1694675528 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/system/system.h
 	<vector>
 	<string>
 
@@ -640,7 +640,7 @@
 	<math.h>
 	<stdio.h>
 
-1683909983 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/system/system.cpp
+1694675557 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/system/system.cpp
 	"system.h"
 	<dirent.h>
 	<string.h>
@@ -729,7 +729,7 @@
 1690696937 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerdropout.cu
 	"cnetlayerdropout.cu.h"
 
-1694088087 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_sorter.cu.h
+1694676207 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_sorter.cu.h
 	<string>
 	<vector>
 	<memory>
@@ -750,6 +750,7 @@
 	"../../netlayer/cnetlayermaxdepooling.cu.h"
 	"../../netlayer/cnetlayerupsampling.cu.h"
 	"../tensor.cu.h"
+	"../../libjpeg/jpeglib.h"
 
 1691564886 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/common/ccolormodel.cpp
 	"ccolormodel.h"
@@ -784,4 +785,296 @@
 
 1691775823 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayeraveragepooling.cu
 	"cnetlayeraveragepooling.cu.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/cdjpeg.c
+	"cdjpeg.h"
+	<ctype.h>
+	<signal.h>
+	<fcntl.h>
+	<io.h>
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/cdjpeg.h
+	"jinclude.h"
+	"jpeglib.h"
+	"jerror.h"
+	"cderror.h"
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jinclude.h
+	"jconfig.h"
+	<stddef.h>
+	<stdlib.h>
+	<sys/types.h>
+	<stdio.h>
+	<strings.h>
+	<string.h>
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jconfig.h
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jpeglib.h
+	"jconfig.h"
+	"jmorecfg.h"
+	"jpegint.h"
+	"jerror.h"
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jmorecfg.h
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jpegint.h
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jerror.h
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/cderror.h
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jaricom.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcapimin.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcapistd.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcarith.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jccoefct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jccolor.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcdctmgr.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdct.h
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jchuff.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcinit.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcmainct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcmarker.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcmaster.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcomapi.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcparam.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcprepct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jcsample.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jctrans.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdapimin.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdapistd.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdarith.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdatadst.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jerror.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdatasrc.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jerror.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdcoefct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdcolor.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jddctmgr.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdhuff.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdinput.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdmainct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdmarker.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdmaster.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdmerge.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdpostct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdsample.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jdtrans.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jerror.c
+	<windows.h>
+	"jinclude.h"
+	"jpeglib.h"
+	"jversion.h"
+	"jerror.h"
+	"jerror.h"
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jversion.h
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jfdctflt.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jfdctfst.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jfdctint.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jidctflt.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jidctfst.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jidctint.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jmemansi.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jmemsys.h"
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jmemsys.h
+	<Files.h>
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jmemmgr.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jmemsys.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jquant1.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jquant2.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/jutils.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/rdbmp.c
+	"cdjpeg.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/rdcolmap.c
+	"cdjpeg.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/rdgif.c
+	"cdjpeg.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/rdppm.c
+	"cdjpeg.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/rdrle.c
+	"cdjpeg.h"
+	<rle.h>
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/rdswitch.c
+	"cdjpeg.h"
+	<ctype.h>
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/rdtarga.c
+	"cdjpeg.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/transupp.c
+	"jinclude.h"
+	"jpeglib.h"
+	"transupp.h"
+	<ctype.h>
+
+1592674808 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/transupp.h
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/wrbmp.c
+	"cdjpeg.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/wrgif.c
+	"cdjpeg.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/wrppm.c
+	"cdjpeg.h"
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/wrrle.c
+	"cdjpeg.h"
+	<rle.h>
+
+1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/wrtarga.c
+	"cdjpeg.h"
 

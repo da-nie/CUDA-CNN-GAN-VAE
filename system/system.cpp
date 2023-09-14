@@ -158,3 +158,69 @@ void SYSTEM::PutMessageToConsole(const std::string &message)
 {
  printf("%s\r\n",message.c_str());
 }
+//----------------------------------------------------------------------------------------------------
+//скопировать файл
+//----------------------------------------------------------------------------------------------------
+void SYSTEM::CopyFile(const std::string &source_file,const std::string &target_file)
+{
+ /*
+ std::string new_source_file=ConvertFileName(source_file);
+ std::string new_target_file=ConvertFileName(target_file);
+
+ std::string command="cp -p \"";
+ command+=new_source_file;
+ command+="\" \"";
+ command+=new_target_file;
+ command+="\"";
+ printf("command:%s\r\n",command.c_str());
+ system(command.c_str());
+ */
+
+ FILE *file_one=fopen(source_file.c_str(),"rb");
+ if (file_one==NULL) return;
+ FILE *file_two=fopen(target_file.c_str(),"wb");
+ if (file_two==NULL)
+ {
+  fclose(file_one);
+  return;
+ }
+ printf("Copy file:%s -> %s\r\n",source_file.c_str(),target_file.c_str());
+
+ uint8_t buffer[65536];
+ while(1)
+ {
+  size_t size=fread(buffer,sizeof(uint8_t),65535,file_one);
+  if (size==0) break;
+  fwrite(buffer,sizeof(uint8_t),size,file_two);
+ }
+ fclose(file_one);
+ fclose(file_two);
+}
+
+//----------------------------------------------------------------------------------------------------
+//перенести файл
+//----------------------------------------------------------------------------------------------------
+void SYSTEM::MoveFileTo(const std::string &source_file,const std::string &target_file)
+{
+ FILE *file_one=fopen(source_file.c_str(),"rb");
+ if (file_one==NULL) return;
+ FILE *file_two=fopen(target_file.c_str(),"wb");
+ if (file_two==NULL)
+ {
+  fclose(file_one);
+  return;
+ }
+ printf("Move file:%s -> %s\r\n",source_file.c_str(),target_file.c_str());
+
+ uint8_t buffer[65536];
+ while(1)
+ {
+  size_t size=fread(buffer,sizeof(uint8_t),65535,file_one);
+  if (size==0) break;
+  fwrite(buffer,sizeof(uint8_t),size,file_two);
+ }
+ fclose(file_one);
+ fclose(file_two);
+ //удаляем файл
+ //remove(source_file.c_str());
+}

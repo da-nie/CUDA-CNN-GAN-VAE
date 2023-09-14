@@ -41,5 +41,7 @@ namespace SYSTEM
  std::string GetPathDivider(void);//получить разделитель каталого
  void PutMessage(const std::string &message);//вывести сообщение
  void PutMessageToConsole(const std::string &message);//вывести сообщение в консоль
+ void CopyFile(const std::string &source_file,const std::string &target_file);//скопировать файл
+ void MoveFileTo(const std::string &source_file,const std::string &target_file);//перенести файл
 }
 #endif
