@@ -23,6 +23,7 @@
 #include "../../common/ccolormodel.h"
 #include "../ctimestamp.cu.h"
 
+#include "../../netlayer/cnetlayerfunction.cu.h"
 #include "../../netlayer/cnetlayerlinear.cu.h"
 #include "../../netlayer/cnetlayerdropout.cu.h"
 #include "../../netlayer/cnetlayerbatchnormalization.cu.h"

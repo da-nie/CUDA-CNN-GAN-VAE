@@ -522,7 +522,7 @@
 1687793484 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu
 	"cnetlayerbackconvolution.cu.h"
 
-1703604776 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu.h
+1704628062 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -586,7 +586,7 @@
 	"../netlayer/cnetlayermaxpooling.cu.h"
 	"tensor.cu.h"
 
-1694680267 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu.h
+1704620186 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -594,7 +594,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1703604774 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolution.cu.h
+1704628064 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -694,7 +694,7 @@
 1691609429 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gray.cu.h
 	"cmodelmain.cu.h"
 
-1704559444 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodelmain.cu.h
+1704614952 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodelmain.cu.h
 	<string>
 	<vector>
 	<array>
@@ -706,6 +706,7 @@
 	"../../common/tga.h"
 	"../../common/ccolormodel.h"
 	"../ctimestamp.cu.h"
+	"../../netlayer/cnetlayerfunction.cu.h"
 	"../../netlayer/cnetlayerlinear.cu.h"
 	"../../netlayer/cnetlayerdropout.cu.h"
 	"../../netlayer/cnetlayerbatchnormalization.cu.h"
@@ -771,7 +772,7 @@
 1691593722 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbatchnormalization.cu
 	"cnetlayerbatchnormalization.cu.h"
 
-1704562169 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gan.cu.h
+1704628093 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gan.cu.h
 	"cmodelmain.cu.h"
 
 1694680126 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayeraveragepooling.cu.h
@@ -1077,4 +1078,15 @@
 
 1592674808 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/libjpeg/wrtarga.c
 	"cdjpeg.h"
+
+1704613359 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerfunction.cu
+	"cnetlayerfunction.cu.h"
+
+1704620001 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerfunction.cu.h
+	<stdio.h>
+	<fstream>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/tensor.cu.h"
+	"neuron.cu.h"
 

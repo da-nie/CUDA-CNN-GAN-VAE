@@ -44,11 +44,9 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  CTensor<type_t> cTensor_Z;///<тензор значений нейронов до функции активации
-  CTensor<type_t> cTensor_H;///<тензор значений нейронов после функции активации
+  CTensor<type_t> cTensor_H;///<тензор значений нейронов до функции активации
   std::vector<CTensor<type_t> > cTensor_Kernel;///<ядра свёртки
   std::vector<type_t> Bias;///<сдвиги
-  NNeuron::NEURON_FUNCTION NeuronFunction;///<функция активации нейронов слоя
 
   size_t Padding_X;///<дополнение нулями по X
   size_t Padding_Y;///<дополнение нулями по Y
@@ -73,13 +71,13 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
 
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerBackConvolution(size_t kernel_size,size_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL);
+  CNetLayerBackConvolution(size_t kernel_size,size_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,INetLayer<type_t> *prev_layer_ptr=NULL);
   CNetLayerBackConvolution(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerBackConvolution();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(size_t kernel_size,size_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL);///<создать слой
+  void Create(size_t kernel_size,size_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,INetLayer<type_t> *prev_layer_ptr=NULL);///<создать слой
   void Reset(void);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -114,14 +112,14 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerBackConvolution<type_t>::CNetLayerBackConvolution(size_t kernel_size,size_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr)
+CNetLayerBackConvolution<type_t>::CNetLayerBackConvolution(size_t kernel_size,size_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,INetLayer<type_t> *prev_layer_ptr)
 {
  Padding_X=padding_x;///<дополнение нулями по X
  Padding_Y=padding_y;///<дополнение нулями по Y
  Stride_X=stride_x;///<шаг свёртки по x
  Stride_Y=stride_y;///<шаг свёртки по Y
 
- Create(kernel_size,kernel_depth,stride_x,stride_y,padding_x,padding_y,neuron_function,prev_layer_ptr);
+ Create(kernel_size,kernel_depth,stride_x,stride_y,padding_x,padding_y,prev_layer_ptr);
 }
 //----------------------------------------------------------------------------------------------------
 //!конструктор
@@ -170,11 +168,10 @@ type_t CNetLayerBackConvolution<type_t>::GetRandValue(type_t max_value)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerBackConvolution<type_t>::Create(size_t kernel_size,size_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr)
+void CNetLayerBackConvolution<type_t>::Create(size_t kernel_size,size_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,INetLayer<type_t> *prev_layer_ptr)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
- NeuronFunction=neuron_function;
  if (prev_layer_ptr==NULL)//слой без предшествующего считается входным
  {
   throw("Свёрточный слой не может быть входным. Создайте слой CNetLayerConvolutionInput перед ним");
@@ -211,7 +208,6 @@ void CNetLayerBackConvolution<type_t>::Create(size_t kernel_size,size_t kernel_d
  int32_t output_y=Stride_Y*(input_y-1)+kernel_y-2*Padding_Y;
  int32_t output_z=kernel_z;
  //создаём выходные тензоры
- cTensor_Z=CTensor<type_t>(output_z,output_y,output_x);
  cTensor_H=CTensor<type_t>(output_z,output_y,output_x);
  //задаём предшествующему слою, что мы его последующий слой
  prev_layer_ptr->SetNextLayerPtr(this);
@@ -293,15 +289,7 @@ void CNetLayerBackConvolution<type_t>::Forward(void)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
 
  //выполняем обратную свёртку
- CTensorConv<type_t>::BackwardConvolution(cTensor_Z,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
- //применяем функцию активации нейронов
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplySigmoid(cTensor_H,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyReLU(cTensor_H,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyLeakyReLU(cTensor_H,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyLinear(cTensor_H,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyTangence(cTensor_H,cTensor_Z);
- //if (NeuronFunction==NNeuron::NEURON_FUNCTION_SOFTMAX) CTensorApplyFunc<type_t>::ApplySoftMax(cTensor_H,cTensor_Z);
-
+ CTensorConv<type_t>::BackwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(input_z,input_y,input_x);
 }
 //----------------------------------------------------------------------------------------------------
@@ -334,7 +322,6 @@ void CNetLayerBackConvolution<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_l
 template<class type_t>
 bool CNetLayerBackConvolution<type_t>::Save(IDataStream *iDataStream_Ptr)
 {
- iDataStream_Ptr->SaveUInt32(NeuronFunction);
  iDataStream_Ptr->SaveUInt32(cTensor_Kernel.size());
  for(size_t n=0;n<cTensor_Kernel.size();n++)
  {
@@ -357,7 +344,6 @@ bool CNetLayerBackConvolution<type_t>::Save(IDataStream *iDataStream_Ptr)
 template<class type_t>
 bool CNetLayerBackConvolution<type_t>::Load(IDataStream *iDataStream_Ptr)
 {
- NeuronFunction=iDataStream_Ptr->LoadUInt32();
  size_t kernel_amount=iDataStream_Ptr->LoadUInt32();
  cTensor_Kernel.resize(kernel_amount);
  for(size_t n=0;n<kernel_amount;n++)
@@ -565,14 +551,7 @@ CTensor<type_t>& CNetLayerBackConvolution<type_t>::GetDeltaTensor(void)
 template<class type_t>
 void CNetLayerBackConvolution<type_t>::SetOutputError(CTensor<type_t>& error)
 {
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(cTensor_Delta,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialReLU(cTensor_Delta,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(cTensor_Delta,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyDifferentialLinear(cTensor_Delta,cTensor_Z);
- if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyDifferentialTangence(cTensor_Delta,cTensor_Z);
- //if (NeuronFunction==NNeuron::NEURON_FUNCTION_SOFTMAX) CTensorApplyFunc<type_t>::ApplyDifferentialSoftMax(cTensor_Delta,cTensor_Z);
-
- CTensorMath<type_t>::TensorItemProduction(cTensor_Delta,error,cTensor_Delta);
+ cTensor_Delta=error;
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон
