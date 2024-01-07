@@ -522,7 +522,7 @@
 1687793484 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu
 	"cnetlayerbackconvolution.cu.h"
 
-1692888271 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu.h
+1703604776 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbackconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -531,7 +531,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1692888271 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/inetlayer.cu.h
+1694679859 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/inetlayer.cu.h
 	<stdio.h>
 
 1687793484 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/neuron.cu.h
@@ -558,7 +558,7 @@
 	<cuda_runtime_api.h>
 	"ccudatimespent.cu.h"
 
-1693812765 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/cuda.cu
+1694679801 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/cuda.cu
 	"cuda.cu.h"
 	<cstdio>
 	<ctime>
@@ -586,7 +586,7 @@
 	"../netlayer/cnetlayermaxpooling.cu.h"
 	"tensor.cu.h"
 
-1692888271 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu.h
+1694680267 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerlinear.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -594,7 +594,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1692888271 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolution.cu.h
+1703604774 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -603,7 +603,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1692449840 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolutioninput.cu.h
+1694680159 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerconvolutioninput.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -611,7 +611,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1692031776 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxpooling.cu.h
+1694680192 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxpooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -667,7 +667,7 @@
 	"../../netlayer/cnetlayerupsampling.cu.h"
 	"../tensor.cu.h"
 
-1692031776 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxdepooling.cu.h
+1694680181 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxdepooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -679,7 +679,7 @@
 1687793484 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayermaxdepooling.cu
 	"cnetlayermaxpooling.cu.h"
 
-1692031776 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerupsampling.cu.h
+1694680203 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerupsampling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -694,7 +694,7 @@
 1691609429 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gray.cu.h
 	"cmodelmain.cu.h"
 
-1693410222 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodelmain.cu.h
+1704559444 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodelmain.cu.h
 	<string>
 	<vector>
 	<array>
@@ -718,7 +718,7 @@
 	"../../netlayer/cnetlayeraveragepooling.cu.h"
 	"../tensor.cu.h"
 
-1692294130 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerdropout.cu.h
+1694680170 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerdropout.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -760,7 +760,7 @@
 	<stdio.h>
 	<stdint.h>
 
-1692031776 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbatchnormalization.cu.h
+1694680495 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbatchnormalization.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -771,10 +771,10 @@
 1691593722 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbatchnormalization.cu
 	"cnetlayerbatchnormalization.cu.h"
 
-1693409287 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gan.cu.h
+1704562169 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gan.cu.h
 	"cmodelmain.cu.h"
 
-1692031775 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayeraveragepooling.cu.h
+1694680126 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayeraveragepooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>

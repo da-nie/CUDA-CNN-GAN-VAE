@@ -63,6 +63,8 @@ class INetLayer
   virtual void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)=0;///<задать указатель на последующий слой
   virtual bool Save(IDataStream *iDataStream_Ptr)=0;///<сохранить параметры слоя
   virtual bool Load(IDataStream *iDataStream_Ptr)=0;///<загрузить параметры слоя
+  virtual bool SaveTrainingParam(IDataStream *iDataStream_Ptr)=0;///<сохранить параметры обучения слоя
+  virtual bool LoadTrainingParam(IDataStream *iDataStream_Ptr)=0;///<загрузить параметры обучения слоя
   virtual void TrainingStart(void)=0;///<начать процесс обучения
   virtual void TrainingStop(void)=0;///<завершить процесс обучения
   virtual void TrainingBackward(void)=0;///<выполнить обратный проход по сети для обучения

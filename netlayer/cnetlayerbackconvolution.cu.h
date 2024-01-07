@@ -88,6 +88,8 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
   bool Load(IDataStream *iDataStream_Ptr);///<загрузить параметры слоя
+  bool SaveTrainingParam(IDataStream *iDataStream_Ptr);///<сохранить параметры обучения слоя
+  bool LoadTrainingParam(IDataStream *iDataStream_Ptr);///<загрузить параметры обучения слоя
 
   void TrainingStart(void);///<начать процесс обучения
   void TrainingStop(void);///<завершить процесс обучения
@@ -370,6 +372,44 @@ bool CNetLayerBackConvolution<type_t>::Load(IDataStream *iDataStream_Ptr)
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
+/*!сохранить параметры обучения слоя
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerBackConvolution<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
+{
+ for(size_t n=0;n<cTensor_MK.size();n++)
+ {
+  cTensor_MK[n].Save(iDataStream_Ptr);
+  cTensor_VK[n].Save(iDataStream_Ptr);
+
+  iDataStream_Ptr->SaveDouble(MB[n]);
+  iDataStream_Ptr->SaveDouble(VB[n]);
+ }
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить параметры обучения слоя
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerBackConvolution<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
+{
+ for(size_t n=0;n<cTensor_MK.size();n++)
+ {
+  cTensor_MK[n].Load(iDataStream_Ptr);
+  cTensor_VK[n].Load(iDataStream_Ptr);
+
+  MB[n]=iDataStream_Ptr->LoadDouble();
+  VB[n]=iDataStream_Ptr->LoadDouble();
+ }
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
 /*!начать процесс обучения
 */
 //----------------------------------------------------------------------------------------------------
@@ -466,6 +506,10 @@ void CNetLayerBackConvolution<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerBackConvolution<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
+ //speed/=static_cast<double>(cTensor_Kernel[0].GetSizeX()*cTensor_Kernel[0].GetSizeY()*cTensor_Kernel[0].GetSizeZ());
+ //speed/=static_cast<double>(InputSize_X*InputSize_Y*InputSize_Z);
+ speed/=static_cast<double>(cTensor_Kernel.size());
+
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   double beta1=0.9;

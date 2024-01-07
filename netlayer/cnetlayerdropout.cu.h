@@ -67,6 +67,8 @@ class CNetLayerDropOut:public INetLayer<type_t>
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
   bool Load(IDataStream *iDataStream_Ptr);///<загрузить параметры слоя
+  bool SaveTrainingParam(IDataStream *iDataStream_Ptr);///<сохранить параметры обучения слоя
+  bool LoadTrainingParam(IDataStream *iDataStream_Ptr);///<загрузить параметры обучения слоя
 
   void TrainingStart(void);///<начать процесс обучения
   void TrainingStop(void);///<завершить процесс обучения
@@ -257,6 +259,28 @@ template<class type_t>
 bool CNetLayerDropOut<type_t>::Load(IDataStream *iDataStream_Ptr)
 {
  DropOut=iDataStream_Ptr->LoadDouble();
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!сохранить параметры обучения слоя
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerDropOut<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
+{
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить параметры обучения слоя
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerDropOut<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
+{
  return(true);
 }
 //----------------------------------------------------------------------------------------------------

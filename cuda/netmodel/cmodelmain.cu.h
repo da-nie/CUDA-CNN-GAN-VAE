@@ -47,7 +47,7 @@ class CModelMain
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
   static const size_t STRING_BUFFER_SIZE=1024;///<размер буфера строки
-  static const size_t CUDA_PAUSE_MS=15;///<пауза для CUDA
+  static const size_t CUDA_PAUSE_MS=1;///<пауза для CUDA
  protected:
   //-структуры------------------------------------------------------------------------------------------
   struct SProtectedVariables
@@ -101,8 +101,12 @@ class CModelMain
   bool LoadRealImage(void);//загрузить образы истинных изображений
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить слои сети
+  void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить параметры обучения слоёв сети
+  void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить параметры обучения слоёв сети
   void LoadNet(void);//загрузить сети
   void SaveNet(void);//сохранить сети
+  void LoadTrainingParam(void);//загрузить параметры обучения
+  void SaveTrainingParam(void);//сохранить параметры обучения
   void CreateFakeImage(CTensor<type_t> &cTensor_Generator_Image);//создать мнимое изображение с помощью генератора
   void TrainingDiscriminatorFake(double &cost);//обучение дискриминатора на фальшивом изображения
   void TrainingDiscriminatorReal(size_t mini_batch_index,double &cost);//обучение дискриминатора на настоящих изображениях
@@ -424,6 +428,25 @@ void CModelMain<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<
 }
 
 //----------------------------------------------------------------------------------------------------
+/*!сохранить параметры обучения слоёв сети
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelMain<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net)
+{
+ for(size_t n=0;n<net.size();n++) net[n]->SaveTrainingParam(iDataStream_Ptr);
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить параметры обучения слоёв сети
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net)
+{
+ for(size_t n=0;n<net.size();n++) net[n]->LoadTrainingParam(iDataStream_Ptr);
+}
+
+//----------------------------------------------------------------------------------------------------
 //загрузить сети
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
@@ -458,6 +481,41 @@ void CModelMain<type_t>::SaveNet(void)
 
  std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("gen_neuronet.net",true));
  SaveNetLayers(iDataStream_Gen_Ptr.get(),GeneratorNet);
+}
+//----------------------------------------------------------------------------------------------------
+//загрузить параметры обучения
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelMain<type_t>::LoadTrainingParam(void)
+{
+ FILE *file=fopen("disc_training_param.net","rb");
+ if (file!=NULL)
+ {
+  fclose(file);
+  std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("disc_training_param.net",false));
+  LoadNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),DiscriminatorNet);
+  SYSTEM::PutMessageToConsole("Параметры обучения дискриминатора загружены.");
+ }
+ file=fopen("gen_training_param.net","rb");
+ if (file!=NULL)
+ {
+  fclose(file);
+  std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("gen_training_param.net",false));
+  LoadNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),GeneratorNet);
+  SYSTEM::PutMessageToConsole("Параметры обучения генератора загружены.");
+ }
+}
+//----------------------------------------------------------------------------------------------------
+//сохранить параметры обучения
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelMain<type_t>::SaveTrainingParam(void)
+{
+ std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("disc_training_param.net",true));
+ SaveNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),DiscriminatorNet);
+
+ std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("gen_training_param.net",true));
+ SaveNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),GeneratorNet);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -527,6 +585,7 @@ void CModelMain<type_t>::TrainingDiscriminatorFake(double &cost)
    CTimeStamp cTimeStamp("Расчёт ошибки:");
    fake_output=cTensor_Discriminator_Output.GetElement(0,0,0);
    double disc_fake_error=-SafeLog(1.0-fake_output);//прямая метка
+   //double disc_fake_error=(fake_output-0);//прямая метка
 
    if (GetRandValue(100)>95)//инвертируем метки, чтобы избежать переобучения генератора
    {
@@ -544,8 +603,11 @@ void CModelMain<type_t>::TrainingDiscriminatorFake(double &cost)
   }
   //выполняем вычисление весов
   {
-   CTimeStamp cTimeStamp("Обучение дискриминатора:");
-   for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward();
+   //if (fake_output>0.5)
+   {
+    CTimeStamp cTimeStamp("Обучение дискриминатора:");
+    for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward();
+   }
   }
   SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
  }
@@ -591,6 +653,8 @@ void CModelMain<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,doubl
    CTimeStamp cTimeStamp("Вычисление ошибки:");
    real_output=cTensor_Discriminator_Output.GetElement(0,0,0);
    double disc_real_error=SafeLog(real_output);//прямая метка
+   //double disc_real_error=(real_output-1);//прямая метка
+
    if (GetRandValue(100)>95)//инвертируем метки, чтобы избежать переобучения генератора
    {
     //disc_real_error=-SafeLog(1.0-real_output);//инверсная метка
@@ -605,8 +669,11 @@ void CModelMain<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,doubl
   }
   //выполняем вычисление весов
   {
-   CTimeStamp cTimeStamp("Обучение дискриминатора:");
-   for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward();
+   //if (real_output<0.5)
+   {
+    CTimeStamp cTimeStamp("Обучение дискриминатора:");
+    for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward();
+   }
   }
   SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
  }
@@ -667,6 +734,8 @@ void CModelMain<type_t>::TrainingGenerator(double &cost,double &max_disc_answer)
    fake_output=cTensor_Discriminator_Output.GetElement(0,0,0);
    double disc_error=SafeLog(fake_output);//прямая метка
    //double disc_error=-SafeLog(1.0-fake_output);//инверсная метка
+   //double disc_error=(fake_output-1);//прямая метка
+
    cost+=disc_error*disc_error;
    cTensor_Discriminator_Error.SetElement(0,0,0,disc_error);
   }
@@ -682,8 +751,11 @@ void CModelMain<type_t>::TrainingGenerator(double &cost,double &max_disc_answer)
   SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
   //выполняем вычисление весов генератора
   {
-   CTimeStamp cTimeStamp("Обучение генератора:");
-   for(size_t m=0,n=GeneratorNet.size()-1;m<GeneratorNet.size();m++,n--) GeneratorNet[n]->TrainingBackward();
+   //if (fake_output<0.5)
+   {
+    CTimeStamp cTimeStamp("Обучение генератора:");
+    for(size_t m=0,n=GeneratorNet.size()-1;m<GeneratorNet.size();m++,n--) GeneratorNet[n]->TrainingBackward();
+   }
   }
   SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
  }
@@ -721,7 +793,7 @@ void CModelMain<type_t>::SaveRandomImage(void)
  {
   CreateFakeImage(cTensor_Generator_Output);
   sprintf(str,"Test/test%05i-%03i.tga",counter,n);
-  SaveImage(cTensor_Generator_Output,str);
+  //SaveImage(cTensor_Generator_Output,str);
   if (n==0) SaveImage(cTensor_Generator_Output,"Test/test-current.tga");
   //sprintf(str,"Test/test%03i.txt",n);
   //cTensor_Generator_Output.PrintToFile(str,"Изображение",true);
@@ -876,16 +948,17 @@ void CModelMain<type_t>::Training(void)
 
   ExchangeRealImageIndex();
 
-  if (iteration%1==0)
+  if (iteration%20==0)
   {
    SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
   }
 
-  if (iteration%1==0)
+  if (iteration%20==0)
   {
   SYSTEM::PutMessageToConsole("Save net.");
   SaveNet();
+  SaveTrainingParam();
   SaveKitImage();
   SYSTEM::PutMessageToConsole("");
   }
@@ -932,7 +1005,7 @@ void CModelMain<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов дискриминатора на настоящих изображениях:");
     for(size_t n=0;n<DiscriminatorNet.size();n++)
     {
-     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE*2.0)),iteration+1);
+     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)),iteration+1);
      //DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
@@ -1044,6 +1117,8 @@ void CModelMain<type_t>::TrainingNet(bool mnist)
  sprintf(str,"Изображений:%i Минипакетов:%i",image_amount,BATCH_AMOUNT);
  SYSTEM::PutMessageToConsole(str);
 
+ //загружаем параметры обучения
+ LoadTrainingParam();
  //запускаем обучение
  Training();
  //отключаем обучение

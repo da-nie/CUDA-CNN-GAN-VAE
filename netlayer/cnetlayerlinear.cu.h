@@ -78,6 +78,8 @@ class CNetLayerLinear:public INetLayer<type_t>
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
   bool Load(IDataStream *iDataStream_Ptr);///<загрузить параметры слоя
+  bool SaveTrainingParam(IDataStream *iDataStream_Ptr);///<сохранить параметры обучения слоя
+  bool LoadTrainingParam(IDataStream *iDataStream_Ptr);///<загрузить параметры обучения слоя
 
   void TrainingStart(void);///<начать процесс обучения
   void TrainingStop(void);///<завершить процесс обучения
@@ -323,6 +325,37 @@ bool CNetLayerLinear<type_t>::Load(IDataStream *iDataStream_Ptr)
  cTensor_B.Load(iDataStream_Ptr);
  return(true);
 }
+//----------------------------------------------------------------------------------------------------
+/*!сохранить параметры обучения слоя
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerLinear<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
+{
+ cTensor_MW.Save(iDataStream_Ptr);
+ cTensor_VW.Save(iDataStream_Ptr);
+ cTensor_MB.Save(iDataStream_Ptr);
+ cTensor_VB.Save(iDataStream_Ptr);
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить параметры обучения слоя
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerLinear<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
+{
+ cTensor_MW.Load(iDataStream_Ptr);
+ cTensor_VW.Load(iDataStream_Ptr);
+ cTensor_MB.Load(iDataStream_Ptr);
+ cTensor_VB.Load(iDataStream_Ptr);
+ return(true);
+}
+
 //----------------------------------------------------------------------------------------------------
 /*!начать процесс обучения
 */
