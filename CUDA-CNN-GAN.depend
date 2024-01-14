@@ -483,7 +483,7 @@
 1687793484 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu
 	"ctensorconv.cu.h"
 
-1691689920 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu.h
+1704985670 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/ctensorconv.cu.h
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 	<vector>
@@ -694,7 +694,7 @@
 1691609429 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gray.cu.h
 	"cmodelmain.cu.h"
 
-1704614952 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodelmain.cu.h
+1704905700 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodelmain.cu.h
 	<string>
 	<vector>
 	<array>
@@ -772,7 +772,7 @@
 1691593722 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayerbatchnormalization.cu
 	"cnetlayerbatchnormalization.cu.h"
 
-1704628093 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gan.cu.h
+1704991817 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/cuda/netmodel/cmodel_gan.cu.h
 	"cmodelmain.cu.h"
 
 1694680126 /home/da-nie/Working/CUDA/CUDA-CNN-GAN/netlayer/cnetlayeraveragepooling.cu.h

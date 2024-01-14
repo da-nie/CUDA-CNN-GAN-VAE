@@ -531,6 +531,7 @@ void CModelMain<type_t>::CreateFakeImage(CTensor<type_t> &cTensor_Generator_Imag
  for(uint32_t n=0;n<NOISE_LAYER_SIZE;n++,ptr++)
  {
   type_t r=GetRandValue(20.0)-10.0;
+  r/=10.0;
   *ptr=r;
  }
  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
@@ -949,13 +950,13 @@ void CModelMain<type_t>::Training(void)
 
   ExchangeRealImageIndex();
 
-  if (iteration%20==0)
+  if (iteration%1==0)
   {
    SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
   }
 
-  if (iteration%20==0)
+  if (iteration%1==0)
   {
   SYSTEM::PutMessageToConsole("Save net.");
   SaveNet();
@@ -1162,7 +1163,7 @@ void CModelMain<type_t>::TestTrainingGenerator(void)
   SYSTEM::PutMessageToConsole("----------");
   SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
 
-  if (iteration%50==0)
+  if (iteration%100==0)
   {
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();

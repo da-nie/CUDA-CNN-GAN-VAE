@@ -149,19 +149,20 @@ struct STensorKernel_ForwardConvolution_Image
 
  __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
-  if (x>=Size_X || y>=Size_Y) return(0);
-  if (z>=Size_Z) return(0);
-
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t dx=pos%Dst_X;
-  pos/=Dst_X;
-  int32_t dy=pos%Dst_Y;
-  pos/=Dst_Y;
-  int32_t kx=pos%Conv_Kernel_X;
-  pos/=Conv_Kernel_X;
-  int32_t ky=pos%Conv_Kernel_Y;
-  pos/=Conv_Kernel_Y;
-  int32_t sz=pos;
+  int32_t tmp=pos;
+  tmp/=Dst_X;
+  int32_t dx=pos-tmp*Dst_X;
+  pos=tmp;
+  tmp/=Dst_Y;
+  int32_t dy=pos-tmp*Dst_Y;
+  pos=tmp;
+  tmp/=Conv_Kernel_X;
+  int32_t kx=pos-tmp*Conv_Kernel_X;
+  pos=tmp;
+  tmp/=Conv_Kernel_Y;
+  int32_t ky=pos-tmp*Conv_Kernel_Y;
+  int32_t sz=tmp;
 
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
@@ -170,19 +171,20 @@ struct STensorKernel_ForwardConvolution_Image
  }
  __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
-  if (x>=Size_X || y>=Size_Y) return;
-  if (z>=Size_Z) return;
-
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t dx=pos%Dst_X;
-  pos/=Dst_X;
-  int32_t dy=pos%Dst_Y;
-  pos/=Dst_Y;
-  int32_t kx=pos%Conv_Kernel_X;
-  pos/=Conv_Kernel_X;
-  int32_t ky=pos%Conv_Kernel_Y;
-  pos/=Conv_Kernel_Y;
-  int32_t sz=pos;
+  int32_t tmp=pos;
+  tmp/=Dst_X;
+  int32_t dx=pos-tmp*Dst_X;
+  pos=tmp;
+  tmp/=Dst_Y;
+  int32_t dy=pos-tmp*Dst_Y;
+  pos=tmp;
+  tmp/=Conv_Kernel_X;
+  int32_t kx=pos-tmp*Conv_Kernel_X;
+  pos=tmp;
+  tmp/=Conv_Kernel_Y;
+  int32_t ky=pos-tmp*Conv_Kernel_Y;
+  int32_t sz=tmp;
 
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
@@ -381,19 +383,20 @@ struct STensorKernel_BackwardConvolution_Delta
 
  __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
-  if (x>=Size_X || y>=Size_Y) return(0);
-  if (z>=Size_Z) return(0);
-
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t dx=pos%Dst_X;
-  pos/=Dst_X;
-  int32_t dy=pos%Dst_Y;
-  pos/=Dst_Y;
-  int32_t kx=pos%Conv_Kernel_X;
-  pos/=Conv_Kernel_X;
-  int32_t ky=pos%Conv_Kernel_Y;
-  pos/=Conv_Kernel_Y;
-  int32_t sz=pos;
+  int32_t tmp=pos;
+  tmp/=Dst_X;
+  int32_t dx=pos-tmp*Dst_X;
+  pos=tmp;
+  tmp/=Dst_Y;
+  int32_t dy=pos-tmp*Dst_Y;
+  pos=tmp;
+  tmp/=Conv_Kernel_X;
+  int32_t kx=pos-tmp*Conv_Kernel_X;
+  pos=tmp;
+  tmp/=Conv_Kernel_Y;
+  int32_t ky=pos-tmp*Conv_Kernel_Y;
+  int32_t sz=tmp;
 
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
@@ -402,19 +405,20 @@ struct STensorKernel_BackwardConvolution_Delta
  }
  __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
-  if (x>=Size_X || y>=Size_Y) return;
-  if (z>=Size_Z) return;
-
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t dx=pos%Dst_X;
-  pos/=Dst_X;
-  int32_t dy=pos%Dst_Y;
-  pos/=Dst_Y;
-  int32_t kx=pos%Conv_Kernel_X;
-  pos/=Conv_Kernel_X;
-  int32_t ky=pos%Conv_Kernel_Y;
-  pos/=Conv_Kernel_Y;
-  int32_t sz=pos;
+  int32_t tmp=pos;
+  tmp/=Dst_X;
+  int32_t dx=pos-tmp*Dst_X;
+  pos=tmp;
+  tmp/=Dst_Y;
+  int32_t dy=pos-tmp*Dst_Y;
+  pos=tmp;
+  tmp/=Conv_Kernel_X;
+  int32_t kx=pos-tmp*Conv_Kernel_X;
+  pos=tmp;
+  tmp/=Conv_Kernel_Y;
+  int32_t ky=pos-tmp*Conv_Kernel_Y;
+  int32_t sz=tmp;
 
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
@@ -632,19 +636,20 @@ struct STensorKernel_DeltaWeightAndBias_Image
 
  __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
-  if (x>=Size_X || y>=Size_Y) return(0);
-  if (z>=Size_Z) return(0);
-
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t dx=pos%Dst_X;
-  pos/=Dst_X;
-  int32_t dy=pos%Dst_Y;
-  pos/=Dst_Y;
-  int32_t sz=pos%Input_Z;
-  pos/=Input_Z;
-  int32_t kx=pos%Conv_Kernel_X;
-  pos/=Conv_Kernel_X;
-  int32_t ky=pos;
+  int32_t tmp=pos;
+  tmp/=Dst_X;
+  int32_t dx=pos-tmp*Dst_X;
+  pos=tmp;
+  tmp/=Dst_Y;
+  int32_t dy=pos-tmp*Dst_Y;
+  pos=tmp;
+  tmp/=Input_Z;
+  int32_t sz=pos-tmp*Input_Z;
+  pos=tmp;
+  tmp/=Conv_Kernel_X;
+  int32_t kx=pos-tmp*Conv_Kernel_X;
+  int32_t ky=tmp;
 
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
@@ -653,20 +658,20 @@ struct STensorKernel_DeltaWeightAndBias_Image
  }
  __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
-  if (x>=Size_X || y>=Size_Y) return;
-  if (z>=Size_Z) return;
-
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-
-  int32_t dx=pos%Dst_X;
-  pos/=Dst_X;
-  int32_t dy=pos%Dst_Y;
-  pos/=Dst_Y;
-  int32_t sz=pos%Input_Z;
-  pos/=Input_Z;
-  int32_t kx=pos%Conv_Kernel_X;
-  pos/=Conv_Kernel_X;
-  int32_t ky=pos;
+  int32_t tmp=pos;
+  tmp/=Dst_X;
+  int32_t dx=pos-tmp*Dst_X;
+  pos=tmp;
+  tmp/=Dst_Y;
+  int32_t dy=pos-tmp*Dst_Y;
+  pos=tmp;
+  tmp/=Input_Z;
+  int32_t sz=pos-tmp*Input_Z;
+  pos=tmp;
+  tmp/=Conv_Kernel_X;
+  int32_t kx=pos-tmp*Conv_Kernel_X;
+  int32_t ky=tmp;
 
   int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
