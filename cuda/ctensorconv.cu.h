@@ -286,6 +286,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
 
  //перестроим тензоры ядер в строку
  CTensor<type_t> cTensor_NewKernel(1,output_z,kernel_x*kernel_y*kernel_z);
+
  for(size_t k=0;k<cTensor_Kernel.size();k++)
  {
   cTensor_Kernel[k].CopyFromDevice();
@@ -293,6 +294,8 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
   type_t *d_ptr=cTensor_NewKernel.GetColumnPtr(0,k);
   for(size_t n=0;n<kernel_x*kernel_y*kernel_z;n++,s_ptr++,d_ptr++) *d_ptr=*s_ptr;
  }
+ cTensor_NewKernel.SetHostOnChange();
+
  //перестроим смещения
  CTensor<type_t> cTensor_Bias(bias.size(),1,1);
  for(size_t b=0;b<bias.size();b++)
@@ -490,7 +493,7 @@ struct STensorKernel_BackwardConvolution_Delta
 template<class type_t>
 void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDelta,const CTensor<type_t> &cTensor_Delta,const std::vector<CTensor<type_t> > &cTensor_Kernel,const std::vector<type_t> &bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
-/* int32_t padding_x=0;//дополнение нулями
+ /* int32_t padding_x=0;//дополнение нулями
  int32_t padding_y=0;//дополнение нулями
  int32_t stride_x=1;//шаг свёртки
  int32_t stride_y=1;//шаг свёртки
@@ -530,25 +533,18 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
 
  //перестроим тензоры ядер в строку по глубине и переворачиваем их на 180
  CTensor<type_t> cTensor_NewKernel(1,kernel_z,kernel_x*kernel_y*input_z);
- ///исключение фрагмента даёт 200 мс
+
  for(size_t z=0;z<kernel_z;z++)
  {
   type_t *d_ptr=cTensor_NewKernel.GetColumnPtr(0,z);
   for(size_t k=0;k<cTensor_Kernel.size();k++)
   {
    cTensor_Kernel[k].CopyFromDevice();
-   const type_t *s_ptr=cTensor_Kernel[k].GetColumnPtr(z,0);
-   for(size_t ky=0;ky<kernel_y;ky++)
-   {
-    for(size_t kx=0;kx<kernel_x;kx++,d_ptr++)
-	{
-     int32_t nky=kernel_y-1-ky;
-	 int32_t nkx=kernel_x-1-kx;
-	 *d_ptr=s_ptr[nkx+nky*kernel_x];
-	}
-   }
+   const type_t *s_ptr=cTensor_Kernel[k].GetColumnPtr(z,0)+kernel_y*kernel_x-1;
+   for(size_t g=0;g<kernel_y*kernel_x;g++,d_ptr++,s_ptr--) *d_ptr=*s_ptr;
   }
  }
+ cTensor_NewKernel.SetHostOnChange();
 
  //умножаем матрицы
  cTensor_OutputDelta.ReinterpretSize(1,output_z,new_input_x);
@@ -787,7 +783,7 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
  cTensor_Output.CopyFromDevice();
  cTensor_Output.ReinterpretSize(dkernel_z*delta_z,dkernel_y,dkernel_x);
 
- //копируем результаты в поправки ядер
+ //копируем результаты в поправки ядер (прибавляем к имеющимся)
  for(size_t k=0;k<dkernel_amount;k++)
  {
   cTensor_dKernel[k].CopyFromDevice();
@@ -809,7 +805,7 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
  CTensorMath<type_t>::SummXY(cTensor_dBias,cTensor_Delta);
  for(size_t b=0;b<dbias.size();b++)
  {
-  dbias[b]+=cTensor_dBias.GetElement(b,0,0);
+  dbias[b]+=cTensor_dBias.GetElement(b,0,0);//поправки прибавляются
  }
 }
 

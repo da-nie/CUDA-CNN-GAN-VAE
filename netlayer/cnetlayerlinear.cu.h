@@ -82,7 +82,7 @@ class CNetLayerLinear:public INetLayer<type_t>
 
   void TrainingStart(void);///<начать процесс обучения
   void TrainingStop(void);///<завершить процесс обучения
-  void TrainingBackward(void);///<выполнить обратный проход по сети для обучения
+  void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
@@ -390,7 +390,7 @@ void CNetLayerLinear<type_t>::TrainingStop(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::TrainingBackward(void)
+void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
 {
  //вычисляем ошибку предыдущего слоя (D=tr(W)xDnext)
  if (PrevLayerPtr!=NULL)//это не входной слой
@@ -405,18 +405,22 @@ void CNetLayerLinear<type_t>::TrainingBackward(void)
   cTensor_PrevLayerError.RestoreSize();
   //задаём ошибку предыдущего слоя
   PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
-  CTensor<type_t> &h=PrevLayerPtr->GetOutputTensor();
-  size_x=h.GetSizeX();
-  size_y=h.GetSizeY();
-  size_z=h.GetSizeZ();
-  h.ReinterpretSize(1,1,size_x*size_y*size_z);
 
-  CTensorMath<type_t>::Mul(cTensor_TmpdW,cTensor_Delta,h);
+  if (create_delta_weight==true)
+  {
+   CTensor<type_t> &h=PrevLayerPtr->GetOutputTensor();
+   size_x=h.GetSizeX();
+   size_y=h.GetSizeY();
+   size_z=h.GetSizeZ();
+   h.ReinterpretSize(1,1,size_x*size_y*size_z);
 
-  h.RestoreSize();
+   CTensorMath<type_t>::Mul(cTensor_TmpdW,cTensor_Delta,h);
 
-  CTensorMath<type_t>::Add(cTensor_dW,cTensor_dW,cTensor_TmpdW);
-  CTensorMath<type_t>::Add(cTensor_dB,cTensor_dB,cTensor_Delta);
+   h.RestoreSize();
+
+   CTensorMath<type_t>::Add(cTensor_dW,cTensor_dW,cTensor_TmpdW);
+   CTensorMath<type_t>::Add(cTensor_dB,cTensor_dB,cTensor_Delta);
+  }
  }
 }
 //----------------------------------------------------------------------------------------------------

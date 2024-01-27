@@ -91,7 +91,7 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
 
   void TrainingStart(void);///<начать процесс обучения
   void TrainingStop(void);///<завершить процесс обучения
-  void TrainingBackward(void);///<выполнить обратный проход по сети для обучения
+  void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
@@ -451,7 +451,7 @@ void CNetLayerBackConvolution<type_t>::TrainingStop(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerBackConvolution<type_t>::TrainingBackward(void)
+void CNetLayerBackConvolution<type_t>::TrainingBackward(bool create_delta_weight)
 {
  size_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
  size_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
@@ -463,7 +463,7 @@ void CNetLayerBackConvolution<type_t>::TrainingBackward(void)
  //вычисляем ошибку предшествующего слоя
  std::vector<type_t> bias(cTensor_dKernel.size(),0);
  CTensorConv<type_t>::ForwardConvolution(cTensor_PrevLayerError,cTensor_Delta,cTensor_Kernel,bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
- CTensorConv<type_t>::CreateBackDeltaWeightAndBias(cTensor_dKernel,dBias,PrevLayerPtr->GetOutputTensor(),cTensor_Delta,Stride_X,Stride_Y,Padding_X,Padding_Y);
+ if (create_delta_weight==true) CTensorConv<type_t>::CreateBackDeltaWeightAndBias(cTensor_dKernel,dBias,PrevLayerPtr->GetOutputTensor(),cTensor_Delta,Stride_X,Stride_Y,Padding_X,Padding_Y);
  //задаём ошибку предыдущего слоя
 
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(input_z,input_y,input_x);

@@ -67,7 +67,7 @@ class INetLayer
   virtual bool LoadTrainingParam(IDataStream *iDataStream_Ptr)=0;///<загрузить параметры обучения слоя
   virtual void TrainingStart(void)=0;///<начать процесс обучения
   virtual void TrainingStop(void)=0;///<завершить процесс обучения
-  virtual void TrainingBackward(void)=0;///<выполнить обратный проход по сети для обучения
+  virtual void TrainingBackward(bool create_delta_weight=true)=0;///<выполнить обратный проход по сети для обучения
   virtual void TrainingResetDeltaWeight(void)=0;///<сбросить поправки к весам
   virtual void TrainingUpdateWeight(double speed,double iteration)=0;///<выполнить обновления весов
   virtual CTensor<type_t>& GetDeltaTensor(void)=0;///<получить ссылку на тензор дельты слоя

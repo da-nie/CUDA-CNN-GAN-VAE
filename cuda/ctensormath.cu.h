@@ -432,10 +432,9 @@ void CTensorMath<type_t>::AddBias(CTensor<type_t> &cTensor_Working,const CTensor
  cTensor_Working.SetDeviceOnChange();
 }
 
-
-
-
-
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для вычисления суммы элементов по X и Y для каждого Z
+//----------------------------------------------------------------------------------------------------
 template<class type_t,uint32_t blockSize>
 __global__ void CUDASummXYTensorFunction(int32_t size,STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
@@ -543,17 +542,6 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
  cTensor_Input.ReinterpretSize(input_z,input_y,input_x);
 }
 
-
-
-
-
-
-
-
-
-
-
-
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для умножения тензоров
 //----------------------------------------------------------------------------------------------------
@@ -578,6 +566,9 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
  __shared__ type_t As[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
  __shared__ type_t Bs[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
 
+ type_t *a_ptr_init=&As[y][0];
+ type_t *b_ptr_init=&Bs[0][x];
+
  for(size_t m=0;m<m_max;m++)
  {
   // Get sub-tensor Asub of A
@@ -593,8 +584,8 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
   // before starting the computation
   __syncthreads();
 
-  type_t *a_ptr=&As[y][0];
-  type_t *b_ptr=&Bs[0][x];
+  type_t *a_ptr=a_ptr_init;
+  type_t *b_ptr=b_ptr_init;
 
   // Multiply Asub and Bsub together
   for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;e++,a_ptr++,b_ptr+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE) Cvalue+=(*a_ptr)*(*b_ptr);
@@ -684,6 +675,9 @@ __global__ void CUDATransponseTensorMulTensorFunction(STensorKernel<type_t> tens
   __shared__ type_t As[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
   __shared__ type_t Bs[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
 
+  type_t *a_ptr_init=&As[0][y];
+  type_t *b_ptr_init=&Bs[0][x];
+
  for(size_t m=0;m<m_max;m++)
  {
 
@@ -700,8 +694,8 @@ __global__ void CUDATransponseTensorMulTensorFunction(STensorKernel<type_t> tens
   // before starting the computation
   __syncthreads();
 
-  type_t *a_ptr=&As[0][y];
-  type_t *b_ptr=&Bs[0][x];
+  type_t *a_ptr=a_ptr_init;
+  type_t *b_ptr=b_ptr_init;
 
   // Multiply Asub and Bsub together
 //  for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;e++) Cvalue+=As[e][y]*Bs[e][x];

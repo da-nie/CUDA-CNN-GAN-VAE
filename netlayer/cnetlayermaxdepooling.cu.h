@@ -78,7 +78,7 @@ class CNetLayerMaxDePooling:public INetLayer<type_t>
 
   void TrainingStart(void);///<начать процесс обучения
   void TrainingStop(void);///<завершить процесс обучения
-  void TrainingBackward(void);///<выполнить обратный проход по сети для обучения
+  void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
@@ -348,7 +348,7 @@ void CNetLayerMaxDePooling<type_t>::TrainingStop(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerMaxDePooling<type_t>::TrainingBackward(void)
+void CNetLayerMaxDePooling<type_t>::TrainingBackward(bool create_delta_weight)
 {
  size_t basic_input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
  size_t basic_input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();

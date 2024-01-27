@@ -141,7 +141,7 @@ class CTensor
 
   void Print(const std::string &name,bool print_value=true) const;///<вывод тензора на экран
   void PrintToFile(const std::string &file_name,const std::string &name,bool print_value=true) const;///<вывод тензора в файл
-  bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="") const;///<сравнение тензоров
+  bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="") const;///<сравнение тензоровzz
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
