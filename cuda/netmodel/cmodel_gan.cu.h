@@ -1,20 +1,20 @@
-#ifndef C_MODEL_GRAY_H
-#define C_MODEL_GRAY_H
+#ifndef C_MODEL_GAN_H
+#define C_MODEL_GAN_H
 
 //****************************************************************************************************
-//Главный класс программы
+//Модель GAN
 //****************************************************************************************************
 
 //****************************************************************************************************
 //подключаемые библиотеки
 //****************************************************************************************************
-#include "cmodelmain.cu.h"
+#include "cmodel_basicgan.cu.h"
 
 //****************************************************************************************************
-//Главный класс программы
+//Модель GAN
 //****************************************************************************************************
 template<class type_t>
-class CModelGAN:public CModelMain<type_t>
+class CModelGAN:public CModelBasicGAN<type_t>
 {
  public:
   //-перечисления---------------------------------------------------------------------------------------
@@ -24,23 +24,23 @@ class CModelGAN:public CModelMain<type_t>
   //-структуры------------------------------------------------------------------------------------------
   //-переменные-----------------------------------------------------------------------------------------
 
-  using CModelMain<type_t>::BATCH_AMOUNT;
-  using CModelMain<type_t>::BATCH_SIZE;
+  using CModelBasicGAN<type_t>::BATCH_AMOUNT;
+  using CModelBasicGAN<type_t>::BATCH_SIZE;
 
-  using CModelMain<type_t>::IMAGE_WIDTH;
-  using CModelMain<type_t>::IMAGE_HEIGHT;
-  using CModelMain<type_t>::IMAGE_DEPTH;
-  using CModelMain<type_t>::NOISE_LAYER_SIDE_X;
-  using CModelMain<type_t>::NOISE_LAYER_SIDE_Y;
-  using CModelMain<type_t>::NOISE_LAYER_SIDE_Z;
-  using CModelMain<type_t>::NOISE_LAYER_SIZE;
+  using CModelBasicGAN<type_t>::IMAGE_WIDTH;
+  using CModelBasicGAN<type_t>::IMAGE_HEIGHT;
+  using CModelBasicGAN<type_t>::IMAGE_DEPTH;
+  using CModelBasicGAN<type_t>::NOISE_LAYER_SIDE_X;
+  using CModelBasicGAN<type_t>::NOISE_LAYER_SIDE_Y;
+  using CModelBasicGAN<type_t>::NOISE_LAYER_SIDE_Z;
+  using CModelBasicGAN<type_t>::NOISE_LAYER_SIZE;
 
-  using CModelMain<type_t>::SPEED_DISCRIMINATOR;
-  using CModelMain<type_t>::SPEED_GENERATOR;
+  using CModelBasicGAN<type_t>::SPEED_DISCRIMINATOR;
+  using CModelBasicGAN<type_t>::SPEED_GENERATOR;
 
 
-  using CModelMain<type_t>::GeneratorNet;
-  using CModelMain<type_t>::DiscriminatorNet;
+  using CModelBasicGAN<type_t>::GeneratorNet;
+  using CModelBasicGAN<type_t>::DiscriminatorNet;
 
  public:
   //-конструктор----------------------------------------------------------------------------------------
@@ -183,7 +183,7 @@ void CModelGAN<type_t>::CreateDiscriminator(void)
 template<class type_t>
 void CModelGAN<type_t>::TrainingNet(bool mnist)
 {
- CModelMain<type_t>::TrainingNet(false);
+ CModelBasicGAN<type_t>::TrainingNet(mnist);
 }
 
 //----------------------------------------------------------------------------------------------------

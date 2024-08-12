@@ -672,11 +672,11 @@ __global__ void CUDATransponseTensorMulTensorFunction(STensorKernel<type_t> tens
  size_t m_max=tensor_left.Size_Y/CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
  if (tensor_left.Size_Y%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE) m_max++;
 
-  __shared__ type_t As[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
-  __shared__ type_t Bs[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
+ __shared__ type_t As[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
+ __shared__ type_t Bs[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE];
 
-  type_t *a_ptr_init=&As[0][y];
-  type_t *b_ptr_init=&Bs[0][x];
+ type_t *a_ptr_init=&As[0][y];
+ type_t *b_ptr_init=&Bs[0][x];
 
  for(size_t m=0;m<m_max;m++)
  {

@@ -12,12 +12,11 @@
 				<Option type="1" />
 				<Option compiler="nvcc" />
 				<Compiler>
-					<Add option="-O3" />
 					<Add option="-std=c++11" />
 					<Add option="-ccbin=g++" />
-					<Add option="-arch=sm_35" />
-					<Add option="-I /usr/local/cuda-11.1/include" />
-					<Add option="-L /usr/local/cuda-11.1/lib64" />
+					<Add option="-gencode=arch=compute_61,code=sm_61" />
+					<Add option="-I /usr/local/cuda-11.7/include" />
+					<Add option="-L /usr/local/cuda-11.7/lib64" />
 				</Compiler>
 			</Target>
 		</Build>
@@ -75,8 +74,11 @@
 		</Unit>
 		<Unit filename="cuda/cuda.cu.h" />
 		<Unit filename="cuda/handle_error.cu.h" />
+		<Unit filename="cuda/netmodel/cmodel_basicgan.cu.h" />
+		<Unit filename="cuda/netmodel/cmodel_basicvae.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_gan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_sorter.cu.h" />
+		<Unit filename="cuda/netmodel/cmodel_vae.cu.h" />
 		<Unit filename="cuda/netmodel/cmodelmain.cu.h" />
 		<Unit filename="cuda/tensor.cu">
 			<Option compile="1" />
