@@ -73,6 +73,7 @@ class CModelMain
   //-закрытые функции-----------------------------------------------------------------------------------
   bool LoadMNISTImage(const std::string &file_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);//загрузить образы изображений из MNIST
   bool LoadImage(const std::string &path_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);//загрузить образы изображений
+  bool CreateResamplingImage(size_t input_image_width,size_t input_image_height,size_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image_output);//создать изображения другого разрешения
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить слои сети
   void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить параметры обучения слоёв сети
@@ -351,6 +352,45 @@ bool CModelMain<type_t>::LoadImage(const std::string &path_name,size_t output_im
  char str[STRING_BUFFER_SIZE];
  sprintf(str,"Загружено реальных изображений:%i",current_index);
  SYSTEM::PutMessageToConsole(str);
+ return(true);
+}
+
+//----------------------------------------------------------------------------------------------------
+//создать изображения другого разрешения
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CModelMain<type_t>::CreateResamplingImage(size_t input_image_width,size_t input_image_height,size_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image_output)
+{
+ image_output.clear();
+ size_t size=image_input.size();
+ for(size_t n=0;n<size;n++)
+ {
+  //изображение
+  std::vector<type_t> image=std::vector<type_t>(output_image_depth*output_image_width*output_image_height);
+
+  const type_t *img_ptr=&image_input[n][0];
+
+  double dx=static_cast<double>(input_image_width)/static_cast<double>(output_image_width);
+  double dy=static_cast<double>(input_image_height)/static_cast<double>(output_image_height);
+
+  for(uint32_t y=0;y<output_image_height;y++)
+  {
+   for(uint32_t x=0;x<output_image_width;x++)
+   {
+    size_t xp=x*dx;
+    size_t yp=y*dy;
+    for(uint32_t z=0;z<output_image_depth;z++)
+    {
+     uint32_t offset=xp+yp*input_image_width+z*input_image_width*input_image_height;
+     type_t color=img_ptr[offset];
+
+	 image[x+y*output_image_width+z*output_image_width*output_image_height]=color;
+	}
+   }
+  }
+
+  image_output.push_back(image);
+ }
  return(true);
 }
 
