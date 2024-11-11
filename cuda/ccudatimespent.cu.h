@@ -1,5 +1,5 @@
-#ifndef C_CUDA_TIME_SPENT_H
-#define C_CUDA_TIME_SPENT_H
+#ifndef C_CUDA_TIME_SPENT_CU_H
+#define C_CUDA_TIME_SPENT_CU_H
 
 //****************************************************************************************************
 //класс измерения времени выполнения

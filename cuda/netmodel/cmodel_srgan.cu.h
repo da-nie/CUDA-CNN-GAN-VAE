@@ -98,7 +98,7 @@ void CModelSR_GAN<type_t>::CreateSRGAN(void)
  Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,Net[Net.size()-1].get())));
  Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
 
- Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(13,32,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,16,1,1,0,0,Net[Net.size()-1].get())));
  Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
  Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
  /*

@@ -1,5 +1,17 @@
-#ifndef C_TENSOR_CONV_H
-#define C_TENSOR_CONV_H
+#ifndef C_TENSOR_CONV_CU_H
+#define C_TENSOR_CONV_CU_H
+
+#include "../settings.h"
+
+#ifdef USE_CPU
+
+#include "../cpu/ctensorconv.h"
+
+#endif
+
+
+#ifndef USE_CPU
+
 
 //****************************************************************************************************
 //Операции свёртки над тензорами произвольной размерности
@@ -818,5 +830,7 @@ void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(std::vector<CTensor<type_
 {
  CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dbias,cTensor_Delta,cTensor_Image,stride_x,stride_y,padding_x,padding_y);
 }
+
+#endif
 
 #endif

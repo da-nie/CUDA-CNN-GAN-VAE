@@ -1,5 +1,5 @@
-#ifndef C_TENSOR_TEST_CU_H
-#define C_TENSOR_TEST_CU_H
+#ifndef C_TENSOR_TEST_H
+#define C_TENSOR_TEST_H
 
 //****************************************************************************************************
 //Тестирование тензоров
@@ -8,11 +8,11 @@
 //****************************************************************************************************
 //подключаемые библиотеки
 //****************************************************************************************************
-#include "ctensor.cu.h"
+#include "ctensor.h"
 #include "../system/system.h"
-#include "ctensormath.cu.h"
-#include "ctensorapplyfunc.cu.h"
-#include "ctensorconv.cu.h"
+#include "ctensormath.h"
+#include "ctensorapplyfunc.h"
+#include "ctensorconv.h"
 
 //****************************************************************************************************
 //макроопределения
@@ -79,94 +79,6 @@ class CTensorTest
 template<class type_t>
 bool CTensorTest<type_t>::Test(void)
 {
-
-
- {
-  SYSTEM::PutMessageToConsole("Тест функции ForwardConvolution (0) .");
-  CTensor<type_t> cTensor_KernelA(2,2,2);
-  //ядро A
-  cTensor_KernelA.SetElement(0,0,0,1);
-  cTensor_KernelA.SetElement(0,0,1,2);
-
-  cTensor_KernelA.SetElement(0,1,0,3);
-  cTensor_KernelA.SetElement(0,1,1,4);
-
-  cTensor_KernelA.SetElement(1,0,0,5);
-  cTensor_KernelA.SetElement(1,0,1,6);
-
-  cTensor_KernelA.SetElement(1,1,0,7);
-  cTensor_KernelA.SetElement(1,1,1,8);
-
-  //создаём вектор тензоров ядер
-  std::vector<CTensor<type_t>> cTensor_Kernel;
-  cTensor_Kernel.push_back(cTensor_KernelA);
-  //создаём вектор смещений
-  std::vector<type_t> bias;
-  bias.push_back(0);
-
-  //входное изображение
-  CTensor<type_t> cTensor_Image(2,3,4);
-
-  cTensor_Image.SetElement(0,0,0,1);
-  cTensor_Image.SetElement(0,0,1,2);
-  cTensor_Image.SetElement(0,0,2,3);
-  cTensor_Image.SetElement(0,0,3,4);
-  cTensor_Image.SetElement(0,1,0,5);
-  cTensor_Image.SetElement(0,1,1,6);
-  cTensor_Image.SetElement(0,1,2,7);
-  cTensor_Image.SetElement(0,1,3,8);
-  cTensor_Image.SetElement(0,2,0,9);
-  cTensor_Image.SetElement(0,2,1,10);
-  cTensor_Image.SetElement(0,2,2,11);
-  cTensor_Image.SetElement(0,2,3,12);
-
-  cTensor_Image.SetElement(1,0,0,12);
-  cTensor_Image.SetElement(1,0,1,11);
-  cTensor_Image.SetElement(1,0,2,10);
-  cTensor_Image.SetElement(1,0,3,9);
-  cTensor_Image.SetElement(1,1,0,8);
-  cTensor_Image.SetElement(1,1,1,7);
-  cTensor_Image.SetElement(1,1,2,6);
-  cTensor_Image.SetElement(1,1,3,5);
-  cTensor_Image.SetElement(1,2,0,4);
-  cTensor_Image.SetElement(1,2,1,3);
-  cTensor_Image.SetElement(1,2,2,2);
-  cTensor_Image.SetElement(1,2,3,1);
-
-
-  //выходной тензор свёртки
-  CTensor<type_t> cTensor_Output(1,2,3);
-  //проверочный тензор свёртки
-  CTensor<type_t> cTensor_Control(1,2,3);
-
-  cTensor_Control.SetElement(0,0,0,282);
-  cTensor_Control.SetElement(0,0,1,266);
-  cTensor_Control.SetElement(0,0,2,250);
-
-  cTensor_Control.SetElement(0,1,0,218);
-  cTensor_Control.SetElement(0,1,1,202);
-  cTensor_Control.SetElement(0,1,2,186);
-
-
-  //выполняем прямую свёртку
-  CTensorConv<type_t>::ForwardConvolution(cTensor_Output,cTensor_Image,cTensor_Kernel,bias,1,1,0,0);
-  //сравниваем полученный тензор
-  if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
-  SYSTEM::PutMessageToConsole("Успешно.");
- }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
  {
   SYSTEM::PutMessageToConsole("Тест функции ForwardConvolution.");
@@ -536,7 +448,7 @@ bool CTensorTest<type_t>::Test(void)
    CTensor<type_t> cTensor_Delta(1,4,4);
 
    std::vector<type_t> back_bias(cTensor_Kernel.size(),0);
-   CTensorConv<type_t>::BackwardConvolution(cTensor_Delta,cTensor_dOut,cTensor_Kernel,back_bias,1,1,0,0);
+   CTensorConv<type_t>::BackwardConvolution(cTensor_Delta,cTensor_dOut,cTensor_Kernel,back_bias);
    cTensor_Delta.Print("Тензор поправок дельта");
 
    //создаём вектор тензоров поправок к ядрам
@@ -549,7 +461,7 @@ bool CTensorTest<type_t>::Test(void)
    std::vector<type_t> dbias;
    dbias.push_back(0);
 
-   CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dbias,cTensor_Image,cTensor_dOut,1,1,0,0);
+   CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dbias,cTensor_Image,cTensor_dOut);
 
    cTensor_dKernel[0].Print("Тензор поправок ядра A после расчёта");
    //проверяем
@@ -652,7 +564,7 @@ bool CTensorTest<type_t>::Test(void)
   CTensor<type_t> cTensor_Control(3,4,4);
   //выполняем обратную свёртку
   std::vector<type_t> back_bias(cTensor_Kernel.size(),0);
-  CTensorConv<type_t>::BackwardConvolution(cTensor_Output,cTensor_Delta,cTensor_Kernel,back_bias,1,1,0,0);
+  CTensorConv<type_t>::BackwardConvolution(cTensor_Output,cTensor_Delta,cTensor_Kernel,back_bias);
 
   cTensor_Control.SetElement(0,0,0,121);
   cTensor_Control.SetElement(0,0,1,246);
@@ -767,34 +679,6 @@ bool CTensorTest<type_t>::Test(void)
     if (fabs(e1-e2)>0.00001) return(false);
    }
   }
-  SYSTEM::PutMessageToConsole("Успешно.");
- }
-
- {
-  SYSTEM::PutMessageToConsole("Тест функции SummXY.");
-  CTensor<type_t> cTensor_Input(3,100,200);
-  CTensor<type_t> cTensor_Output(3,1,1);
-  CTensor<type_t> cTensor_Control(3,1,1);
-
-  for(size_t z=0;z<cTensor_Input.GetSizeZ();z++)
-  {
-   type_t summ=0;
-   for(size_t y=0;y<cTensor_Input.GetSizeY();y++)
-   {
-    for(size_t x=0;x<cTensor_Input.GetSizeX();x++)
-	{
-     type_t e=(x-y+z*2)%10;
-	 summ+=e;
-	 cTensor_Input.SetElement(z,y,x,e);
-	}
-   }
-   cTensor_Control.SetElement(z,0,0,summ);
-  }
-
-  CTensorMath<type_t>::SummXY(cTensor_Output,cTensor_Input);
-
-  //сравниваем полученный тензор
-  if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
   SYSTEM::PutMessageToConsole("Успешно.");
  }
 

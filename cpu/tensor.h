@@ -1,5 +1,5 @@
-#ifndef TENSOR_CU_H
-#define TENSOR_CU_H
+#ifndef TENSOR_H
+#define TENSOR_H
 
 //****************************************************************************************************
 //Тензоры и операции над ними
@@ -8,11 +8,11 @@
 //****************************************************************************************************
 //подключаемые библиотеки
 //****************************************************************************************************
-#include "ctensor.cu.h"
-#include "ctensormath.cu.h"
-#include "ctensorconv.cu.h"
-#include "ctensorapplyfunc.cu.h"
-#include "ctensortest.cu.h"
+#include "ctensor.h"
+#include "ctensormath.h"
+#include "ctensorconv.h"
+#include "ctensorapplyfunc.h"
+#include "ctensortest.h"
 
 //****************************************************************************************************
 //макроопределения

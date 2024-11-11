@@ -1,5 +1,16 @@
-#ifndef C_TENSOR_APPLY_FUNC_H
-#define C_TENSOR_APPLY_FUNC_H
+#ifndef C_TENSOR_APPLY_FUNC_CU_H
+#define C_TENSOR_APPLY_FUNC_CU_H
+
+#include "../settings.h"
+
+#ifdef USE_CPU
+
+#include "../cpu/ctensorapplyfunc.h"
+
+#endif
+
+
+#ifndef USE_CPU
 
 //****************************************************************************************************
 //Применение функций к тензорам произвольной размерности
@@ -768,5 +779,7 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialSoftMax(CTensor<type_t>
  cTensor_Output.SetDeviceOnChange();
 }
 */
+
+#endif
 
 #endif

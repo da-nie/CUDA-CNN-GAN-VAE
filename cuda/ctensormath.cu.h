@@ -1,5 +1,16 @@
-#ifndef C_TENSOR_MATH_H
-#define C_TENSOR_MATH_H
+#ifndef C_TENSOR_MATH_CU_H
+#define C_TENSOR_MATH_CU_H
+
+#include "../settings.h"
+
+#ifdef USE_CPU
+
+#include "../cpu/ctensormath.h"
+
+#endif
+
+
+#ifndef USE_CPU
 
 //****************************************************************************************************
 //Операции над тензорами произвольной размерности
@@ -1423,5 +1434,7 @@ void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &
  cTensor_V.SetDeviceOnChange();
 }
 
+
+#endif
 
 #endif

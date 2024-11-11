@@ -32,6 +32,18 @@
 		<Unit filename="common/idatastream.h" />
 		<Unit filename="common/tga.cpp" />
 		<Unit filename="common/tga.h" />
+		<Unit filename="cpu/ctensor.cpp" />
+		<Unit filename="cpu/ctensor.h" />
+		<Unit filename="cpu/ctensorapplyfunc.cpp" />
+		<Unit filename="cpu/ctensorapplyfunc.h" />
+		<Unit filename="cpu/ctensorconv.cpp" />
+		<Unit filename="cpu/ctensorconv.h" />
+		<Unit filename="cpu/ctensormath.cpp" />
+		<Unit filename="cpu/ctensormath.h" />
+		<Unit filename="cpu/ctensortest.cpp" />
+		<Unit filename="cpu/ctensortest.h" />
+		<Unit filename="cpu/tensor.cpp" />
+		<Unit filename="cpu/tensor.h" />
 		<Unit filename="cuda/ccudadevicevector.cu.h" />
 		<Unit filename="cuda/ccudatimespent.cu">
 			<Option compile="1" />
@@ -75,9 +87,11 @@
 		<Unit filename="cuda/cuda.cu.h" />
 		<Unit filename="cuda/handle_error.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicgan.cu.h" />
+		<Unit filename="cuda/netmodel/cmodel_basicsrgan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicvae.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_gan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_sorter.cu.h" />
+		<Unit filename="cuda/netmodel/cmodel_srgan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_vae.cu.h" />
 		<Unit filename="cuda/netmodel/cmodelmain.cu.h" />
 		<Unit filename="cuda/tensor.cu">
@@ -343,6 +357,7 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/neuron.cu.h" />
+		<Unit filename="settings.h" />
 		<Unit filename="system/system.cpp" />
 		<Unit filename="system/system.h" />
 		<Extensions />

@@ -1,5 +1,5 @@
-#ifndef C_TIME_STAMP_H
-#define C_TIME_STAMP_H
+#ifndef C_TIME_STAMP_CU_H
+#define C_TIME_STAMP_CU_H
 
 //****************************************************************************************************
 //Главный класс программы

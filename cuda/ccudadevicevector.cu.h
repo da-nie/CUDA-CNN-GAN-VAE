@@ -1,5 +1,5 @@
-#ifndef C_CUDA_DEVICE_VECTOR_H
-#define C_CUDA_DEVICE_VECTOR_H
+#ifndef C_CUDA_DEVICE_VECTOR_CU_H
+#define C_CUDA_DEVICE_VECTOR_CU_H
 
 //****************************************************************************************************
 //Класс вектора на устройстве в CUDA
