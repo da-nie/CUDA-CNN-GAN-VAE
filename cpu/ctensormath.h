@@ -32,17 +32,18 @@ static const double TENSOR_EPS=0.0000000001;
 ///!Операции над тензорами произвольной размерности
 //****************************************************************************************************
 
+struct SPos
+{
+ size_t X;
+ size_t Y;
+};
+
 template<class type_t>
 class CTensorMath
 {
  public:
   //-перечисления---------------------------------------------------------------------------------------
   //-структуры------------------------------------------------------------------------------------------
-  struct SPos
-  {
-   size_t X;
-   size_t Y;
-  };
   //-константы------------------------------------------------------------------------------------------
   static const size_t TENSOR_OPERATION_BLOCK_SIZE=16;///<размер блока операций с тензорами
  private:
@@ -72,8 +73,8 @@ class CTensorMath
   static void UpSampling(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,size_t upsampling_x,size_t upsampling_y);///<увеличение разрешения тензора
   static void DownSampling(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,size_t downsampling_x,size_t downsampling_y);///<уменьшение разрешения тензора
 
-  static void MaxPooling(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<уменьшение разрешения тензора выборкой большего элемента
-  static void MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<обратный проход при увеличении разрешения тензора выборкой большего элемента
+  static void MaxPooling(CTensor<type_t> &cTensor_Output,CTensor<SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<уменьшение разрешения тензора выборкой большего элемента
+  static void MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<обратный проход при увеличении разрешения тензора выборкой большего элемента
   static void Clip(CTensor<type_t> &cTensor,type_t min_value,type_t max_value);///<выполнить отсечку значений тензора
 
   static void Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,double speed,double beta1,double beta2,double epsilon,double iteration);///<выполнить алгоритм Adam к весовому тензору
@@ -443,10 +444,15 @@ void CTensorMath<type_t>::UpSampling(CTensor<type_t> &cTensor_Output,const CTens
  {
   for(size_t y=0;y<cTensor_Output.Size_Y;y++)
   {
+   size_t iy=y/upsampling_y;
    for(size_t x=0;x<cTensor_Output.Size_X;x++,output_ptr++)
    {
     size_t ix=x/upsampling_x;
-    size_t iy=y/upsampling_y;
+	if (ix>=cTensor_Input.Size_X || iy>=cTensor_Input.Size_Y)
+	{
+     *output_ptr=0;
+	 continue;
+	}
     type_t item=cTensor_Input.GetElement(z,iy,ix);
     *output_ptr=item;
    }
@@ -476,8 +482,20 @@ void CTensorMath<type_t>::DownSampling(CTensor<type_t> &cTensor_Output,const CTe
    {
     size_t ix=x*downsampling_x;
     size_t iy=y*downsampling_y;
-    type_t item=cTensor_Input.GetElement(z,iy,ix);
-    *output_ptr=item;
+	type_t summ=0;
+    for(size_t dx=0;dx<downsampling_x;dx++)
+	{
+     size_t xp=ix+dx;
+	 if (xp>=cTensor_Input.Size_X) continue;
+     for(size_t dy=0;dy<downsampling_y;dy++)
+	 {
+      size_t yp=iy+dy;
+  	  if (yp>=cTensor_Input.Size_Y) continue;
+	  summ+=cTensor_Input.GetElement(z,yp,xp);
+	 }
+	}
+	summ/=static_cast<type_t>(downsampling_x*downsampling_y);
+    *output_ptr=summ;
    }
   }
  }
@@ -488,7 +506,7 @@ void CTensorMath<type_t>::DownSampling(CTensor<type_t> &cTensor_Output,const CTe
 ///!увеличение разрешения тензора выборкой большего элемента
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::MaxPooling(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y)
+void CTensorMath<type_t>::MaxPooling(CTensor<type_t> &cTensor_Output,CTensor<SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y)
 {
  if ((cTensor_Input.Size_X/pooling_x)!=cTensor_Output.Size_X || (cTensor_Input.Size_Y/pooling_y)!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
@@ -542,7 +560,7 @@ void CTensorMath<type_t>::MaxPooling(CTensor<type_t> &cTensor_Output,const CTens
 ///!обратный проход при увеличении разрешения тензора выборкой большего элемента
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y)
+void CTensorMath<type_t>::MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y)
 {
  if (cTensor_Input.Size_X!=(cTensor_Output.Size_X/pooling_x) || cTensor_Input.Size_Y!=(cTensor_Output.Size_Y/pooling_y) || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {

@@ -803,18 +803,12 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
   type_t *d_ptr=cTensor_dKernel[k].GetColumnPtr(0,0);
   for(size_t n=0;n<dkernel_x*dkernel_y*dkernel_z;n++,s_ptr++,d_ptr++) *d_ptr+=*s_ptr;
   cTensor_dKernel[k].SetHostOnChange();
-  //считаем поправку к вектору сдвига
-  /*
-  const type_t *ds_ptr=cTensor_Delta.GetColumnPtr(k,0);
-  type_t summ=0;
-  for(int32_t n=0;n<delta_y*delta_x;n++,ds_ptr++) summ+=*ds_ptr;
-  dbias[k]+=summ;
-  */
  }
 
  //считаем поправку к вектору сдвига
  CTensor<type_t> cTensor_dBias(dbias.size(),1,1);
  CTensorMath<type_t>::SummXY(cTensor_dBias,cTensor_Delta);
+ cTensor_dBias.CopyFromDevice();
  for(size_t b=0;b<dbias.size();b++)
  {
   dbias[b]+=cTensor_dBias.GetElement(b,0,0);//поправки прибавляются
@@ -829,6 +823,7 @@ template<class type_t>
 void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(std::vector<CTensor<type_t> > &cTensor_dKernel,std::vector<type_t> &dbias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
  CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dbias,cTensor_Delta,cTensor_Image,stride_x,stride_y,padding_x,padding_y);
+ for(size_t n=0;n<dbias.size();n++) dbias[n]=0;
 }
 
 #endif

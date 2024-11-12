@@ -305,6 +305,7 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
  int32_t dkernel_z=image_z;
 
  if (dkernel_x!=cTensor_dKernel[0].Size_X || dkernel_y!=cTensor_dKernel[0].Size_Y || dkernel_z!=cTensor_dKernel[0].Size_Z) throw("Неверные размеры тензора поправок к ядрам для обновления весов и смещений");
+ if (delta_z!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы глубина тензора дельт совпадала с количеством ядер");
 
  for(int32_t f=0;f<dkernel_amount;f++)
  {
@@ -344,74 +345,8 @@ template<class type_t>
 void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(std::vector<CTensor<type_t> > &cTensor_dKernel,std::vector<type_t> &dbias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
  CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dbias,cTensor_Delta,cTensor_Image,stride_x,stride_y,padding_x,padding_y);
-/*
- int32_t padding_x=0;//дополнение нулями
- int32_t padding_y=0;//дополнение нулями
- int32_t stride_x=1;//шаг свёртки
- int32_t stride_y=1;//шаг свёртки
 
- int32_t dkernel_amount=cTensor_dKernel.size();
- if (dkernel_amount==0) throw("Для создания поправок весов и смещений требуется не пустой вектор поправок к ядрам");
- if (dbias.size()!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы количество поправок фильтров и поправок сдвигов совпадало");
-
- int32_t delta_x=cTensor_Delta.Size_X;
- int32_t delta_y=cTensor_Delta.Size_Y;
- int32_t delta_z=cTensor_Delta.Size_Z;
-
- int32_t image_x=cTensor_Image.Size_X;
- int32_t image_y=cTensor_Image.Size_Y;
- int32_t image_z=cTensor_Image.Size_Z;
-
- int32_t dkernel_x=delta_x-image_x+1;
- int32_t dkernel_y=delta_y-image_y+1;
- int32_t dkernel_z=delta_z;
-
- if (dkernel_x!=cTensor_dKernel[0].Size_X || dkernel_y!=cTensor_dKernel[0].Size_Y || dkernel_z!=cTensor_dKernel[0].Size_Z) throw("Неверные размеры тензора поправок к ядрам для обновления весов и смещений");
-
- for(int32_t f=0;f<dkernel_amount;f++)
- {
-  for(int32_t y=0;y<image_y;y++)
-  {
-   for(int32_t x=0;x<image_x;x++)
-   {
-    type_t image=cTensor_Image.GetElement(f,y,x);//запоминаем значение изображения
-    for(int32_t i=0;i<dkernel_y;i++)
-    {
-     for(int32_t j=0;j<dkernel_x;j++)
-     {
-      int32_t i0=i+y*stride_y-padding_y;//TODO: возможно, ошибочно умножать на шаг
-      int32_t j0=j+x*stride_x-padding_x;//TODO: возможно, ошибочно умножать на шаг
-      //игнорируем выходящие за границы элементы
-      if (i0<0 || i0>=delta_y || j0<0 || j0>=delta_x) continue;
-      //наращиваем градиент фильтра
-      for(int32_t c=0;c<dkernel_z;c++)
-      {
-       type_t dk=cTensor_dKernel[f].GetElement(c,i,j);
-       dk+=image*cTensor_Delta.GetElement(c,i0,j0);
-       cTensor_dKernel[f].SetElement(c,i,j,dk);
-      }
-     }
-    }
-   }
-  }
- }*/
-
- //TODO: надо решить, как вычисляются поправки к смещениям
-/*
- for(int32_t f=0;f<dkernel_amount;f++)
- {
-  for(int32_t z=0;z<delta_z;z++)
-  {
-   for(int32_t y=0;y<delta_y;y++)
-   {
-    for(int32_t x=0;x<delta_x;x++)
-    {
-     dbias[f]+=cTensor_Delta.GetElement(z,y,x)/3.0;
-    }
-   }
-  }
- }
- */
+ for(size_t n=0;n<dbias.size();n++) dbias[n]=0;
 }
 
 #endif

@@ -222,6 +222,7 @@ void CModelBasicSR_GAN<type_t>::TrainingSRGAN(size_t mini_batch_index,double &co
    size=RealHiResImage[index].size();
    cTensor_Image.CopyItemToDevice(ptr,size);
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
   //вычисляем сеть
   {
    CTimeStamp cTimeStamp("Вычисление сети:");
@@ -244,11 +245,13 @@ void CModelBasicSR_GAN<type_t>::TrainingSRGAN(size_t mini_batch_index,double &co
     }
    }
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
   //задаём ошибку
   {
    CTimeStamp cTimeStamp("Задание ошибки:");
    Net[Net.size()-1]->SetOutputError(cTensor_Error);
   }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
   //выполняем вычисление весов
   {
    CTimeStamp cTimeStamp("Обучение:");

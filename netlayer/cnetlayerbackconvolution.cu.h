@@ -494,7 +494,7 @@ void CNetLayerBackConvolution<type_t>::TrainingUpdateWeight(double speed,double 
 {
  //speed/=static_cast<double>(cTensor_Kernel[0].GetSizeX()*cTensor_Kernel[0].GetSizeY()*cTensor_Kernel[0].GetSizeZ());
  //speed/=static_cast<double>(InputSize_X*InputSize_Y*InputSize_Z);
- speed/=static_cast<double>(cTensor_Kernel.size());
+ //speed/=static_cast<double>(cTensor_Kernel.size());
 
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {

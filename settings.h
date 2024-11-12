@@ -7,6 +7,6 @@
 
 
 //использовать CPU вместо CUDA
-#define USE_CPU
+//#define USE_CPU
 
 #endif

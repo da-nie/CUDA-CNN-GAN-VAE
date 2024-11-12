@@ -66,7 +66,7 @@ CModelSR_GAN<type_t>::CModelSR_GAN(void)
  INPUT_IMAGE_WIDTH=100;
  INPUT_IMAGE_DEPTH=3;
 
- SPEED=0.01;
+ SPEED=0.001;
 
  BATCH_SIZE=1;
 }
@@ -87,7 +87,7 @@ CModelSR_GAN<type_t>::~CModelSR_GAN()
 template<class type_t>
 void CModelSR_GAN<type_t>::CreateSRGAN(void)
 {
- Net.clear();
+Net.clear();
 
  Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolutionInput<type_t>(INPUT_IMAGE_DEPTH,INPUT_IMAGE_HEIGHT,INPUT_IMAGE_WIDTH)));
  /*
@@ -97,22 +97,68 @@ void CModelSR_GAN<type_t>::CreateSRGAN(void)
  */
  Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,Net[Net.size()-1].get())));
  Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
-
- Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,16,1,1,0,0,Net[Net.size()-1].get())));
- Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
- Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
  /*
- Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(7,16,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,64,1,1,0,0,Net[Net.size()-1].get())));
  Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
  Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
 
- Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(11,8,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,64,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+ Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);*/
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,3,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,3,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,Net[Net.size()-1].get())));
+ Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,3,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,3,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(INPUT_IMAGE_DEPTH,1,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+
+ /*
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,64,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+ Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(5,64,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+ Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,64,1,1,0,0,Net[Net.size()-1].get())));
  Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
  Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
  */
- Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,INPUT_IMAGE_DEPTH,1,1,0,0,Net[Net.size()-1].get())));
- //Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_TANGENCE,Net[Net.size()-1].get())));
+
+ /*
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,32,1,1,0,0,Net[Net.size()-1].get())));
  Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+ Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
+
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,32,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+ Net[Net.size()-1]->GetOutputTensor().Print("Output tensor",false);
+ */
+
+ /*Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBackConvolution<type_t>(3,INPUT_IMAGE_DEPTH,1,1,0,0,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_TANGENCE,Net[Net.size()-1].get())));
+ Net.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,Net[Net.size()-1].get())));
+ */
+
  Net[Net.size()-1]->GetOutputTensor().Print("Output tensor final",false);
 
  OUTPUT_IMAGE_WIDTH=Net[Net.size()-1]->GetOutputTensor().GetSizeX();
