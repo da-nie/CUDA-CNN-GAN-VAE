@@ -118,10 +118,10 @@ struct STensorKernel_ForwardConvolution_Image
  int32_t Dst_X;
  int32_t Dst_Y;
 
- STensorKernel_ForwardConvolution_Image()///<конструктор
+ __host__ __device__ STensorKernel_ForwardConvolution_Image()///<конструктор
  {
  }
- STensorKernel_ForwardConvolution_Image(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)///<конструктор
+ __host__ __device__ STensorKernel_ForwardConvolution_Image(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)///<конструктор
  {
   Set(cTensor,input_y,input_x,kernel_y,kernel_x,stride_y,stride_x,padding_y,padding_x,dst_y,dst_x);
  }
@@ -355,10 +355,10 @@ struct STensorKernel_BackwardConvolution_Delta
  int32_t Dst_X;
  int32_t Dst_Y;
 
- STensorKernel_BackwardConvolution_Delta()///<конструктор
+ __host__ __device__ STensorKernel_BackwardConvolution_Delta()///<конструктор
  {
  }
- STensorKernel_BackwardConvolution_Delta(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)///<конструктор
+ __host__ __device__ STensorKernel_BackwardConvolution_Delta(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)///<конструктор
  {
   Set(cTensor,input_y,input_x,kernel_y,kernel_x,stride_y,stride_x,padding_y,padding_x,dst_y,dst_x);
  }
@@ -600,10 +600,10 @@ struct STensorKernel_DeltaWeightAndBias_Image
  int32_t Dst_Y;
  int32_t Input_Z;
 
- STensorKernel_DeltaWeightAndBias_Image()///<конструктор
+ __host__ __device__ STensorKernel_DeltaWeightAndBias_Image()///<конструктор
  {
  }
- STensorKernel_DeltaWeightAndBias_Image(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)///<конструктор
+ __host__ __device__ STensorKernel_DeltaWeightAndBias_Image(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)///<конструктор
  {
   Set(cTensor,input_y,input_x,kernel_y,kernel_x,stride_y,stride_x,padding_y,padding_x,dst_y,dst_x);
  }

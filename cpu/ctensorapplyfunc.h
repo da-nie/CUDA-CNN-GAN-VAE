@@ -46,20 +46,27 @@ class CTensorApplyFunc
   //-деструктор-----------------------------------------------------------------------------------------
  public:
   //-открытые функции-----------------------------------------------------------------------------------
+  static type_t tanh(type_t v);///<гиперболический тангенс
+  static type_t ch(type_t v);///<гиперболический косинус
+  static type_t sech(type_t v);///<гиперболический секанс
+
   static type_t Sigmoid(type_t v);///<сигмоид
   static type_t ReLU(type_t v);///<ReLU
+  static type_t GeLU(type_t v);///<GeLU
   static type_t LeakyReLU(type_t v);///<Leaky ReLU
   static type_t Linear(type_t v);///<линейная
   static type_t Tangence(type_t v);///<гиперболический тангенс
 
   static type_t dSigmoid(type_t v);///<производная сигмоида
   static type_t dReLU(type_t v);///<производная ReLU
+  static type_t dGeLU(type_t v);///<производная GeLU
   static type_t dLeakyReLU(type_t v);///<производная Leaky ReLU
   static type_t dLinear(type_t v);///<производная линейной функции
   static type_t dTangence(type_t v);///<производная гиперболического тангенса
 
   static void ApplySigmoid(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию сигмоид
   static void ApplyReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию ReLU
+  static void ApplyGeLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию GeLU
   static void ApplyLeakyReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию Leaky ReLU
   static void ApplyLinear(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить линейную функцию
   static void ApplyTangence(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию гиперболический тангенс
@@ -67,6 +74,7 @@ class CTensorApplyFunc
 
   static void ApplyDifferentialSigmoid(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию  производной от сигмоида
   static void ApplyDifferentialReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию производной от ReLU
+  static void ApplyDifferentialGeLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию производной от GeLU
   static void ApplyDifferentialLeakyReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию производной от Leaky ReLU
   static void ApplyDifferentialLinear(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить производную линейной функций
   static void ApplyDifferentialTangence(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию производной от гиперболического тангенса
@@ -97,6 +105,31 @@ class CTensorApplyFunc
 //****************************************************************************************************
 
 //----------------------------------------------------------------------------------------------------
+///!гиперболический тангенс
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+type_t CTensorApplyFunc<type_t>::tanh(type_t v)
+{
+ return(::tanh(v));
+}
+//----------------------------------------------------------------------------------------------------
+///!гиперболический косинус
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+type_t CTensorApplyFunc<type_t>::ch(type_t v)
+{
+ return(cosh(v));
+}
+//----------------------------------------------------------------------------------------------------
+///!гиперболический секанс
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+type_t CTensorApplyFunc<type_t>::sech(type_t v)
+{
+ return(1/ch(v));
+}
+
+//----------------------------------------------------------------------------------------------------
 ///!сигмоид
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
@@ -115,6 +148,21 @@ type_t CTensorApplyFunc<type_t>::ReLU(type_t v)
 {
  if (v>0) return(v);
  return(0);
+}
+//----------------------------------------------------------------------------------------------------
+///!GeLU
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+type_t CTensorApplyFunc<type_t>::GeLU(type_t v)
+{
+ const type_t PI=3.141592654;
+
+ type_t ft=sqrt(2/PI)*(v+0.044715*v*v*v);
+ //гиперболический тангенс
+ ft=tanh(ft);
+ //вычисляем GeLU
+ type_t f=0.5*v*(1+ft);
+ return(f);
 }
 //----------------------------------------------------------------------------------------------------
 ///!Leaky ReLU
@@ -145,9 +193,7 @@ type_t CTensorApplyFunc<type_t>::Tangence(type_t v)
  //if (v>20) return(1);
  //if (v<-20) return(-1);
 
- type_t ep=exp(2*v);
- type_t en=exp(-2*v);
- return((ep-en)/(ep+en));
+ return(tanh(v));
 }
 //----------------------------------------------------------------------------------------------------
 ///!производная сигмоида
@@ -166,6 +212,20 @@ type_t CTensorApplyFunc<type_t>::dReLU(type_t v)
 {
  if (v>=0) return(1);
  return(0);
+}
+//----------------------------------------------------------------------------------------------------
+///!производная GeLU
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+type_t CTensorApplyFunc<type_t>::dGeLU(type_t v)
+{
+ const type_t PI=3.141592654;
+
+ type_t ft=sqrt(2/PI)*(v+0.044715*v*v*v);
+ type_t fa=sqrt(2/PI)*(1+3*0.044715*v*v);
+ //вычисляем производную GeLU
+ type_t f=0.5*((1+tanh(ft))+0.5*v*sech(ft)*sech(ft))*fa;
+ return(f);
 }
 //----------------------------------------------------------------------------------------------------
 ///!производная Leaky ReLU
@@ -245,6 +305,33 @@ void CTensorApplyFunc<type_t>::ApplyReLU(CTensor<type_t> &cTensor_Output,const C
   }
  }
 }
+
+//----------------------------------------------------------------------------------------------------
+///!применить функцию GeLU
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorApplyFunc<type_t>::ApplyGeLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ {
+  throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
+ }
+
+ const type_t *input_ptr=&cTensor_Input.Item[0];
+ type_t *o_ptr=&cTensor_Output.Item[0];
+
+ for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ {
+  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  {
+   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   {
+    *o_ptr=GeLU(*input_ptr);
+   }
+  }
+ }
+}
+
 //----------------------------------------------------------------------------------------------------
 ///!применить функцию Leaky ReLU
 //----------------------------------------------------------------------------------------------------
@@ -400,6 +487,33 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialReLU(CTensor<type_t> &cTensor_Ou
   }
  }
 }
+
+//----------------------------------------------------------------------------------------------------
+///!применить функцию производной от GeLU
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorApplyFunc<type_t>::ApplyDifferentialGeLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ {
+  throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
+ }
+
+ const type_t *input_ptr=&cTensor_Input.Item[0];
+ type_t *o_ptr=&cTensor_Output.Item[0];
+
+ for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ {
+  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  {
+   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   {
+    *o_ptr=dGeLU(*input_ptr);
+   }
+  }
+ }
+}
+
 //----------------------------------------------------------------------------------------------------
 ///!применить функцию производной от Leaky ReLU
 //----------------------------------------------------------------------------------------------------

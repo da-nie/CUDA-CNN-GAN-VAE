@@ -184,6 +184,7 @@ void CNetLayerFunction<type_t>::Forward(void)
  //применим функцию активации
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplySigmoid(cTensor_H,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyReLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_GELU) CTensorApplyFunc<type_t>::ApplyGeLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyLeakyReLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyLinear(cTensor_H,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyTangence(cTensor_H,PrevLayerPtr->GetOutputTensor());
@@ -327,6 +328,7 @@ void CNetLayerFunction<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(cTensor_Delta,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialReLU(cTensor_Delta,PrevLayerPtr->GetOutputTensor());
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_GELU) CTensorApplyFunc<type_t>::ApplyDifferentialGeLU(cTensor_Delta,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(cTensor_Delta,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyDifferentialLinear(cTensor_Delta,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyDifferentialTangence(cTensor_Delta,PrevLayerPtr->GetOutputTensor());

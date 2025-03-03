@@ -80,6 +80,106 @@ template<class type_t>
 bool CTensorTest<type_t>::Test(void)
 {
 
+ CTensor<type_t> cTensorA(1,2,2);
+ CTensor<type_t> cTensorB(1,2,2);
+ CTensor<type_t> cTensorC(1,2,2);
+
+ cTensorA.SetElement(0,0,0,1);
+ cTensorA.SetElement(0,0,1,2);
+ cTensorA.SetElement(0,1,0,3);
+ cTensorA.SetElement(0,1,1,4);
+
+ cTensorB.SetElement(0,0,0,1);
+ cTensorB.SetElement(0,0,1,2);
+ cTensorB.SetElement(0,1,0,3);
+ cTensorB.SetElement(0,1,1,4);
+
+ SYSTEM::PutMessageToConsole("Тест заполнения тензора по элементам.");
+ //проверка на заполнение тензора
+ if (cTensorA.GetElement(0,0,0)!=1) return(false);
+ if (cTensorA.GetElement(0,0,1)!=2) return(false);
+ if (cTensorA.GetElement(0,1,0)!=3) return(false);
+ if (cTensorA.GetElement(0,1,1)!=4) return(false);
+ SYSTEM::PutMessageToConsole("Успешно.");
+ SYSTEM::PutMessageToConsole("");
+
+ //умножение на число справа
+ SYSTEM::PutMessageToConsole("Тест умножения на число справа.");
+ cTensorC=cTensorA*static_cast<type_t>(2.0);
+ if (cTensorC.GetElement(0,0,0)!=2) return(false);
+ if (cTensorC.GetElement(0,0,1)!=4) return(false);
+ if (cTensorC.GetElement(0,1,0)!=6) return(false);
+ if (cTensorC.GetElement(0,1,1)!=8) return(false);
+ SYSTEM::PutMessageToConsole("Успешно.");
+ SYSTEM::PutMessageToConsole("");
+
+ //умножение на число слева
+ SYSTEM::PutMessageToConsole("Тест умножения на число слева.");
+ cTensorC=static_cast<type_t>(2.0)*cTensorA;
+ if (cTensorC.GetElement(0,0,0)!=2) return(false);
+ if (cTensorC.GetElement(0,0,1)!=4) return(false);
+ if (cTensorC.GetElement(0,1,0)!=6) return(false);
+ if (cTensorC.GetElement(0,1,1)!=8) return(false);
+ SYSTEM::PutMessageToConsole("Успешно.");
+ SYSTEM::PutMessageToConsole("");
+
+ //умножение тензоров
+ SYSTEM::PutMessageToConsole("Тест умножения тензоров.");
+ cTensorC=cTensorA*cTensorB;
+ if (cTensorC.GetElement(0,0,0)!=7) return(false);
+ if (cTensorC.GetElement(0,0,1)!=10) return(false);
+ if (cTensorC.GetElement(0,1,0)!=15) return(false);
+ if (cTensorC.GetElement(0,1,1)!=22) return(false);
+ SYSTEM::PutMessageToConsole("Успешно.");
+ SYSTEM::PutMessageToConsole("");
+
+ //вычитание тензоров
+ SYSTEM::PutMessageToConsole("Тест вычитания тензоров.");
+ cTensorC=cTensorA-cTensorB;
+ if (cTensorC.GetElement(0,0,0)!=0) return(false);
+ if (cTensorC.GetElement(0,0,1)!=0) return(false);
+ if (cTensorC.GetElement(0,1,0)!=0) return(false);
+ if (cTensorC.GetElement(0,1,1)!=0) return(false);
+ SYSTEM::PutMessageToConsole("Успешно.");
+ SYSTEM::PutMessageToConsole("");
+
+ //сложение тензоров
+ SYSTEM::PutMessageToConsole("Тест сложения тензоров.");
+ cTensorC=cTensorA+cTensorB;
+ if (cTensorC.GetElement(0,0,0)!=2) return(false);
+ if (cTensorC.GetElement(0,0,1)!=4) return(false);
+ if (cTensorC.GetElement(0,1,0)!=6) return(false);
+ if (cTensorC.GetElement(0,1,1)!=8) return(false);
+ SYSTEM::PutMessageToConsole("Успешно.");
+ SYSTEM::PutMessageToConsole("");
+
+ //транспонирование тензора
+ SYSTEM::PutMessageToConsole("Тест транспонирования тензоров.");
+ cTensorC=CTensorMath<type_t>::Transpose(cTensorA);
+ if (cTensorC.GetElement(0,0,0)!=1) return(false);
+ if (cTensorC.GetElement(0,0,1)!=3) return(false);
+ if (cTensorC.GetElement(0,1,0)!=2) return(false);
+ if (cTensorC.GetElement(0,1,1)!=4) return(false);
+ SYSTEM::PutMessageToConsole("Успешно.");
+ SYSTEM::PutMessageToConsole("");
+
+/* //построчное скалярное произведение тензоров
+ CTensor<type_t> cTensorD(1,2,1);
+ TensorColumnScalarProduction(cTensorD,cTensorA,cTensorB);
+ if (cTensorD.GetElement(0,0,0)!=5) return(false);
+ if (cTensorD.GetElement(0,1,0)!=25) return(false);
+ */
+
+ //поэлементное умножение тензоров
+ SYSTEM::PutMessageToConsole("Тест поэлементного умножения тензоров.");
+ CTensor<type_t> cTensorE(1,2,2);
+ CTensorMath<type_t>::TensorItemProduction(cTensorE,cTensorA,cTensorB);
+ if (cTensorE.GetElement(0,0,0)!=1) return(false);
+ if (cTensorE.GetElement(0,0,1)!=4) return(false);
+ if (cTensorE.GetElement(0,1,0)!=9) return(false);
+ if (cTensorE.GetElement(0,1,1)!=16) return(false);
+ SYSTEM::PutMessageToConsole("Успешно.");
+ SYSTEM::PutMessageToConsole("");
 
  {
   SYSTEM::PutMessageToConsole("Тест функции ForwardConvolution (0) .");
@@ -153,6 +253,7 @@ bool CTensorTest<type_t>::Test(void)
   //сравниваем полученный тензор
   if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
   SYSTEM::PutMessageToConsole("Успешно.");
+  SYSTEM::PutMessageToConsole("");
  }
 
 
@@ -277,6 +378,7 @@ bool CTensorTest<type_t>::Test(void)
   //сравниваем полученный тензор
   if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
   SYSTEM::PutMessageToConsole("Успешно.");
+  SYSTEM::PutMessageToConsole("");
  }
 
 
@@ -473,7 +575,9 @@ bool CTensorTest<type_t>::Test(void)
    CTensorConv<type_t>::ForwardConvolution(cTensor_Convolution,cTensor_Image,cTensor_Kernel,bias,2,2,1,1);
 
    cTensor_Convolution.Print("Результат свёртки 1");
+   SYSTEM::PutMessageToConsole("");
   }
+
   {
    CTensor<type_t> cTensor_KernelA(1,3,3);
    //ядро A
@@ -570,6 +674,7 @@ bool CTensorTest<type_t>::Test(void)
    if (cTensor_dKernel[0].Compare(cTensor_Control,"")==false) return(false);
   }
   SYSTEM::PutMessageToConsole("Успешно.");
+  SYSTEM::PutMessageToConsole("");
  }
 
 
@@ -719,6 +824,7 @@ bool CTensorTest<type_t>::Test(void)
   //сравниваем полученный тензор
   if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
   SYSTEM::PutMessageToConsole("Успешно.");
+  SYSTEM::PutMessageToConsole("");
  }
 
  {
@@ -796,102 +902,8 @@ bool CTensorTest<type_t>::Test(void)
   //сравниваем полученный тензор
   if (cTensor_Output.Compare(cTensor_Control,"")==false) return(false);
   SYSTEM::PutMessageToConsole("Успешно.");
+  SYSTEM::PutMessageToConsole("");
  }
-
-
- CTensor<type_t> cTensorA(1,2,2);
- CTensor<type_t> cTensorB(1,2,2);
- CTensor<type_t> cTensorC(1,2,2);
-
- cTensorA.SetElement(0,0,0,1);
- cTensorA.SetElement(0,0,1,2);
- cTensorA.SetElement(0,1,0,3);
- cTensorA.SetElement(0,1,1,4);
-
- cTensorB.SetElement(0,0,0,1);
- cTensorB.SetElement(0,0,1,2);
- cTensorB.SetElement(0,1,0,3);
- cTensorB.SetElement(0,1,1,4);
-
- SYSTEM::PutMessageToConsole("Тест заполнения тензора по элементам.");
- //проверка на заполнение тензора
- if (cTensorA.GetElement(0,0,0)!=1) return(false);
- if (cTensorA.GetElement(0,0,1)!=2) return(false);
- if (cTensorA.GetElement(0,1,0)!=3) return(false);
- if (cTensorA.GetElement(0,1,1)!=4) return(false);
- SYSTEM::PutMessageToConsole("Успешно.");
-
- //умножение на число справа
- SYSTEM::PutMessageToConsole("Тест умножения на число справа.");
- cTensorC=cTensorA*static_cast<type_t>(2.0);
- if (cTensorC.GetElement(0,0,0)!=2) return(false);
- if (cTensorC.GetElement(0,0,1)!=4) return(false);
- if (cTensorC.GetElement(0,1,0)!=6) return(false);
- if (cTensorC.GetElement(0,1,1)!=8) return(false);
- SYSTEM::PutMessageToConsole("Успешно.");
-
- //умножение на число слева
- SYSTEM::PutMessageToConsole("Тест умножения на число слева.");
- cTensorC=static_cast<type_t>(2.0)*cTensorA;
- if (cTensorC.GetElement(0,0,0)!=2) return(false);
- if (cTensorC.GetElement(0,0,1)!=4) return(false);
- if (cTensorC.GetElement(0,1,0)!=6) return(false);
- if (cTensorC.GetElement(0,1,1)!=8) return(false);
- SYSTEM::PutMessageToConsole("Успешно.");
-
- //умножение тензоров
- SYSTEM::PutMessageToConsole("Тест умножения тензоров.");
- cTensorC=cTensorA*cTensorB;
- if (cTensorC.GetElement(0,0,0)!=7) return(false);
- if (cTensorC.GetElement(0,0,1)!=10) return(false);
- if (cTensorC.GetElement(0,1,0)!=15) return(false);
- if (cTensorC.GetElement(0,1,1)!=22) return(false);
- SYSTEM::PutMessageToConsole("Успешно.");
-
- //вычитание тензоров
- SYSTEM::PutMessageToConsole("Тест вычитания тензоров.");
- cTensorC=cTensorA-cTensorB;
- if (cTensorC.GetElement(0,0,0)!=0) return(false);
- if (cTensorC.GetElement(0,0,1)!=0) return(false);
- if (cTensorC.GetElement(0,1,0)!=0) return(false);
- if (cTensorC.GetElement(0,1,1)!=0) return(false);
- SYSTEM::PutMessageToConsole("Успешно.");
-
- //сложение тензоров
- SYSTEM::PutMessageToConsole("Тест сложения тензоров.");
- cTensorC=cTensorA+cTensorB;
- if (cTensorC.GetElement(0,0,0)!=2) return(false);
- if (cTensorC.GetElement(0,0,1)!=4) return(false);
- if (cTensorC.GetElement(0,1,0)!=6) return(false);
- if (cTensorC.GetElement(0,1,1)!=8) return(false);
- SYSTEM::PutMessageToConsole("Успешно.");
-
- //транспонирование тензора
- SYSTEM::PutMessageToConsole("Тест транспонирования тензоров.");
- cTensorC=CTensorMath<type_t>::Transpose(cTensorA);
- if (cTensorC.GetElement(0,0,0)!=1) return(false);
- if (cTensorC.GetElement(0,0,1)!=3) return(false);
- if (cTensorC.GetElement(0,1,0)!=2) return(false);
- if (cTensorC.GetElement(0,1,1)!=4) return(false);
- SYSTEM::PutMessageToConsole("Успешно.");
-
-/* //построчное скалярное произведение тензоров
- CTensor<type_t> cTensorD(1,2,1);
- TensorColumnScalarProduction(cTensorD,cTensorA,cTensorB);
- if (cTensorD.GetElement(0,0,0)!=5) return(false);
- if (cTensorD.GetElement(0,1,0)!=25) return(false);
- */
-
- //поэлементное умножение тензоров
- SYSTEM::PutMessageToConsole("Тест поэлементного умножения тензоров.");
- CTensor<type_t> cTensorE(1,2,2);
- CTensorMath<type_t>::TensorItemProduction(cTensorE,cTensorA,cTensorB);
- if (cTensorE.GetElement(0,0,0)!=1) return(false);
- if (cTensorE.GetElement(0,0,1)!=4) return(false);
- if (cTensorE.GetElement(0,1,0)!=9) return(false);
- if (cTensorE.GetElement(0,1,1)!=16) return(false);
- SYSTEM::PutMessageToConsole("Успешно.");
-
  return(true);
 }
 

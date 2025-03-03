@@ -317,7 +317,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
    double disc_fake_error=-SafeLog(1.0-fake_output);//прямая метка
    //double disc_fake_error=(fake_output-0);//прямая метка
 
-   if (GetRandValue(100)>95)//инвертируем метки, чтобы избежать переобучения генератора
+   if (GetRandValue(100)>95)//инвертируем метки, чтобы избежать переобучения дискриминатора
    {
     //disc_fake_error=SafeLog(fake_output);//инверсная метка
    }
@@ -771,6 +771,12 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
  static CTensor<type_t> cTensor_Generator_Error=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
 
+ //учим первому изображению
+ CTensor<type_t> cTensor_Generator_Etalon=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+ size_t size=RealImage[0].size();
+ type_t *ptr=&RealImage[0][0];
+ cTensor_Generator_Etalon.CopyItemToDevice(ptr,size);
+
  char str_b[STRING_BUFFER_SIZE];
 
  const double gen_speed=SPEED_GENERATOR;
@@ -781,7 +787,14 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
 
  std::string str;
 
-  while(iteration<max_iteration)
+ for(uint32_t n=0;n<NOISE_LAYER_SIZE;n++)
+ {
+  type_t r=GetRandValue(20.0)-10.0;
+  r/=10.0;
+  cTensor_Generator_Input.SetElement(0,n,0,r);
+ }
+
+ while(iteration<max_iteration)
  {
   SYSTEM::PutMessageToConsole("----------");
   SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
@@ -791,7 +804,15 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();
    SYSTEM::PutMessageToConsole("Save image.");
-   SaveRandomImage();
+   //SaveRandomImage();
+
+   GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
+   //выполняем прямой проход по сети
+   for(size_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
+   SaveImage(GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(),"Test/test-current.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+   SaveImage(cTensor_Generator_Etalon,"Test/etalon.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+
+   SaveTrainingParam();
    SaveKitImage();
    SYSTEM::PutMessageToConsole("");
   }
@@ -803,12 +824,15 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   //обучаем генератор
   double gen_cost=0;
   for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingResetDeltaWeight();
-
+/*
   for(uint32_t n=0;n<NOISE_LAYER_SIZE;n++)
   {
    type_t r=GetRandValue(20.0)-10.0;
+   r/=10.0;
    cTensor_Generator_Input.SetElement(0,n,0,r);
   }
+  */
+
 
   GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
   //выполняем прямой проход по сети генератора
@@ -819,8 +843,22 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   //вычисляем ошибку
   {
    CTimeStamp cTimeStamp("Расчёт ошибки генератора:");
-   CTensorMath<type_t>::Sub(cTensor_Generator_Error,GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(),RealImage[0]);//учим первому изображению
+   CTensorMath<type_t>::Sub(cTensor_Generator_Error,GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(),cTensor_Generator_Etalon);
    GeneratorNet[GeneratorNet.size()-1]->SetOutputError(cTensor_Generator_Error);
+
+   type_t *ptr=cTensor_Generator_Error.GetColumnPtr(0,0);
+   for(size_t z=0;z<cTensor_Generator_Error.GetSizeZ();z++)
+   {
+    for(size_t y=0;y<cTensor_Generator_Error.GetSizeY();y++)
+	{
+     for(size_t x=0;x<cTensor_Generator_Error.GetSizeX();x++,ptr++)
+	 {
+      type_t delta=*ptr;
+	  delta=delta*delta;
+	  gen_cost+=delta;
+	 }
+	}
+   }
   }
   //выполняем вычисление весов генератора
   {
@@ -833,7 +871,7 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
    CTimeStamp cTimeStamp("Обновление весов генератора:");
    for(size_t n=0;n<GeneratorNet.size();n++)
    {
-    GeneratorNet[n]->TrainingUpdateWeight(gen_speed);
+    GeneratorNet[n]->TrainingUpdateWeight(gen_speed,iteration+1);
    }
   }
   str="Ошибка генератора:";
@@ -862,7 +900,10 @@ void CModelBasicGAN<type_t>::TestTrainingGeneratorNet(bool mnist)
 {
  char str[STRING_BUFFER_SIZE];
  SYSTEM::MakeDirectory("Test");
- if (LoadImage("RealImage",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_WIDTH,RealImage,RealImageIndex)==false)
+
+ //загружаем изображения
+ //if (LoadMNISTImage("mnist.bin",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH,RealImage,RealImageIndex)==false)
+ if (LoadImage("RealImage",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH,RealImage,RealImageIndex)==false)
  {
   SYSTEM::PutMessage("Не удалось загрузить образы изображений!");
   return;
@@ -893,7 +934,14 @@ void CModelBasicGAN<type_t>::TestTrainingGeneratorNet(bool mnist)
  LoadNet();
 
  //включаем обучение
- for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingStart();
+ for(size_t n=0;n<GeneratorNet.size();n++)
+ {
+  GeneratorNet[n]->TrainingModeAdam();
+  GeneratorNet[n]->TrainingStart();
+ }
+
+ //загружаем параметры обучения
+ LoadTrainingParam();
 
  TestTrainingGenerator();
 

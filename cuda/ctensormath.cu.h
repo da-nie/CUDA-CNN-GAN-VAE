@@ -109,10 +109,10 @@ struct STensorKernel
  size_t StrideZ;///<размер блока по Z
  type_t *TensorData_Ptr;///<указатель на данные тензора на стороне GPU
 
- STensorKernel(void)///<конструктор
+ __host__ __device__ STensorKernel(void)///<конструктор
  {
  }
- STensorKernel(const CTensor<type_t> &cTensor)///<конструктор
+ __host__ __device__ STensorKernel(const CTensor<type_t> &cTensor)///<конструктор
  {
   Set(cTensor);
  }
@@ -122,14 +122,16 @@ struct STensorKernel
   return(&TensorData_Ptr[z*StrideZ]);
  }
 
- __host__ __device__ STensorKernel GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1
+ __host__ __device__ STensorKernel<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1
  {
-  STensorKernel sub_tensor;
+  STensorKernel<type_t> sub_tensor;
+
   sub_tensor.Size_X=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
   sub_tensor.Size_Y=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
   sub_tensor.Size_Z=1;
   sub_tensor.StrideX=Size_X;
   sub_tensor.StrideZ=0;
+
   sub_tensor.TensorData_Ptr=&TensorData_Ptr[z*StrideZ+StrideX*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*y+CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*x];
 
   //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.

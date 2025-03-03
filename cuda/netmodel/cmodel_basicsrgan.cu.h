@@ -329,13 +329,13 @@ void CModelBasicSR_GAN<type_t>::Training(void)
 
   ExchangeImageIndex(RealImageIndex);
 
-  if (iteration%100==0)
+  if (iteration%1==0)
   {
    SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
   }
 
-  if (iteration%100==0)
+  if (iteration%1==0)
   {
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();
