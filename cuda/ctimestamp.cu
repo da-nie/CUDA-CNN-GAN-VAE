@@ -11,8 +11,9 @@
 //----------------------------------------------------------------------------------------------------
 //конструктор
 //----------------------------------------------------------------------------------------------------
-CTimeStamp::CTimeStamp(std::string text):Text(text)
+CTimeStamp::CTimeStamp(std::string text,bool enabled):Text(text)
 {
+ Enabled=enabled;
  cCUDATimeSpent.Start();
 }
 //----------------------------------------------------------------------------------------------------
@@ -21,7 +22,7 @@ CTimeStamp::CTimeStamp(std::string text):Text(text)
 CTimeStamp::~CTimeStamp()
 {
  float gpu_time=cCUDATimeSpent.Stop();
- return;
+ if (Enabled==false) return;
  char str[255];
  sprintf(str,"%.2f мс.",gpu_time);
  SYSTEM::PutMessageToConsole(Text+str);

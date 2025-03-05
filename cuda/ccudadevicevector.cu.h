@@ -156,7 +156,7 @@ __device__ __host__ type_t* CCUDADeviceVector<type_t>::get(void) const
 ///!оператор "="
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__device__ __host__ CCUDADeviceVector<type_t>& CCUDADeviceVector<type_t>::operator=(const CCUDADeviceVector<type_t> &cCUDADeviceVector)
+__host__ CCUDADeviceVector<type_t>& CCUDADeviceVector<type_t>::operator=(const CCUDADeviceVector<type_t> &cCUDADeviceVector)
 {
  if (this!=&cCUDADeviceVector)
  {

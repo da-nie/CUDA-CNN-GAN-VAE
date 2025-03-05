@@ -110,9 +110,9 @@ class CTensor
   ~CTensor<type_t>();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  size_t GetSizeX(void) const;///<получить размер по x
-  size_t GetSizeY(void) const;///<получить размер по y
-  size_t GetSizeZ(void) const;///<получить размер по z
+  __host__ __device__ size_t GetSizeX(void) const;///<получить размер по x
+  __host__ __device__ size_t GetSizeY(void) const;///<получить размер по y
+  __host__ __device__ size_t GetSizeZ(void) const;///<получить размер по z
   type_t GetElement(size_t z,size_t y,size_t x) const;///<получить элемент тензора
   void SetElement(size_t z,size_t y,size_t x,type_t value);///<задать элемент тензора
   type_t* GetColumnPtr(size_t z,size_t y);///<получить указатель на строку тензора
@@ -238,7 +238,7 @@ CTensor<type_t>::~CTensor()
 //получить размер по x
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-size_t CTensor<type_t>::GetSizeX(void) const
+__host__ __device__ size_t CTensor<type_t>::GetSizeX(void) const
 {
  return(Size_X);
 }
@@ -246,7 +246,7 @@ size_t CTensor<type_t>::GetSizeX(void) const
 //получить размер по y
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-size_t CTensor<type_t>::GetSizeY(void) const
+__host__ __device__ size_t CTensor<type_t>::GetSizeY(void) const
 {
  return(Size_Y);
 }
@@ -254,7 +254,7 @@ size_t CTensor<type_t>::GetSizeY(void) const
 //получить размер по z
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-size_t CTensor<type_t>::GetSizeZ(void) const
+__host__ __device__ size_t CTensor<type_t>::GetSizeZ(void) const
 {
  return(Size_Z);
 }
@@ -500,7 +500,7 @@ void CTensor<type_t>::ReinterpretSize(size_t size_z,size_t size_y,size_t size_x)
  if (Size_X*Size_Y*Size_Z!=size_x*size_y*size_z)
  {
   char str[STRING_BUFFER_SIZE];
-  sprintf(str,"%ix%ix%i->%ix%ix%i",Size_Z,Size_Y,Size_X,size_z,size_y,size_x);
+  sprintf(str,"%ix%ix%i->%ix%ix%i",static_cast<int>(Size_Z),static_cast<int>(Size_Y),static_cast<int>(Size_X),static_cast<int>(size_z),static_cast<int>(size_y),static_cast<int>(size_x));
   SYSTEM::PutMessageToConsole(str);
   throw("Новая интерпретация размеров невозможна из-за различного количества элементов.");
  }
@@ -619,12 +619,12 @@ void CTensor<type_t>::Print(const std::string &name,bool print_value) const
 
  sprintf(str,"***** %s *****",name.c_str());
  SYSTEM::PutMessageToConsole(str);
- sprintf(str,"Z:%i Y:%i X:%i",Size_Z,Size_Y,Size_X);
+ sprintf(str,"Z:%i Y:%i X:%i",static_cast<int>(Size_Z),static_cast<int>(Size_Y),static_cast<int>(Size_X));
  SYSTEM::PutMessageToConsole(str);
  if (print_value==false) return;
  for(size_t z=0;z<GetSizeZ();z++)
  {
-  sprintf(str,"-----%i-----",z);
+  sprintf(str,"-----%i-----",static_cast<int>(z));
   SYSTEM::PutMessageToConsole(str);
   for(size_t y=0;y<GetSizeY();y++)
   {
@@ -651,11 +651,11 @@ void CTensor<type_t>::PrintToFile(const std::string &file_name,const std::string
  if (file==NULL) return;
 
  fprintf(file,"***** %s *****\r\n",name.c_str());
- fprintf(file,"Z:%i Y:%i X:%i\r\n",Size_Z,Size_Y,Size_X);
+ fprintf(file,"Z:%i Y:%i X:%i\r\n",static_cast<int>(Size_Z),static_cast<int>(Size_Y),static_cast<int>(Size_X));
  if (print_value==false) return;
  for(size_t z=0;z<GetSizeZ();z++)
  {
-  fprintf(file,"-----%i-----\r\n",z);
+  fprintf(file,"-----%i-----\r\n",static_cast<int>(z));
   for(size_t y=0;y<GetSizeY();y++)
   {
    for(size_t x=0;x<GetSizeX();x++)
@@ -685,11 +685,11 @@ bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::
 
  sprintf(str,"***** %s *****",name.c_str());
  SYSTEM::PutMessageToConsole(str);
- sprintf(str,"Z:%i Y:%i X:%i",Size_Z,Size_Y,Size_X);
+ sprintf(str,"Z:%i Y:%i X:%i",static_cast<int>(Size_Z),static_cast<int>(Size_Y),static_cast<int>(Size_X));
  SYSTEM::PutMessageToConsole(str);
  for(size_t z=0;z<GetSizeZ();z++)
  {
-  sprintf(str,"-----%i-----",z);
+  sprintf(str,"-----%i-----",static_cast<int>(z));
   SYSTEM::PutMessageToConsole(str);
   for(size_t y=0;y<GetSizeY();y++)
   {

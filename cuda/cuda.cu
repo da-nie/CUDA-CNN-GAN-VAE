@@ -52,25 +52,25 @@ struct cudaDeviceProp
   HANDLE_ERROR(cudaGetDeviceProperties(&devProp,device));
   sprintf(str,"Device %d\n", device );
   SYSTEM::PutMessageToConsole(str);
-  sprintf(str,"Compute capability     : %lu.%lu",devProp.major,devProp.minor);
+  sprintf(str,"Compute capability     : %lu.%lu",static_cast<long unsigned int>(devProp.major),static_cast<long unsigned int>(devProp.minor));
   SYSTEM::PutMessageToConsole(str);
   sprintf(str,"Name                   : %s",devProp.name);
   SYSTEM::PutMessageToConsole(str);
-  sprintf(str,"Total Global Memory    : %lu",devProp.totalGlobalMem);
+  sprintf(str,"Total Global Memory    : %lu",static_cast<long unsigned int>(devProp.totalGlobalMem));
   SYSTEM::PutMessageToConsole(str);
-  sprintf(str,"Shared memory per block: %lu",devProp.sharedMemPerBlock);
+  sprintf(str,"Shared memory per block: %lu",static_cast<long unsigned int>(devProp.sharedMemPerBlock));
   SYSTEM::PutMessageToConsole(str);
-  sprintf(str,"Registers per block    : %lu",devProp.regsPerBlock);
+  sprintf(str,"Registers per block    : %lu",static_cast<long unsigned int>(devProp.regsPerBlock));
   SYSTEM::PutMessageToConsole(str);
-  sprintf(str,"Warp size              : %lu",devProp.warpSize);
+  sprintf(str,"Warp size              : %lu",static_cast<long unsigned int>(devProp.warpSize));
   SYSTEM::PutMessageToConsole(str);
-  sprintf(str,"Max threads per block  : %lu",devProp.maxThreadsPerBlock);
-  SYSTEM::PutMessageToConsole(str);
-
-  sprintf(str,"Max Grid Size: %lux%lux%lu",devProp.maxGridSize[0],devProp.maxGridSize[1],devProp.maxGridSize[2]);
+  sprintf(str,"Max threads per block  : %lu",static_cast<long unsigned int>(devProp.maxThreadsPerBlock));
   SYSTEM::PutMessageToConsole(str);
 
-  sprintf(str,"Max Threads dim: %lux%lux%lu",devProp.maxThreadsDim[0],devProp.maxThreadsDim[1],devProp.maxThreadsDim[2]);
+  sprintf(str,"Max Grid Size: %lux%lux%lu",static_cast<long unsigned int>(devProp.maxGridSize[0]),static_cast<long unsigned int>(devProp.maxGridSize[1]),static_cast<long unsigned int>(devProp.maxGridSize[2]));
+  SYSTEM::PutMessageToConsole(str);
+
+  sprintf(str,"Max Threads dim: %lux%lux%lu",static_cast<long unsigned int>(devProp.maxThreadsDim[0]),static_cast<long unsigned int>(devProp.maxThreadsDim[1]),static_cast<long unsigned int>(devProp.maxThreadsDim[2]));
   SYSTEM::PutMessageToConsole(str);
 
 

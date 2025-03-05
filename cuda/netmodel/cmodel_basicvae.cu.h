@@ -57,8 +57,8 @@ class CModelBasicVAE:public CModelMain<type_t>
   CTensor<type_t> cTensor_Image;
   CTensor<type_t> cTensor_Error;
 
-  std::vector< std::vector<type_t> > RealImage;//образы истинных изображений
-  std::vector<size_t> RealImageIndex;//индексы изображений в обучающем наборе
+  std::vector< std::vector<type_t> > RealImage;///<образы истинных изображений
+  std::vector<size_t> RealImageIndex;///<индексы изображений в обучающем наборе
 
   using CModelMain<type_t>::STRING_BUFFER_SIZE;
   using CModelMain<type_t>::CUDA_PAUSE_MS;
@@ -78,6 +78,8 @@ class CModelBasicVAE:public CModelMain<type_t>
   using CModelMain<type_t>::SaveImage;
   using CModelMain<type_t>::SpeedTest;
 
+  size_t Iteration;///<итерация
+
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CModelBasicVAE(void);
@@ -85,23 +87,23 @@ class CModelBasicVAE:public CModelMain<type_t>
   ~CModelBasicVAE();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Execute(void);//выполнить
+  void Execute(void);///<выполнить
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
-  virtual void CreateCoder(void)=0;//создать сеть генератора
-  virtual void CreateDecoder(void)=0;//создать сеть дискриминатора
-  void LoadNet(void);//загрузить сети
-  void SaveNet(void);//сохранить сети
-  void LoadTrainingParam(void);//загрузить параметры обучения
-  void SaveTrainingParam(void);//сохранить параметры обучения
-  void CreateFakeImage(CTensor<type_t> &cTensor_Image);//создать мнимое изображение с помощью декодировщика
-  void TrainingCoderAndDecoder(size_t mini_batch_index,double &cost);//обучение кодировщика и декодировщика
-  void SaveRandomImage(void);//сохранить случайное изображение с генератора
-  void SaveKitImage(void);//сохранить изображение из набора
-  void Training(void);//обучение нейросети
-  virtual void TrainingNet(bool mnist);//запуск обучения нейросети
-  void TestTrainingCoder(void);//тест обучения генератора
-  void TestTrainingCoderNet(bool mnist);//запуск теста обучения генератора
+  virtual void CreateCoder(void)=0;///<создать сеть генератора
+  virtual void CreateDecoder(void)=0;///<создать сеть дискриминатора
+  void LoadNet(void);///<загрузить сети
+  void SaveNet(void);///<сохранить сети
+  void LoadTrainingParam(void);///<загрузить параметры обучения
+  void SaveTrainingParam(void);///<сохранить параметры обучения
+  void CreateFakeImage(CTensor<type_t> &cTensor_Image);///<создать мнимое изображение с помощью декодировщика
+  void TrainingCoderAndDecoder(size_t mini_batch_index,double &cost);///<обучение кодировщика и декодировщика
+  void SaveRandomImage(void);///<сохранить случайное изображение с генератора
+  void SaveKitImage(void);///<сохранить изображение из набора
+  void Training(void);///<обучение нейросети
+  virtual void TrainingNet(bool mnist);///<запуск обучения нейросети
+  void TestTrainingCoder(void);///<тест обучения генератора
+  void TestTrainingCoderNet(bool mnist);///<запуск теста обучения генератора
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -124,6 +126,8 @@ CModelBasicVAE<type_t>::CModelBasicVAE(void)
  SPEED=0;
 
  BATCH_SIZE=1;
+
+ Iteration=0;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -182,7 +186,7 @@ void CModelBasicVAE<type_t>::LoadTrainingParam(void)
  {
   fclose(file);
   std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("coder_training_param.net",false));
-  LoadNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),CoderNet);
+  LoadNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),CoderNet,Iteration);
   SYSTEM::PutMessageToConsole("Параметры обучения кодировщика загружены.");
  }
  file=fopen("decoder_training_param.net","rb");
@@ -190,7 +194,7 @@ void CModelBasicVAE<type_t>::LoadTrainingParam(void)
  {
   fclose(file);
   std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("decoder_training_param.net",false));
-  LoadNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),DecoderNet);
+  LoadNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),DecoderNet,Iteration);
   SYSTEM::PutMessageToConsole("Параметры обучения декодировщика загружены.");
  }
 }
@@ -201,10 +205,10 @@ template<class type_t>
 void CModelBasicVAE<type_t>::SaveTrainingParam(void)
 {
  std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("coder_training_param.net",true));
- SaveNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),CoderNet);
+ SaveNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),CoderNet,Iteration);
 
  std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("decoder_training_param.net",true));
- SaveNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),DecoderNet);
+ SaveNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),DecoderNet,Iteration);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -309,7 +313,7 @@ void CModelBasicVAE<type_t>::SaveRandomImage(void)
  for(size_t n=0;n<BATCH_SIZE*0+1;n++)
  {
   CreateFakeImage(cTensor);
-  sprintf(str,"Test/test%05i-%03i.tga",counter,n);
+  sprintf(str,"Test/test%05i-%03i.tga",static_cast<int>(counter),static_cast<int>(n));
   //SaveImage(cTensor,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   if (n==0) SaveImage(cTensor,"Test/test-current.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   //sprintf(str,"Test/test%03i.txt",n);
@@ -326,7 +330,7 @@ void CModelBasicVAE<type_t>::SaveKitImage(void)
  char str[STRING_BUFFER_SIZE];
  for(size_t n=0;n<BATCH_SIZE;n++)
  {
-  sprintf(str,"Test/real%03i.tga",n);
+  sprintf(str,"Test/real%03i.tga",static_cast<int>(n));
   type_t *ptr=&RealImage[RealImageIndex[n]][0];
   size_t size=RealImage[RealImageIndex[n]].size();
   //cTensor_Coder_Output.CopyItemToHost(ptr,size);
@@ -344,7 +348,6 @@ void CModelBasicVAE<type_t>::Training(void)
 
  const double speed=SPEED;
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
- uint32_t iteration=0;
 
  size_t image_amount=RealImage.size();
 
@@ -352,20 +355,20 @@ void CModelBasicVAE<type_t>::Training(void)
 
  CCUDATimeSpent cCUDATimeSpent;
 
- while(iteration<max_iteration)
+ while(Iteration<max_iteration)
  {
   SYSTEM::PutMessageToConsole("----------");
-  SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
+  SYSTEM::PutMessageToConsole("Итерация:"+std::to_string(static_cast<long double>(Iteration+1)));
 
   ExchangeImageIndex(RealImageIndex);
 
-  if (iteration%1==0)
+  if (Iteration%1==0)
   {
    SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
   }
 
-  if (iteration%1==0)
+  if (Iteration%1==0)
   {
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();
@@ -379,11 +382,11 @@ void CModelBasicVAE<type_t>::Training(void)
    if (IsExit()==true) throw("Стоп");
 
    str="Итерация:";
-   str+=std::to_string((long double)iteration+1);
+   str+=std::to_string(static_cast<long double>(Iteration+1));
    str+=" минипакет:";
-   str+=std::to_string((long double)batch+1);
+   str+=std::to_string(static_cast<long double>(batch+1));
    str+=" из ";
-   str+=std::to_string((long double)BATCH_AMOUNT);
+   str+=std::to_string(static_cast<long double>(BATCH_AMOUNT));
    SYSTEM::PutMessageToConsole(str);
 
    {
@@ -400,7 +403,7 @@ void CModelBasicVAE<type_t>::Training(void)
      CTimeStamp cTimeStamp("Обновление весов кодировщика:");
      for(size_t n=0;n<CoderNet.size();n++)
      {
-      CoderNet[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)),iteration+1);
+      CoderNet[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
      }
     }
     //корректируем веса генератора
@@ -408,13 +411,13 @@ void CModelBasicVAE<type_t>::Training(void)
      CTimeStamp cTimeStamp("Обновление весов декодировщика:");
      for(size_t n=0;n<DecoderNet.size();n++)
      {
-      DecoderNet[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)),iteration+1);
+      DecoderNet[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
      }
     }
     SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
 
     str="Ошибка:";
-    str+=std::to_string((long double)cost);
+    str+=std::to_string(static_cast<long double>(cost));
     SYSTEM::PutMessageToConsole(str);
    }
 
@@ -423,7 +426,7 @@ void CModelBasicVAE<type_t>::Training(void)
    SYSTEM::PutMessageToConsole(str_b);
    SYSTEM::PutMessageToConsole("");
   }
-  iteration++;
+  Iteration++;
  }
 }
 
@@ -482,7 +485,7 @@ void CModelBasicVAE<type_t>::TrainingNet(bool mnist)
   image_amount=RealImageIndex.size();
   BATCH_AMOUNT=image_amount/BATCH_SIZE;
  }
- sprintf(str,"Изображений:%i Минипакетов:%i",image_amount,BATCH_AMOUNT);
+ sprintf(str,"Изображений:%i Минипакетов:%i",static_cast<int>(image_amount),static_cast<int>(BATCH_AMOUNT));
  SYSTEM::PutMessageToConsole(str);
 
  //загружаем параметры обучения

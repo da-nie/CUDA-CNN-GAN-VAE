@@ -76,8 +76,8 @@ class CModelMain
   bool CreateResamplingImage(size_t input_image_width,size_t input_image_height,size_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image_output);//создать изображения другого разрешения
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить слои сети
-  void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить параметры обучения слоёв сети
-  void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить параметры обучения слоёв сети
+  void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration);///<сохранить параметры обучения слоёв сети
+  void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration);///<загрузить параметры обучения слоёв сети
   void ExchangeImageIndex(std::vector<size_t> &index);//перемешать индексы изображений
   void SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t output_image_width,size_t output_image_height,size_t output_image_depth);//сохранить изображение
   void SpeedTest(void);//тест скорости
@@ -350,7 +350,7 @@ bool CModelMain<type_t>::LoadImage(const std::string &path_name,size_t output_im
   delete[](img_ptr);
  }
  char str[STRING_BUFFER_SIZE];
- sprintf(str,"Загружено реальных изображений:%i",current_index);
+ sprintf(str,"Загружено реальных изображений:%i",static_cast<int>(current_index));
  SYSTEM::PutMessageToConsole(str);
  return(true);
 }
@@ -418,18 +418,21 @@ void CModelMain<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net)
+void CModelMain<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration)
 {
  for(size_t n=0;n<net.size();n++) net[n]->SaveTrainingParam(iDataStream_Ptr);
+ iDataStream_Ptr->SaveUInt32(iteration);
+
 }
 //----------------------------------------------------------------------------------------------------
 /*!загрузить параметры обучения слоёв сети
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net)
+void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration)
 {
  for(size_t n=0;n<net.size();n++) net[n]->LoadTrainingParam(iDataStream_Ptr);
+ iteration=iDataStream_Ptr->LoadUInt32();
 }
 //----------------------------------------------------------------------------------------------------
 //перемешать индексы изображений
@@ -480,8 +483,8 @@ void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &n
     //восстановление из RGB
     {
      r=ir;
-     g=ib;
-     b=ir;
+     g=ig;
+     b=ib;
 
      r+=1.0;
      r/=2.0;

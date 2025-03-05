@@ -239,7 +239,7 @@ struct STensorKernel_ForwardConvolution_Image
   Dst_Y=0;
  }
 
- __host__ void Set(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)
+ __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)
  {
   sTensorKernel_Image.Set(cTensor);
 
@@ -292,7 +292,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  int32_t dst_y=output_y;
  int32_t dst_x=output_x;
 
- int32_t new_input_z=1;
+ //int32_t new_input_z=1;
  int32_t new_input_y=kernel_y*kernel_x*kernel_z;
  int32_t new_input_x=dst_x*dst_y;
 
@@ -476,7 +476,7 @@ struct STensorKernel_BackwardConvolution_Delta
   Dst_Y=0;
  }
 
- __host__ void Set(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)
+ __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)
  {
   sTensorKernel_Delta.Set(cTensor);
 
@@ -539,7 +539,7 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
  int32_t dst_y=output_y;
  int32_t dst_x=output_x;
 
- int32_t new_input_z=1;
+ //int32_t new_input_z=1;
  int32_t new_input_y=kernel_y*kernel_x*input_z;
  int32_t new_input_x=dst_x*dst_y;
 
@@ -723,7 +723,7 @@ struct STensorKernel_DeltaWeightAndBias_Image
   Input_Z=0;
  }
 
- __host__ void Set(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)
+ __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)
  {
   sTensorKernel_Image.Set(cTensor);
 

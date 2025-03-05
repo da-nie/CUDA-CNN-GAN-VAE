@@ -53,14 +53,14 @@ class CModelBasicSR_GAN:public CModelMain<type_t>
 
   std::vector<std::shared_ptr<INetLayer<type_t> > > Net;///<сеть увеличения разрешения
 
-  CTensor<type_t> cTensor_Image;//тензор выходного изображения
-  CTensor<type_t> cTensor_Error;//тензор ошибки выходного изображения
+  CTensor<type_t> cTensor_Image;///<тензор выходного изображения
+  CTensor<type_t> cTensor_Error;///<тензор ошибки выходного изображения
 
-  std::vector< std::vector<type_t> > RealHiResImage;//образы истинных изображений в полном разрешении
-  std::vector< std::vector<type_t> > RealLoResImage;//образы истинных изображений в сниженном разрешении
-  std::vector<size_t> RealImageIndex;//индексы изображений в обучающем наборе
+  std::vector< std::vector<type_t> > RealHiResImage;///<образы истинных изображений в полном разрешении
+  std::vector< std::vector<type_t> > RealLoResImage;///<образы истинных изображений в сниженном разрешении
+  std::vector<size_t> RealImageIndex;///<индексы изображений в обучающем наборе
 
-  std::vector< std::vector<type_t> > TestImage;//образы тестовых изображений
+  std::vector< std::vector<type_t> > TestImage;///<образы тестовых изображений
 
   using CModelMain<type_t>::STRING_BUFFER_SIZE;
   using CModelMain<type_t>::CUDA_PAUSE_MS;
@@ -81,6 +81,8 @@ class CModelBasicSR_GAN:public CModelMain<type_t>
   using CModelMain<type_t>::SaveImage;
   using CModelMain<type_t>::SpeedTest;
 
+  size_t Iteration;///<итерация
+
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CModelBasicSR_GAN(void);
@@ -88,20 +90,20 @@ class CModelBasicSR_GAN:public CModelMain<type_t>
   ~CModelBasicSR_GAN();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Execute(void);//выполнить
+  void Execute(void);///<выполнить
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
-  virtual void CreateSRGAN(void)=0;//создать сеть
-  void LoadNet(void);//загрузить сети
-  void SaveNet(void);//сохранить сети
-  void LoadTrainingParam(void);//загрузить параметры обучения
-  void SaveTrainingParam(void);//сохранить параметры обучения
-  void CreateHiResImage(CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_Image);//создать изображение высокого разрешения
-  void TrainingSRGAN(size_t mini_batch_index,double &cost);//обучение
-  void SaveRandomImage(void);//сохранить случайное изображение
-  void SaveKitImage(void);//сохранить изображение из набора
-  void Training(void);//обучение нейросети
-  virtual void TrainingNet(bool mnist);//запуск обучения нейросети
+  virtual void CreateSRGAN(void)=0;///<создать сеть
+  void LoadNet(void);///<загрузить сети
+  void SaveNet(void);///<сохранить сети
+  void LoadTrainingParam(void);///<загрузить параметры обучения
+  void SaveTrainingParam(void);///<сохранить параметры обучения
+  void CreateHiResImage(CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_Image);///<создать изображение высокого разрешения
+  void TrainingSRGAN(size_t mini_batch_index,double &cost);///<обучение
+  void SaveRandomImage(void);///<сохранить случайное изображение
+  void SaveKitImage(void);///<сохранить изображение из набора
+  void Training(void);///<обучение нейросети
+  virtual void TrainingNet(bool mnist);///<запуск обучения нейросети
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -124,6 +126,8 @@ CModelBasicSR_GAN<type_t>::CModelBasicSR_GAN(void)
  SPEED=0;
 
  BATCH_SIZE=1;
+
+ Iteration=0;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -171,7 +175,7 @@ void CModelBasicSR_GAN<type_t>::LoadTrainingParam(void)
  {
   fclose(file);
   std::unique_ptr<IDataStream> iDataStream_Ptr(IDataStream::CreateNewDataStreamFile("srgan_training_param.net",false));
-  LoadNetLayersTrainingParam(iDataStream_Ptr.get(),Net);
+  LoadNetLayersTrainingParam(iDataStream_Ptr.get(),Net,Iteration);
   SYSTEM::PutMessageToConsole("Параметры обучения сети увеличения разрешения загружены.");
  }
 }
@@ -182,7 +186,7 @@ template<class type_t>
 void CModelBasicSR_GAN<type_t>::SaveTrainingParam(void)
 {
  std::unique_ptr<IDataStream> iDataStream_Ptr(IDataStream::CreateNewDataStreamFile("srgan_training_param.net",true));
- SaveNetLayersTrainingParam(iDataStream_Ptr.get(),Net);
+ SaveNetLayersTrainingParam(iDataStream_Ptr.get(),Net,Iteration);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -277,7 +281,7 @@ void CModelBasicSR_GAN<type_t>::SaveRandomImage(void)
   type_t *ptr=&RealLoResImage[n][0];
   cTensor_Input.CopyItemToDevice(ptr,RealLoResImage[n].size());
   CreateHiResImage(cTensor_Input,cTensor);
-  sprintf(str,"Test/test%05i-%03i.tga",counter,n);
+  sprintf(str,"Test/test%05i-%03i.tga",static_cast<int>(counter),static_cast<int>(n));
   //SaveImage(cTensor,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   if (n==0) SaveImage(cTensor,"Test/test-current.tga",OUTPUT_IMAGE_WIDTH,OUTPUT_IMAGE_HEIGHT,OUTPUT_IMAGE_DEPTH);
   //sprintf(str,"Test/test%03i.txt",n);
@@ -296,7 +300,7 @@ void CModelBasicSR_GAN<type_t>::SaveKitImage(void)
  char str[STRING_BUFFER_SIZE];
  for(size_t n=0;n<BATCH_SIZE;n++)
  {
-  sprintf(str,"Test/real%03i.tga",n);
+  sprintf(str,"Test/real%03i.tga",static_cast<int>(n));
   type_t *ptr=&RealLoResImage[RealImageIndex[n]][0];
   size_t size=RealLoResImage[RealImageIndex[n]].size();
   cTensor_Input.CopyItemToHost(ptr,size);
@@ -314,7 +318,6 @@ void CModelBasicSR_GAN<type_t>::Training(void)
 
  const double speed=SPEED;
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
- uint32_t iteration=0;
 
  size_t image_amount=RealLoResImage.size();
 
@@ -322,20 +325,20 @@ void CModelBasicSR_GAN<type_t>::Training(void)
 
  CCUDATimeSpent cCUDATimeSpent;
 
- while(iteration<max_iteration)
+ while(Iteration<max_iteration)
  {
   SYSTEM::PutMessageToConsole("----------");
-  SYSTEM::PutMessageToConsole("Итерация:"+std::to_string((long double)iteration+1));
+  SYSTEM::PutMessageToConsole("Итерация:"+std::to_string(static_cast<long double>(Iteration+1)));
 
   ExchangeImageIndex(RealImageIndex);
 
-  if (iteration%1==0)
+  if (Iteration%1==0)
   {
    SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
   }
 
-  if (iteration%1==0)
+  if (Iteration%1==0)
   {
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();
@@ -349,11 +352,11 @@ void CModelBasicSR_GAN<type_t>::Training(void)
    if (IsExit()==true) throw("Стоп");
 
    str="Итерация:";
-   str+=std::to_string((long double)iteration+1);
+   str+=std::to_string(static_cast<long double>(Iteration+1));
    str+=" минипакет:";
-   str+=std::to_string((long double)batch+1);
+   str+=std::to_string(static_cast<long double>(batch+1));
    str+=" из ";
-   str+=std::to_string((long double)BATCH_AMOUNT);
+   str+=std::to_string(static_cast<long double>(BATCH_AMOUNT));
    SYSTEM::PutMessageToConsole(str);
 
    {
@@ -368,13 +371,13 @@ void CModelBasicSR_GAN<type_t>::Training(void)
      CTimeStamp cTimeStamp("Обновление весов:");
      for(size_t n=0;n<Net.size();n++)
      {
-      Net[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)),iteration+1);
+      Net[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
      }
     }
     SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
 
     str="Ошибка:";
-    str+=std::to_string((long double)cost);
+    str+=std::to_string(static_cast<long double>(cost));
     SYSTEM::PutMessageToConsole(str);
    }
 
@@ -383,7 +386,7 @@ void CModelBasicSR_GAN<type_t>::Training(void)
    SYSTEM::PutMessageToConsole(str_b);
    SYSTEM::PutMessageToConsole("");
   }
-  iteration++;
+  Iteration++;
  }
 }
 
@@ -435,7 +438,7 @@ void CModelBasicSR_GAN<type_t>::TrainingNet(bool mnist)
   image_amount=RealImageIndex.size();
   BATCH_AMOUNT=image_amount/BATCH_SIZE;
  }
- sprintf(str,"Изображений:%i Минипакетов:%i",image_amount,BATCH_AMOUNT);
+ sprintf(str,"Изображений:%i Минипакетов:%i",static_cast<int>(image_amount),static_cast<int>(BATCH_AMOUNT));
  SYSTEM::PutMessageToConsole(str);
  //создаём изображения меньшего разрешения
  CreateResamplingImage(OUTPUT_IMAGE_WIDTH,OUTPUT_IMAGE_HEIGHT,OUTPUT_IMAGE_DEPTH,RealHiResImage,INPUT_IMAGE_WIDTH,INPUT_IMAGE_HEIGHT,INPUT_IMAGE_DEPTH,RealLoResImage);

@@ -179,7 +179,7 @@ struct STensorKernel
   TensorData_Ptr=NULL;
  }
 
- __host__ void Set(const CTensor<type_t> &cTensor)
+ __host__ __device__ void Set(const CTensor<type_t> &cTensor)
  {
   Size_Z=cTensor.Size_Z;
   Size_Y=cTensor.Size_Y;

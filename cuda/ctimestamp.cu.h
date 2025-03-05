@@ -28,9 +28,10 @@ class CTimeStamp
   //-переменные-----------------------------------------------------------------------------------------
   std::string Text;
   CCUDATimeSpent cCUDATimeSpent;
+  bool Enabled;
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CTimeStamp(std::string text);
+  CTimeStamp(std::string text,bool enabled=false);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CTimeStamp();
  public:
