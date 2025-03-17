@@ -65,6 +65,8 @@ class CModelSorter
 
   size_t GROUP_SIZE;///<количество групп сортировки
 
+  size_t ITERATION_OF_SAVE_NET;///<какую итерацию сохранять сеть
+
   double SPEED;///<скорость обучения
 
   type_t END_COST;///<значение ошибки, ниже которого обучение прекращается
@@ -153,6 +155,8 @@ CModelSorter<type_t>::CModelSorter(void)
 
  SPEED=0.001;
  END_COST=0.1;
+
+ ITERATION_OF_SAVE_NET=1;
 
  Iteration=0;
 }
@@ -728,7 +732,7 @@ void CModelSorter<type_t>::Training(void)
   SYSTEM::PutMessageToConsole("----------");
   SYSTEM::PutMessageToConsole("Итерация:"+std::to_string(static_cast<long double>(Iteration+1)));
 
-  if (Iteration%1==0)
+  if (Iteration%ITERATION_OF_SAVE_NET==0)
   {
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();

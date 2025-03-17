@@ -49,6 +49,9 @@ class CModelBasicVAE:public CModelMain<type_t>
   size_t BATCH_AMOUNT;///<количество пакетов
   size_t BATCH_SIZE;///<размер пакета
 
+  size_t ITERATION_OF_SAVE_IMAGE;///<какую итерацию сохранять изображения
+  size_t ITERATION_OF_SAVE_NET;///<какую итерацию сохранять сеть
+
   double SPEED;///<скорость обучения
 
   std::vector<std::shared_ptr<INetLayer<type_t> > > CoderNet;///<сеть кодера
@@ -98,7 +101,7 @@ class CModelBasicVAE:public CModelMain<type_t>
   void SaveTrainingParam(void);///<сохранить параметры обучения
   void CreateFakeImage(CTensor<type_t> &cTensor_Image);///<создать мнимое изображение с помощью декодировщика
   void TrainingCoderAndDecoder(size_t mini_batch_index,double &cost);///<обучение кодировщика и декодировщика
-  void SaveRandomImage(void);///<сохранить случайное изображение с генератора
+  void SaveRandomImage(void);///<сохрани  size_t ITERATION_OF_SAVE_IMAGE;///<какую итерацию сохранять изображения
   void SaveKitImage(void);///<сохранить изображение из набора
   void Training(void);///<обучение нейросети
   virtual void TrainingNet(bool mnist);///<запуск обучения нейросети
@@ -126,6 +129,9 @@ CModelBasicVAE<type_t>::CModelBasicVAE(void)
  SPEED=0;
 
  BATCH_SIZE=1;
+
+ ITERATION_OF_SAVE_IMAGE=1;
+ ITERATION_OF_SAVE_NET=1;
 
  Iteration=0;
 }
@@ -362,13 +368,13 @@ void CModelBasicVAE<type_t>::Training(void)
 
   ExchangeImageIndex(RealImageIndex);
 
-  if (Iteration%1==0)
+  if (Iteration%ITERATION_OF_SAVE_IMAGE==0)
   {
    SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
   }
 
-  if (Iteration%1==0)
+  if (Iteration%ITERATION_OF_SAVE_NET==0)
   {
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();

@@ -49,6 +49,9 @@ class CModelBasicSR_GAN:public CModelMain<type_t>
   size_t BATCH_AMOUNT;///<количество пакетов
   size_t BATCH_SIZE;///<размер пакета
 
+  size_t ITERATION_OF_SAVE_IMAGE;///<какую итерацию сохранять изображения
+  size_t ITERATION_OF_SAVE_NET;///<какую итерацию сохранять сеть
+
   double SPEED;///<скорость обучения
 
   std::vector<std::shared_ptr<INetLayer<type_t> > > Net;///<сеть увеличения разрешения
@@ -126,6 +129,9 @@ CModelBasicSR_GAN<type_t>::CModelBasicSR_GAN(void)
  SPEED=0;
 
  BATCH_SIZE=1;
+
+ ITERATION_OF_SAVE_IMAGE=1;
+ ITERATION_OF_SAVE_NET=1;
 
  Iteration=0;
 }
@@ -332,13 +338,13 @@ void CModelBasicSR_GAN<type_t>::Training(void)
 
   ExchangeImageIndex(RealImageIndex);
 
-  if (Iteration%1==0)
+  if (Iteration%ITERATION_OF_SAVE_IMAGE==0)
   {
    SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
   }
 
-  if (Iteration%1==0)
+  if (Iteration%ITERATION_OF_SAVE_NET==0)
   {
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();

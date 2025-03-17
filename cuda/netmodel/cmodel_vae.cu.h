@@ -35,6 +35,8 @@ class CModelVAE:public CModelBasicVAE<type_t>
   using CModelBasicVAE<type_t>::NOISE_LAYER_SIDE_Z;
   using CModelBasicVAE<type_t>::NOISE_LAYER_SIZE;
 
+  using CModelBasicVAE<type_t>::ITERATION_OF_SAVE_IMAGE;
+  using CModelBasicVAE<type_t>::ITERATION_OF_SAVE_NET;
   using CModelBasicVAE<type_t>::SPEED;
 
   using CModelBasicVAE<type_t>::CoderNet;
@@ -75,6 +77,9 @@ CModelVAE<type_t>::CModelVAE(void)
  SPEED=0.001;
 
  BATCH_SIZE=10;
+
+ ITERATION_OF_SAVE_IMAGE=10;
+ ITERATION_OF_SAVE_NET=10;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -156,6 +161,8 @@ void CModelVAE<type_t>::CreateDecoder(void)
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,DecoderNet[DecoderNet.size()-1].get())));
  DecoderNet[convert]->GetOutputTensor().RestoreSize();
  DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
+ ITERATION_OF_SAVE_IMAGE=10;
+ ITERATION_OF_SAVE_NET=10;
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,3,1,1,0,0,DecoderNet[DecoderNet.size()-1].get())));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DecoderNet[DecoderNet.size()-1].get())));

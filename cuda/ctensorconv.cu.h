@@ -413,8 +413,16 @@ struct STensorKernel_BackwardConvolution_Delta
   int32_t ky=pos-tmp*Conv_Kernel_Y;
   int32_t sz=tmp;
 
-  int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
-  int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
+  int32_t sy=dy+ky-Conv_Padding_Y;
+  int32_t sx=dx+kx-Conv_Padding_X;
+
+  if (sx<0 || sy<0) return(0);
+
+  if (sy%Conv_Stride_Y!=0) return(0);
+  if (sx%Conv_Stride_X!=0) return(0);
+
+  sy/=Conv_Stride_Y;
+  sx/=Conv_Stride_X;
 
   return(sTensorKernel_Delta.GetElement(sz,sy,sx));
  }
@@ -435,8 +443,18 @@ struct STensorKernel_BackwardConvolution_Delta
   int32_t ky=pos-tmp*Conv_Kernel_Y;
   int32_t sz=tmp;
 
-  int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
-  int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
+  int32_t sy=dy+ky-Conv_Padding_Y;
+  int32_t sx=dx+kx-Conv_Padding_X;
+
+  if (sx<0 || sy<0) return;
+
+  if (sy%Conv_Stride_Y!=0) return;
+  if (sx%Conv_Stride_X!=0) return;
+
+  sy/=Conv_Stride_Y;
+  sx/=Conv_Stride_X;
+
+  value=0;
 
   sTensorKernel_Delta.SetElement(sz,sy,sx,value);
  }
@@ -505,12 +523,6 @@ struct STensorKernel_BackwardConvolution_Delta
 template<class type_t>
 void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDelta,const CTensor<type_t> &cTensor_Delta,const std::vector<CTensor<type_t> > &cTensor_Kernel,const std::vector<type_t> &bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
- /* int32_t padding_x=0;//дополнение нулями
- int32_t padding_y=0;//дополнение нулями
- int32_t stride_x=1;//шаг свёртки
- int32_t stride_y=1;//шаг свёртки
- */
-
  //вычисляем размеры выходного тензора
  int32_t kernel_amount=cTensor_Kernel.size();
  if (kernel_amount==0) throw("Для обратной свёртки требуется хотя бы одно ядро свёртки");
@@ -525,11 +537,12 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
  int32_t input_z=cTensor_Delta.Size_Z;
 
  //обратная свёртка делается с ядрами, повёрнутыми на 180
- padding_x=((cTensor_OutputDelta.Size_X-1)*stride_x+kernel_x-input_x)/2;
- padding_y=((cTensor_OutputDelta.Size_Y-1)*stride_y+kernel_y-input_y)/2;
+ padding_x=kernel_x-1-padding_x;
+ padding_y=kernel_y-1-padding_y;
 
- int32_t output_x=(input_x-kernel_x+2*padding_x)/stride_x+1;
- int32_t output_y=(input_y-kernel_y+2*padding_y)/stride_y+1;
+ int32_t output_x=cTensor_OutputDelta.Size_X;
+ int32_t output_y=cTensor_OutputDelta.Size_Y;
+
  int32_t output_z=kernel_z;
 
  if (cTensor_OutputDelta.Size_X!=output_x || cTensor_OutputDelta.Size_Y!=output_y || cTensor_OutputDelta.Size_Z!=output_z) throw("Ошибочная размерность выходного тензора для обратной свёртки");
@@ -746,6 +759,139 @@ struct STensorKernel_DeltaWeightAndBias_Image
  }
 };
 
+//****************************************************************************************************
+///!структура ядра тензора дельт для вычисления поправок
+//****************************************************************************************************
+template<class type_t>
+struct STensorKernel_DeltaWeightAndBias_Delta
+{
+ STensorKernel<type_t> sTensorKernel_Delta;///<исходный тензор
+
+ int32_t Size_X;
+ int32_t Size_Y;
+ int32_t Size_Z;
+ int32_t Offset_X;
+ int32_t Offset_Y;
+ int32_t Stride_X;
+ int32_t Stride_Y;
+ int32_t NewDelta_X;
+ int32_t NewDelta_Y;
+
+ __host__ __device__ STensorKernel_DeltaWeightAndBias_Delta()///<конструктор
+ {
+ }
+ __host__ __device__ STensorKernel_DeltaWeightAndBias_Delta(const CTensor<type_t> &cTensor,int32_t new_delta_y,int32_t new_delta_x,int32_t stride_y,int32_t stride_x)///<конструктор
+ {
+  Set(cTensor,new_delta_y,new_delta_x,stride_y,stride_x);
+ }
+
+ __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
+ {
+  return(NULL);
+ }
+
+ __host__ __device__ STensorKernel_DeltaWeightAndBias_Delta<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ {
+  if (z>=Size_Z) z=0;
+  STensorKernel_DeltaWeightAndBias_Delta<type_t> sub_tensor;
+  sub_tensor.Size_X=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Size_Y=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Size_Z=1;
+  sub_tensor.sTensorKernel_Delta=sTensorKernel_Delta;
+  sub_tensor.Offset_X=Offset_X+x*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Offset_Y=Offset_Y+y*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+
+  sub_tensor.Stride_X=Stride_X;
+  sub_tensor.Stride_Y=Stride_Y;
+  sub_tensor.NewDelta_X=NewDelta_X;
+  sub_tensor.NewDelta_Y=NewDelta_Y;
+
+  //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
+  if ((x+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_X) sub_tensor.Size_X=Size_X%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  if ((y+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_Y) sub_tensor.Size_Y=Size_Y%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+
+  return(sub_tensor);
+ }
+
+ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
+ {
+  int32_t sx=x+Offset_X;
+  int32_t sy=y+Offset_Y;
+
+  int32_t dy=sx/NewDelta_X;
+  int32_t dx=sx-dy*NewDelta_X;
+
+  //пересчитываем в новые размеры матрицы поправок
+  if (dx%Stride_X==0 && dy%Stride_Y==0)
+  {
+   dx=dx/Stride_X;
+   dy=dy/Stride_Y;
+   return(sTensorKernel_Delta.GetElement(sy,dy,dx));
+  }
+  else return(0);
+ }
+ __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
+ {
+  int32_t sx=x+Offset_X;
+  int32_t sy=y+Offset_Y;
+
+  int32_t dy=sx/NewDelta_X;
+  int32_t dx=sx-dy*NewDelta_X;
+
+  //пересчитываем в новые размеры матрицы поправок
+  if (dx%Stride_X==0 && dy%Stride_Y==0)
+  {
+   dx=dx/Stride_X;
+   dy=dy/Stride_Y;
+   sTensorKernel_Delta.SetElement(sy,dy,dx,value);
+  }
+ }
+
+ __host__ __device__ size_t GetSizeX(void)
+ {
+  return(Size_X);
+ }
+
+ __host__ __device__ size_t GetSizeY(void)
+ {
+  return(Size_Y);
+ }
+
+ __host__ __device__ size_t GetSizeZ(void)
+ {
+  return(Size_Z);
+ }
+
+ __host__ __device__ void Reset(void)
+ {
+  sTensorKernel_Delta.Reset();
+  Size_X=0;
+  Size_Y=0;
+  Size_Z=0;
+  Offset_X=0;
+  Offset_Y=0;
+  Stride_X=0;
+  Stride_Y=0;
+  NewDelta_X=0;
+  NewDelta_Y=0;
+ }
+
+ __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t new_delta_y,int32_t new_delta_x,int32_t stride_y,int32_t stride_x)
+ {
+  sTensorKernel_Delta.Set(cTensor);
+
+  Size_Z=1;
+  Size_Y=cTensor.GetSizeZ();
+  Size_X=new_delta_x*new_delta_y;
+  Offset_X=0;
+  Offset_Y=0;
+  Stride_X=stride_x;
+  Stride_Y=stride_y;
+  NewDelta_X=new_delta_x;
+  NewDelta_Y=new_delta_y;
+ }
+};
+
 //----------------------------------------------------------------------------------------------------
 /*!создание поправок весов и смещений для прямой свёртки через умножение матриц
 */
@@ -765,33 +911,34 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(std::vector<CTensor<type_t> >
  int32_t delta_y=cTensor_Delta.Size_Y;
  int32_t delta_z=cTensor_Delta.Size_Z;
 
- int32_t dkernel_x=(image_x-delta_x+2*padding_x)/stride_x+1;//TODO: при шаге отличном от 1 результат неверный
- int32_t dkernel_y=(image_y-delta_y+2*padding_y)/stride_y+1;
-
+ int32_t dkernel_x=cTensor_dKernel[0].Size_X;
+ int32_t dkernel_y=cTensor_dKernel[0].Size_Y;
  int32_t dkernel_z=image_z;
+
  if (dkernel_x!=cTensor_dKernel[0].Size_X || dkernel_y!=cTensor_dKernel[0].Size_Y || dkernel_z!=cTensor_dKernel[0].Size_Z) throw("Неверные размеры тензора поправок к ядрам для обновления весов и смещений");
  if (delta_z!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы глубина тензора дельт совпадала с количеством ядер");
+
+ //новая дельта
+ int32_t new_delta_x=stride_x*(delta_x-1)+1;
+ int32_t new_delta_y=stride_y*(delta_y-1)+1;
 
  //перестроим входной тензор для выполнения умножения
  int32_t dst_y=dkernel_y;
  int32_t dst_x=dkernel_x;
 
  int32_t new_input_z=1;
- int32_t new_input_y=delta_y*delta_x;
+ int32_t new_input_y=new_delta_y*new_delta_x;
  int32_t new_input_x=dst_x*dst_y*image_z;
 
- //перестроим тензоры дельт в строку
- cTensor_Delta.ReinterpretSize(1,delta_z,delta_x*delta_y);
  //умножаем матрицы
  CTensor<type_t> cTensor_Output(1,delta_z,new_input_x);
 
  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
- STensorKernel<type_t> sTensorKernel_Delta(cTensor_Delta);
- STensorKernel_DeltaWeightAndBias_Image<type_t> sTensorKernel_Image(cTensor_Image,new_input_y,new_input_x,delta_y,delta_x,stride_y,stride_x,padding_y,padding_x,dst_y,dst_x);
+ STensorKernel_DeltaWeightAndBias_Delta<type_t> sTensorKernel_Delta(cTensor_Delta,new_delta_y,new_delta_x,stride_y,stride_x);
+ STensorKernel_DeltaWeightAndBias_Image<type_t> sTensorKernel_Image(cTensor_Image,new_input_y,new_input_x,new_delta_y,new_delta_x,1,1,padding_y,padding_x,dst_y,dst_x);
 
  CTensorMath<type_t>::MulAbstract(cTensor_Output,sTensorKernel_Output,cTensor_Delta,sTensorKernel_Delta,cTensor_Image,sTensorKernel_Image);
 
- cTensor_Delta.ReinterpretSize(delta_z,delta_y,delta_x);
  cTensor_Output.CopyFromDevice();
  cTensor_Output.ReinterpretSize(dkernel_z*delta_z,dkernel_y,dkernel_x);
 

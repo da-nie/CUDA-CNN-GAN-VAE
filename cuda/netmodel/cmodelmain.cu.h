@@ -64,23 +64,26 @@ class CModelMain
   ~CModelMain();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  type_t GetRandValue(type_t max_value);//случайное число
-  type_t SafeLog(type_t value);//логарифм с ограничением по размеру
-  type_t CrossEntropy(type_t y,type_t p);//перекрёстная энтропия
-  bool IsExit(void);//нужно ли выйти из потока
-  void SetExitState(bool state);//задать необходимость выхода из потока
+  type_t GetRandValue(type_t max_value);///<случайное число
+  double GetGaussRandValue(double MO,double sko);///<генератор случайных чисел с нормальным распределением
+  type_t SafeLog(type_t value);///<логарифм с ограничением по размеру
+  type_t CrossEntropy(type_t y,type_t p);///<перекрёстная энтропия
+  bool IsExit(void);///<нужно ли выйти из потока
+  void SetExitState(bool state);///<задать необходимость выхода из потока
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
-  bool LoadMNISTImage(const std::string &file_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);//загрузить образы изображений из MNIST
-  bool LoadImage(const std::string &path_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);//загрузить образы изображений
-  bool CreateResamplingImage(size_t input_image_width,size_t input_image_height,size_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image_output);//создать изображения другого разрешения
+  bool LoadMNISTImage(const std::string &file_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);///<загрузить образы изображений из MNIST
+  bool LoadImage(const std::string &path_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);///<загрузить образы изображений
+  bool CreateResamplingImage(size_t input_image_width,size_t input_image_height,size_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image_output);///<создать изображения другого разрешения
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить слои сети
   void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration);///<сохранить параметры обучения слоёв сети
   void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration);///<загрузить параметры обучения слоёв сети
-  void ExchangeImageIndex(std::vector<size_t> &index);//перемешать индексы изображений
-  void SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t output_image_width,size_t output_image_height,size_t output_image_depth);//сохранить изображение
-  void SpeedTest(void);//тест скорости
+  void ExchangeImageIndex(std::vector<size_t> &index);///<перемешать индексы изображений
+  void SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t output_image_width,size_t output_image_height,size_t output_image_depth);///<сохранить изображение
+  void SpeedTest(void);///<тест скорости
+  void SetRandomNormal(CTensor<type_t> &cTensor);///<заполнить тензор случайными числами с нормальным распределением
+
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -569,6 +572,46 @@ type_t CModelMain<type_t>::GetRandValue(type_t max_value)
  return((static_cast<type_t>(rand())*max_value)/static_cast<type_t>(RAND_MAX));
 }
 
+//----------------------------------------------------------------------------------------------------
+//генератор случайных чисел с нормальным распределением
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+double CModelMain<type_t>::GetGaussRandValue(double MO,double sko)
+{
+ double sum=0;
+ double x;
+ for(size_t n=0;n<28;n++) sum+=1.0*rand()/RAND_MAX;
+ x=(sqrt(2.0)*(sko)*(sum-14.))/2.11233+MO;
+ return(x);
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//заполнить тензор случайными числами с нормальным распределением
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelMain<type_t>::SetRandomNormal(CTensor<type_t> &cTensor)
+{
+ size_t size=cTensor.GetSizeX()*cTensor.GetSizeY()*cTensor.GetSizeZ();
+ double min=-1;
+ double max=1;
+ double average=(max+min)/2.0;
+ double sigma=(average-min)/3.0;
+
+ for(size_t x=0;x<cTensor.GetSizeX();x++)
+ {
+  for(size_t y=0;y<cTensor.GetSizeY();y++)
+  {
+   for(size_t z=0;z<cTensor.GetSizeZ();z++)
+   {
+    type_t value=static_cast<type_t>(GetGaussRandValue(average,sigma));
+    //есть вероятность (0.3%) что сгенерированное число выйдет за нужный нам диапазон
+    while(value<min || value>max) value=GetGaussRandValue(average,sigma);//если это произошло генерируем новое число.
+	cTensor.SetElement(z,y,x,value);
+   }
+  }
+ }
+}
 //----------------------------------------------------------------------------------------------------
 //логарифм с ограничением по размеру
 //----------------------------------------------------------------------------------------------------

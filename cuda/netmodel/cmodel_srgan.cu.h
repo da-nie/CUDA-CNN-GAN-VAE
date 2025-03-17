@@ -35,6 +35,9 @@ class CModelSR_GAN:public CModelBasicSR_GAN<type_t>
   using CModelBasicSR_GAN<type_t>::OUTPUT_IMAGE_HEIGHT;
   using CModelBasicSR_GAN<type_t>::OUTPUT_IMAGE_DEPTH;
 
+  using CModelBasicSR_GAN<type_t>::ITERATION_OF_SAVE_IMAGE;
+  using CModelBasicSR_GAN<type_t>::ITERATION_OF_SAVE_NET;
+
   using CModelBasicSR_GAN<type_t>::SPEED;
 
   using CModelBasicSR_GAN<type_t>::Net;
@@ -69,6 +72,9 @@ CModelSR_GAN<type_t>::CModelSR_GAN(void)
  SPEED=0.001;
 
  BATCH_SIZE=1;
+
+ ITERATION_OF_SAVE_IMAGE=10;
+ ITERATION_OF_SAVE_NET=10;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
