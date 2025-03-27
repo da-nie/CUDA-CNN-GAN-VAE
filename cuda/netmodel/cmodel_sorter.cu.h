@@ -149,7 +149,7 @@ CModelSorter<type_t>::CModelSorter(void)
  IMAGE_WIDTH=224;
  IMAGE_HEIGHT=224;
  IMAGE_DEPTH=3;
- BATCH_SIZE=10;
+ BATCH_SIZE=100;
 
  GROUP_SIZE=10;
 
@@ -179,6 +179,50 @@ void CModelSorter<type_t>::CreateSorter(void)
 {
  SorterNet.clear();
 
+
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolutionInput<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH)));
+
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,2,2,2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get())));
+
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,2,2,2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get())));
+
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,2,2,2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get())));
+
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,2,2,2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get())));
+
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64,5,2,2,2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get())));
+
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128,5,1,1,2,2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get())));
+
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(2048,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get())));
+
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(GROUP_SIZE,SorterNet[SorterNet.size()-1].get())));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
+ SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+
+/*
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolutionInput<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(IMAGE_DEPTH,3,1,1,0,0,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
@@ -220,6 +264,7 @@ void CModelSorter<type_t>::CreateSorter(void)
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(GROUP_SIZE,SorterNet[SorterNet.size()-1].get())));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get())));
+ */
 }
 
 
@@ -788,11 +833,11 @@ void CModelSorter<type_t>::Training(void)
   str="Общая ошибка сортировщика для итерации:";
   str+=std::to_string((long double)full_cost);
   SYSTEM::PutMessageToConsole(str);
-
+/*
   FILE *file=fopen("test.csv","ab");
   fprintf(file,"%i;%f\r\n",static_cast<int>(Iteration),full_cost);
   fclose(file);
-
+*/
 
   if (full_cost<END_COST) break;
   Iteration++;
@@ -1043,8 +1088,8 @@ void CModelSorter<type_t>::Execute(void)
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
  if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
- Sorting();
- //TrainingNet();
+ //Sorting();
+ TrainingNet();
 }
 
 #endif

@@ -66,7 +66,6 @@ class CModelBasicVAE:public CModelMain<type_t>
   using CModelMain<type_t>::STRING_BUFFER_SIZE;
   using CModelMain<type_t>::CUDA_PAUSE_MS;
 
-  using CModelMain<type_t>::GetRandValue;
   using CModelMain<type_t>::SafeLog;
   using CModelMain<type_t>::CrossEntropy;
   using CModelMain<type_t>::IsExit;
@@ -225,14 +224,7 @@ void CModelBasicVAE<type_t>::CreateFakeImage(CTensor<type_t> &cTensor_Image)
 {
  CTensor<type_t> cTensor_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
  if (IsExit()==true) throw("Стоп");
- type_t *ptr=cTensor_Input.GetColumnPtr(0,0);
- for(uint32_t n=0;n<NOISE_LAYER_SIZE;n++,ptr++)
- {
-  type_t r=GetRandValue(20.0)-10.0;
-  r/=10.0;
-  *ptr=r;
- }
- cTensor_Input.SetHostOnChange();
+ CRandom<type_t>::SetRandomNormal(cTensor_Input,-100,100);
  CoderNet[CoderNet.size()-1]->SetOutput(cTensor_Input);//входной вектор
  //выполняем прямой проход по сети
  for(size_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();

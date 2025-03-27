@@ -15,6 +15,7 @@
 #include "inetlayer.cu.h"
 #include "../cuda/tensor.cu.h"
 #include "neuron.cu.h"
+#include "../common/crandom.h"
 
 //****************************************************************************************************
 //макроопределения
@@ -92,7 +93,6 @@ class CNetLayerLinear:public INetLayer<type_t>
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
-  type_t GetRandValue(type_t max_value);///<получить случайное число
 };
 
 //****************************************************************************************************
@@ -126,19 +126,6 @@ CNetLayerLinear<type_t>::~CNetLayerLinear()
 //****************************************************************************************************
 //закрытые функции
 //****************************************************************************************************
-
-
-//----------------------------------------------------------------------------------------------------
-/*!получить случайное число
-\param[in] max_value Максимальное значение случайного числа
-\return Случайное число в диапазоне [0...max_value]
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-type_t CNetLayerLinear<type_t>::GetRandValue(type_t max_value)
-{
- return((static_cast<type_t>(rand())*max_value)/static_cast<type_t>(RAND_MAX));
-}
 
 //****************************************************************************************************
 //открытые функции
@@ -187,14 +174,18 @@ void CNetLayerLinear<type_t>::Reset(void)
 
  type_t size=static_cast<type_t>(cTensor_W.GetSizeX());//нормируется только по количеству входов нейрона
  type_t koeff=static_cast<type_t>(sqrt(2.0/size));
+ CTensor<type_t> cTensor_Rand(1,1,size);
  //веса
  for(size_t y=0;y<cTensor_W.GetSizeY();y++)
  {
+  //CRandom<type_t>::SetRandomNormal(cTensor_Rand,-koeff,koeff);
+  //CRandom<type_t>::SetRandomNormal(cTensor_Rand);
   for(size_t x=0;x<cTensor_W.GetSizeX();x++)
   {
    //используем метод инициализации He (Ге)
-   type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
+   type_t rnd=static_cast<type_t>(CRandom<type_t>::GetRandValue(2.0)-1.0);
    type_t init=rnd*koeff;
+   //type_t init=cTensor_Rand.GetElement(0,0,x);
    cTensor_W.SetElement(0,y,x,init);
   }
  }
@@ -204,8 +195,8 @@ void CNetLayerLinear<type_t>::Reset(void)
  for(size_t y=0;y<cTensor_B.GetSizeY();y++)
  {
   //используем метод инициализации He (Ге)
-  type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
-  type_t init=rnd*koeff;
+  //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
+  type_t init=0;//rnd*koeff;
   cTensor_B.SetElement(0,y,0,init);
  }
 }

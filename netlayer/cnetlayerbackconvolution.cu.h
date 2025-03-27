@@ -16,6 +16,7 @@
 #include "inetlayer.cu.h"
 #include "../cuda/tensor.cu.h"
 #include "neuron.cu.h"
+#include "../common/crandom.h"
 
 //****************************************************************************************************
 //макроопределения
@@ -105,7 +106,6 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
-  type_t GetRandValue(type_t max_value);///<получить случайное число
 };
 
 //****************************************************************************************************
@@ -143,19 +143,6 @@ CNetLayerBackConvolution<type_t>::~CNetLayerBackConvolution()
 //****************************************************************************************************
 //закрытые функции
 //****************************************************************************************************
-
-
-//----------------------------------------------------------------------------------------------------
-/*!получить случайное число
-\param[in] max_value Максимальное значение случайного числа
-\return Случайное число в диапазоне [0...max_value]
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-type_t CNetLayerBackConvolution<type_t>::GetRandValue(type_t max_value)
-{
- return((static_cast<type_t>(rand())*max_value)/static_cast<type_t>(RAND_MAX));
-}
 
 //****************************************************************************************************
 //открытые функции
@@ -228,12 +215,15 @@ void CNetLayerBackConvolution<type_t>::Reset(void)
  {
   type_t size=static_cast<type_t>(Kernel_X*Kernel_Y*Kernel_Z);
   type_t koeff=static_cast<type_t>(sqrt(2.0/size));
+  CTensor<type_t> cTensor_Rand(1,1,size);
+  CRandom<type_t>::SetRandomNormal(cTensor_Rand,-koeff,koeff);
   //веса
   for(size_t m=0;m<Kernel_X*Kernel_Y*Kernel_Z;m++)
   {
    //используем метод инициализации He (Ге)
-   type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
-   type_t init=rnd*koeff;
+   //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
+   //type_t init=rnd*koeff;
+   type_t init=cTensor_Rand.GetElement(0,0,m);
    cTensor_Kernel.SetElement(0,n,m,init);
   }
  }
@@ -243,7 +233,7 @@ void CNetLayerBackConvolution<type_t>::Reset(void)
  for(size_t z=0;z<Kernel_Amount;z++)
  {
   //используем метод инициализации He (Ге)
-  type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
+  //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
   type_t init=0;//rnd*koeff;//TODO: обнулено, пока не будет ясно, как считать поправки к смещениям
   cTensor_Bias.SetElement(z,0,0,init);
  }

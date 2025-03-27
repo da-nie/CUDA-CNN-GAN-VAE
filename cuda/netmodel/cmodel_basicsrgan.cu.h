@@ -68,7 +68,6 @@ class CModelBasicSR_GAN:public CModelMain<type_t>
   using CModelMain<type_t>::STRING_BUFFER_SIZE;
   using CModelMain<type_t>::CUDA_PAUSE_MS;
 
-  using CModelMain<type_t>::GetRandValue;
   using CModelMain<type_t>::SafeLog;
   using CModelMain<type_t>::CrossEntropy;
   using CModelMain<type_t>::IsExit;

@@ -88,10 +88,11 @@ struct cudaDeviceProp
 
  CModelGAN<float> cModelGAN;
  cModelGAN.Execute();
+/*
+ CModelVAE<float> cModelVAE;
+ cModelVAE.Execute();
 
- //CModelVAE<float> cModelVAE;
- //cModelVAE.Execute();
-
- //CModelSR_GAN<float> cModelSR_GAN;
- //cModelSR_GAN.Execute();
+ CModelSR_GAN<float> cModelSR_GAN;
+ cModelSR_GAN.Execute();
+ */
 }

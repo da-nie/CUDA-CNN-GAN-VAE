@@ -28,6 +28,8 @@
 		<Unit filename="common/craiifilein.h" />
 		<Unit filename="common/craiifileout.cpp" />
 		<Unit filename="common/craiifileout.h" />
+		<Unit filename="common/crandom.cpp" />
+		<Unit filename="common/crandom.h" />
 		<Unit filename="common/idatastream.cpp" />
 		<Unit filename="common/idatastream.h" />
 		<Unit filename="common/tga.cpp" />
