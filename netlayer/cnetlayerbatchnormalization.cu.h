@@ -23,6 +23,7 @@
 //****************************************************************************************************
 //константы
 //****************************************************************************************************
+static const double EPSILON=0.0000001;
 
 //****************************************************************************************************
 //предварительные объявления
@@ -45,6 +46,18 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
 
   type_t Beta;///<параметр сдвига
   type_t Gamma;///<параметр масштабирования
+
+  type_t dGamma;///<поправка
+  type_t dBeta;///<поправка
+
+  CTensor<type_t> cTensor_XMU;///<отклонение от среднего
+  CTensor<type_t> cTensor_XHAT;
+  CTensor<type_t> cTensor_DXHAT;
+  CTensor<type_t> cTensor_DXMU1;
+  CTensor<type_t> cTensor_DXMU2;
+  double IVAR;///<обратная дисперсия
+  double SQRTVAR;///<сигма
+  double VAR;///<дисперсия
 
   CTensor<type_t> cTensor_H;///<тензор выхода слоя
 
@@ -195,42 +208,61 @@ void CNetLayerBatchNormalization<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerBatchNormalization<type_t>::Forward(void)
 {
- static const double EPSILON=0.001;
+/*
+ #step1: calculate mean
+  mu = 1./N * np.sum(x, axis = 0)
 
+  #step2: subtract mean vector of every trainings example
+  xmu = x - mu
+
+  #step3: following the lower branch - calculation denominator
+  sq = xmu ** 2
+
+  #step4: calculate variance
+  var = 1./N * np.sum(sq, axis = 0)
+
+  #step5: add eps for numerical stability, then sqrt
+  sqrtvar = np.sqrt(var + eps)
+
+  #step6: invert sqrtwar
+  ivar = 1./sqrtvar
+
+  #step7: execute normalization
+  xhat = xmu * ivar
+
+  #step8: Nor the two transformation steps
+  gammax = gamma * xhat
+
+  #step9
+  out = gammax + beta
+
+  #store intermediate
+  cache = (xhat,gamma,xmu,ivar,sqrtvar,var,eps)
+*/
  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
  size_t input_x=input.GetSizeX();
  size_t input_y=input.GetSizeY();
  size_t input_z=input.GetSizeZ();
+
+ type_t N=static_cast<type_t>(input_x*input_y*input_z);
+ //type_t D=static_cast<type_t>(1);
+
  //считаем среднее
- double middle=0;
+ double mu=0;//mu = 1./N * np.sum(x, axis = 0)
  for(size_t z=0;z<input_z;z++)
  {
   for(size_t y=0;y<input_y;y++)
   {
    for(size_t x=0;x<input_x;x++)
    {
-	middle+=input.GetElement(z,y,x);
+	mu+=input.GetElement(z,y,x);
    }
   }
  }
- middle/=static_cast<double>(input_x*input_y*input_z);
- //считаем стандартное отклонение по пакету (дисперсию)
- double sigma=0;
- for(size_t z=0;z<input_z;z++)
- {
-  for(size_t y=0;y<input_y;y++)
-  {
-   for(size_t x=0;x<input_x;x++)
-   {
-    type_t e=input.GetElement(z,y,x);
-	sigma+=(e-middle)*(e-middle);
-   }
-  }
- }
- sigma/=static_cast<double>(input_x*input_y*input_z);
- //выполняем нормализацию
- double k=1.0/sqrt(sigma+EPSILON);
+ mu/=N;
+ //считаем отклонение элемента от среднего и дисперсию
+ VAR=0;
  for(size_t z=0;z<input_z;z++)
  {
   for(size_t y=0;y<input_y;y++)
@@ -238,9 +270,29 @@ void CNetLayerBatchNormalization<type_t>::Forward(void)
    for(size_t x=0;x<input_x;x++)
    {
 	type_t e=input.GetElement(z,y,x);
-	e=(e-middle)/k;//нормировка
-	e=e*Gamma+Beta;//сдвиг и масштабирование
-	cTensor_H.SetElement(z,y,x,e);
+	type_t xmu=e-mu;//xmu = x - mu
+	cTensor_XMU.SetElement(z,y,x,xmu);
+	//sq = xmu ** 2
+	VAR+=xmu*xmu;//var = 1./N * np.sum(sq, axis = 0)
+   }
+  }
+ }
+ VAR/=N;
+ SQRTVAR=sqrt(VAR+EPSILON);//sqrtvar = np.sqrt(var + eps)
+ IVAR=1.0/SQRTVAR;//ivar = 1./sqrtvar
+ //делаем нормализацию
+ for(size_t z=0;z<input_z;z++)
+ {
+  for(size_t y=0;y<input_y;y++)
+  {
+   for(size_t x=0;x<input_x;x++)
+   {
+	type_t xmu=cTensor_XMU.GetElement(z,y,x);
+	type_t xhat=xmu*IVAR;//xhat = xmu * ivar
+	cTensor_XHAT.SetElement(z,y,x,xhat);
+	type_t gammax=Gamma*xhat;//gammax = gamma * xhat
+	type_t out=gammax+Beta;//out = gammax + beta
+	cTensor_H.SetElement(z,y,x,out);
    }
   }
  }
@@ -325,6 +377,13 @@ void CNetLayerBatchNormalization<type_t>::TrainingStart(void)
  CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor();
  cTensor_Delta=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
  cTensor_PrevLayerError=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+
+ cTensor_XMU=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+ cTensor_XHAT=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+ cTensor_DXHAT=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+
+ cTensor_DXMU1=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());;
+ cTensor_DXMU2=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());;
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -336,6 +395,12 @@ void CNetLayerBatchNormalization<type_t>::TrainingStop(void)
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1);
  cTensor_PrevLayerError=CTensor<type_t>(1,1,1);
+ cTensor_XMU=CTensor<type_t>(1,1,1);
+ cTensor_XHAT=CTensor<type_t>(1,1,1);
+ cTensor_DXHAT=CTensor<type_t>(1,1,1);
+
+ cTensor_DXMU1=CTensor<type_t>(1,1,1);
+ cTensor_DXMU2=CTensor<type_t>(1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -344,9 +409,130 @@ void CNetLayerBatchNormalization<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerBatchNormalization<type_t>::TrainingBackward(bool create_delta_weight)
 {
- //умножаем тензор ошибки на тензор исключения поэлементно
- //CTensorMath<type_t>::TensorItemProduction(cTensor_PrevLayerError,cTensor_Delta,cTensor_H_BatchNormalization);
- //задаём ошибку предыдущего слоя
+/*
+ #unfold the variables stored in cache
+  xhat,gamma,xmu,ivar,sqrtvar,var,eps = cache
+
+  #get the dimensions of the input/output
+  N,D = dout.shape
+
+  #step9
+  dbeta = np.sum(dout, axis=0)
+  dgammax = dout #not necessary, but more understandable
+
+  #step8
+  dgamma = np.sum(dgammax*xhat, axis=0)
+  dxhat = dgammax * gamma
+
+  #step7
+  divar = np.sum(dxhat*xmu, axis=0)
+  dxmu1 = dxhat * ivar
+
+  #step6
+  dsqrtvar = -1. /(sqrtvar**2) * divar
+
+  #step5
+  dvar = 0.5 * 1. /np.sqrt(var+eps) * dsqrtvar
+
+  #step4
+  dsq = 1. /N * np.ones((N,D)) * dvar
+
+  #step3
+  dxmu2 = 2 * xmu * dsq
+
+  #step2
+  dx1 = (dxmu1 + dxmu2)
+  dmu = -1 * np.sum(dxmu1+dxmu2, axis=0)
+
+  #step1
+  dx2 = 1. /N * np.ones((N,D)) * dmu
+
+  #step0
+  dx = dx1 + dx2
+*/
+ CTensor<type_t> &dout=cTensor_Delta;
+
+ size_t dout_x=dout.GetSizeX();
+ size_t dout_y=dout.GetSizeY();
+ size_t dout_z=dout.GetSizeZ();
+
+ type_t N=static_cast<type_t>(dout_x*dout_y*dout_z);
+ //type_t D=static_cast<type_t>(1);
+
+ //считаем dbeta,dxhat
+ double dbeta=0;
+ double dgamma=0;
+ for(size_t z=0;z<dout_z;z++)
+ {
+  for(size_t y=0;y<dout_y;y++)
+  {
+   for(size_t x=0;x<dout_x;x++)
+   {
+	type_t e=dout.GetElement(z,y,x);
+	type_t xhat=cTensor_XHAT.GetElement(z,y,x);
+	dbeta+=e;//dbeta = np.sum(dout, axis=0)
+	dgamma+=e*xhat;//dgamma = np.sum(dout*xhat, axis=0)
+	type_t dxhat=e*Gamma;//dxhat = dout * gamma
+	cTensor_DXHAT.SetElement(z,y,x,dxhat);
+	type_t dxmul1=dxhat*IVAR;//dxmu1 = dxhat * ivar
+	cTensor_DXMU1.SetElement(z,y,x,dxmul1);
+   }
+  }
+ }
+ //считаем divar
+ double divar=0;
+ for(size_t z=0;z<dout_z;z++)
+ {
+  for(size_t y=0;y<dout_y;y++)
+  {
+   for(size_t x=0;x<dout_x;x++)
+   {
+	type_t dxhat=cTensor_DXHAT.GetElement(z,y,x);
+	type_t xmu=cTensor_XMU.GetElement(z,y,x);
+	divar+=dxhat*xmu;//divar = np.sum(dxhat*xmu, axis=0)
+   }
+  }
+ }
+ double dsqrtvar=-1.0/(SQRTVAR*SQRTVAR)*divar;//dsqrtvar = -1. /(sqrtvar**2) * divar
+ double dvar=0.5*1.0/sqrt(VAR+EPSILON)*dsqrtvar;//dvar = 0.5 * 1. /np.sqrt(var+eps) * dsqrtvar
+
+ //считаем dxmu2 и dmu
+ double dmu=0;
+ for(size_t z=0;z<dout_z;z++)
+ {
+  for(size_t y=0;y<dout_y;y++)
+  {
+   for(size_t x=0;x<dout_x;x++)
+   {
+	type_t xmu=cTensor_XMU.GetElement(z,y,x);
+	type_t dsq=dvar*1.0/N;//dsq = 1. /N * np.ones((N,D)) * dvar
+    type_t dxmu2=2.0*xmu*dsq;//dxmu2 = 2 * xmu * dsq
+    cTensor_DXMU2.SetElement(z,y,x,dxmu2);
+    type_t dxmu1=cTensor_DXMU1.GetElement(z,y,x);
+    dmu+=-1.0*(dxmu2+dxmu1);//dmu = -1 * np.sum(dxmu1+dxmu2, axis=0)
+   }
+  }
+ }
+ //формируем тензор ошибки
+ for(size_t z=0;z<dout_z;z++)
+ {
+  for(size_t y=0;y<dout_y;y++)
+  {
+   for(size_t x=0;x<dout_x;x++)
+   {
+    type_t dxmu1=cTensor_DXMU1.GetElement(z,y,x);
+    type_t dxmu2=cTensor_DXMU2.GetElement(z,y,x);
+    type_t dx1=dxmu1+dxmu2;//dx1 = (dxmu1 + dxmu2)
+    type_t dx2=dmu/N;
+    cTensor_PrevLayerError.SetElement(z,y,x,dx1+dx2);
+   }
+  }
+ }
+ if (create_delta_weight==true)
+ {
+  dGamma+=dgamma;
+  dBeta+=dbeta;
+ }
  PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
 }
 //----------------------------------------------------------------------------------------------------
@@ -356,6 +542,8 @@ void CNetLayerBatchNormalization<type_t>::TrainingBackward(bool create_delta_wei
 template<class type_t>
 void CNetLayerBatchNormalization<type_t>::TrainingResetDeltaWeight(void)
 {
+ dGamma=0;
+ dBeta=0;
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обновления весов
@@ -365,6 +553,10 @@ void CNetLayerBatchNormalization<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
+ Gamma-=dGamma*speed;
+ Beta-=dBeta*speed;
+
+ printf("dGamma[%f]:%f dBeta[%f]:%f\r\n",Gamma,dGamma,Beta,dBeta);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на тензор дельты слоя

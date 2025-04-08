@@ -785,7 +785,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
     str="Ошибка генератора:";
     str+=std::to_string((long double)gen_cost);
     SYSTEM::PutMessageToConsole(str);
-/*
+
     if (middle_answer<0.05)
     {
      if (generator_error<10) generator_error++;
@@ -798,7 +798,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
       if (middle_answer>=0.4) generator_error=0;
      }
     }
-*/
+
    }
    float gpu_time=cCUDATimeSpent.Stop();
    sprintf(str_b,"На минипакет ушло:%.2f мс.",gpu_time);
@@ -871,8 +871,8 @@ void CModelBasicGAN<type_t>::TrainingNet(bool mnist)
  //загружаем параметры обучения
  LoadTrainingParam();
  //запускаем обучение
- Training();
-// TrainingSeparable();
+ //Training();
+ TrainingSeparable();
  //отключаем обучение
  for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingStop();
  for(size_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingStop();
@@ -1085,8 +1085,8 @@ void CModelBasicGAN<type_t>::Execute(void)
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
  if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
- //TestTrainingGeneratorNet(true);
- TrainingNet(true);
+ TestTrainingGeneratorNet(true);
+ //TrainingNet(true);
 }
 
 #endif
