@@ -66,8 +66,15 @@ class CTensorMath
   //-деструктор-----------------------------------------------------------------------------------------
  public:
   //-открытые функции-----------------------------------------------------------------------------------
+  static void Inv(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<вычислить обратный тензор
+  static void Div(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<поделить тензоры
   static void Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры
+  static void AddValue(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t tensor_scale,type_t value);///<прибавить к каждому элементу тензора число
   static void Sub(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<вычесть тензоры
+  static void SubValue(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t tensor_scale,type_t value);//отнять от каждого элемента тензора число
+  static void Set(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale=1,type_t add_value=0);///<скопировать тензор с масштабированием
+  static void Pow2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale=1);///<возведение элементов тензора в квадрат
+  static void SQRT(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_sqrt_value);//вычисление квадратного корня из элементов тензора
   static void AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias);///<добавить смещения к элементам тензора (смещения одинаковы для x и y, но по z смещения разные)
   static void SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input);///<вычислить сумму элементов по X и Y для каждого Z
 
@@ -249,6 +256,135 @@ CTensor<type_t> operator*(const type_t &value_left,const CTensor<type_t> &cTenso
 //открытые функции
 //****************************************************************************************************
 
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для вычисления обратного тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorInvTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+ //получаем подтензоры
+ size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+
+ if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
+
+ size_t offset=xp+yp*tensor_output.GetSizeX();
+ type_t *in_ptr=tensor_input.GetTensorDataPtr(z)+offset;
+ type_t *out_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t e=(*in_ptr);
+
+ *out_ptr=1.0/e;
+}
+
+//----------------------------------------------------------------------------------------------------
+//вычисление обратного тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Inv(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::Inv: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor_Input.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorInvTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для деления тензоров
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorDivTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_left,STensorKernel<type_t> tensor_right,type_t left_scale,type_t right_scale)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+ //получаем подтензоры
+ size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+
+ if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
+
+ size_t offset=xp+yp*tensor_output.GetSizeX();
+ type_t *a_ptr=tensor_left.GetTensorDataPtr(z)+offset;
+ type_t *b_ptr=tensor_right.GetTensorDataPtr(z)+offset;
+ type_t *c_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+
+ *c_ptr=(*a_ptr)*left_scale/((*b_ptr)*right_scale);
+}
+
+//----------------------------------------------------------------------------------------------------
+//поделить тензоры
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Div(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale,type_t right_scale)
+{
+ if (cTensor_Left.Size_X!=cTensor_Right.Size_X || cTensor_Left.Size_Y!=cTensor_Right.Size_Y || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
+     cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
+ {
+  throw "CTensor::Div: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Left.CopyToDevice();
+ cTensor_Right.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Left(cTensor_Left);
+ STensorKernel<type_t> sTensorKernel_Right(cTensor_Right);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor_Left.Size_X/thread.x;
+ if (cTensor_Left.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor_Left.Size_Y/thread.y;
+ if (cTensor_Left.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor_Left.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorDivTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right,left_scale,right_scale);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для сложения тензоров
 //----------------------------------------------------------------------------------------------------
@@ -315,10 +451,10 @@ void CTensorMath<type_t>::Add(CTensor<type_t> &cTensor_Output,const CTensor<type
 }
 
 //----------------------------------------------------------------------------------------------------
-//функция CUDA для вычитания тензоров
+//функция CUDA для прибавления числа к элементам тензора
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__global__ void CUDATensorSubTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_left,STensorKernel<type_t> tensor_right,type_t left_scale,type_t right_scale)
+__global__ void CUDATensorAddValueTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,type_t tensor_scale,type_t value)
 {
  size_t blockCol=blockIdx.x;
  size_t blockRow=blockIdx.y;
@@ -333,13 +469,46 @@ __global__ void CUDATensorSubTensorFunction(STensorKernel<type_t> tensor_output,
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  size_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_left.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_right.GetTensorDataPtr(z)+offset;
- type_t *c_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *in_ptr=tensor_input.GetTensorDataPtr(z)+offset;
+ type_t *out_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
- *c_ptr=(*a_ptr)*left_scale-(*b_ptr)*right_scale;
+ *out_ptr=(*in_ptr)*tensor_scale+value;
+}
 
- __syncthreads();
+//----------------------------------------------------------------------------------------------------
+//прибавить к каждому элементу тензора число
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::AddValue(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t tensor_scale,type_t value)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::AddValue: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor_Input.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorAddValueTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,tensor_scale,value);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -375,7 +544,235 @@ void CTensorMath<type_t>::Sub(CTensor<type_t> &cTensor_Output,const CTensor<type
  if (blocks.x==0) blocks.x=1;
  if (blocks.y==0) blocks.y=1;
  if (blocks.z==0) blocks.z=1;
- CUDATensorSubTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right,left_scale,right_scale);
+ CUDATensorAddTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right,left_scale,-right_scale);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+//----------------------------------------------------------------------------------------------------
+//отнять от каждого элемента тензора число
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SubValue(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t tensor_scale,type_t value)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::SubValue: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor_Input.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorAddValueTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,tensor_scale,-value);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для копирования с масштабированием тензоров
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorSetTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,type_t scale,type_t add_value)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+ //получаем подтензоры
+ size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+
+ if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
+
+ size_t offset=xp+yp*tensor_output.GetSizeX();
+ type_t *in_ptr=tensor_input.GetTensorDataPtr(z)+offset;
+ type_t *out_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+
+ *out_ptr=(*in_ptr)*scale+add_value;
+
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+//скопировать тензор с масштабированием
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Set(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_value)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::Set: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ //запускаем процесс
+
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor_Input.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorSetTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,scale,add_value);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для возведение элементов тензора в квадрат
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorPow2TensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,type_t scale)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+ //получаем подтензоры
+ size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+
+ if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
+
+ size_t offset=xp+yp*tensor_output.GetSizeX();
+ type_t *in_ptr=tensor_input.GetTensorDataPtr(z)+offset;
+ type_t *out_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t e=(*in_ptr);
+
+ *out_ptr=e*e*scale;
+}
+
+//----------------------------------------------------------------------------------------------------
+//возведение элементов тензора в квадрат
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Pow2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::Pow2: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor_Input.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorPow2TensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,scale);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для вычисление квадратного корня из элементов тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorSQRTTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,type_t scale,type_t add_sqrt_value)
+{
+ size_t blockCol=blockIdx.x;
+ size_t blockRow=blockIdx.y;
+ size_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ size_t x=threadIdx.x;
+ size_t y=threadIdx.y;
+ //получаем подтензоры
+ size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+
+ if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
+
+ size_t offset=xp+yp*tensor_output.GetSizeX();
+ type_t *in_ptr=tensor_input.GetTensorDataPtr(z)+offset;
+ type_t *out_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t e=(*in_ptr);
+
+ *out_ptr=(sqrt(e+add_sqrt_value))*scale;
+}
+
+//----------------------------------------------------------------------------------------------------
+//вычисление квадратного корня из элементов тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SQRT(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_sqrt_value)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::SQRT: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ size_t block_x=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_x++;
+ size_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ size_t block_z=cTensor_Input.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorSQRTTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,scale,add_sqrt_value);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
@@ -510,6 +907,7 @@ __global__ void CUDASummXYTensorFunction(int32_t size,STensorKernel<type_t> tens
   d_xin[blockIdx.x]=sdata[0];
   if (blockIdx.x==0) *(tensor_output.GetTensorDataPtr(z))=sdata[0];
  }
+
  __syncthreads();
 }
 

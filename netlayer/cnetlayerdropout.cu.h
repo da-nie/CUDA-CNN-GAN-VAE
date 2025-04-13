@@ -12,6 +12,7 @@
 #include <fstream>
 
 #include "../common/idatastream.h"
+#include "../common/crandom.h"
 #include "inetlayer.cu.h"
 #include "../cuda/tensor.cu.h"
 #include "neuron.cu.h"
@@ -43,27 +44,29 @@ class CNetLayerDropOut:public INetLayer<type_t>
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
+  size_t BatchSize;///<размер пакета для обучения
+
   double DropOut;///<вероятность исключения нейронов
   bool Training;///<включён ли режим обучения
   //тензоры, используемые при обучении
-  CTensor<type_t> cTensor_H;///<тензор выхода слоя
-  CTensor<type_t> cTensor_H_DropOut;///<тензор исключения выхода слоя
-  CTensor<type_t> cTensor_Delta;///<тензор ошибки предыдущего слоя
+  std::vector<CTensor<type_t>> cTensor_H_Array;///<тензоры выхода слоя
+  std::vector<CTensor<type_t>> cTensor_H_DropOut_Array;///<тензоры исключения выхода слоя
+  std::vector<CTensor<type_t>> cTensor_Delta_Array;///<тензоры ошибки предыдущего слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerDropOut(double drop_out,INetLayer<type_t> *prev_layer_ptr=NULL);
+  CNetLayerDropOut(double drop_out,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);
   CNetLayerDropOut(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerDropOut();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(double drop_out,INetLayer<type_t> *prev_layer_ptr=NULL);///<создать слой
+  void Create(double drop_out,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию весов и сдвигов
-  void SetOutput(CTensor<type_t> &output);///<задать выход слоя
-  void GetOutput(CTensor<type_t> &output);///<получить выход слоя
+  void SetOutput(size_t unit_index,CTensor<type_t> &output);///<задать выход слоя
+  void GetOutput(size_t unit_index,CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
-  CTensor<type_t>& GetOutputTensor(void);///<получить ссылку на выходной тензор
+  CTensor<type_t>& GetOutputTensor(size_t unit_index);///<получить ссылку на выходной тензор
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
   bool Load(IDataStream *iDataStream_Ptr);///<загрузить параметры слоя
@@ -75,14 +78,13 @@ class CNetLayerDropOut:public INetLayer<type_t>
   void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
-  CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
+  CTensor<type_t>& GetDeltaTensor(size_t unit_index);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
+  void SetOutputError(size_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
-  type_t GetRandValue(type_t max_value);///<получить случайное число
 };
 
 //****************************************************************************************************
@@ -93,9 +95,9 @@ class CNetLayerDropOut:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerDropOut<type_t>::CNetLayerDropOut(double drop_out,INetLayer<type_t> *prev_layer_ptr)
+CNetLayerDropOut<type_t>::CNetLayerDropOut(double drop_out,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
 {
- Create(drop_out,prev_layer_ptr);
+ Create(drop_out,prev_layer_ptr,batch_size);
 }
 //----------------------------------------------------------------------------------------------------
 //!конструктор
@@ -117,19 +119,6 @@ CNetLayerDropOut<type_t>::~CNetLayerDropOut()
 //закрытые функции
 //****************************************************************************************************
 
-
-//----------------------------------------------------------------------------------------------------
-/*!получить случайное число
-\param[in] max_value Максимальное значение случайного числа
-\return Случайное число в диапазоне [0...max_value]
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-type_t CNetLayerDropOut<type_t>::GetRandValue(type_t max_value)
-{
- return((static_cast<type_t>(rand())*max_value)/static_cast<type_t>(RAND_MAX));
-}
-
 //****************************************************************************************************
 //открытые функции
 //****************************************************************************************************
@@ -143,10 +132,13 @@ type_t CNetLayerDropOut<type_t>::GetRandValue(type_t max_value)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerDropOut<type_t>::Create(double drop_out,INetLayer<type_t> *prev_layer_ptr)
+void CNetLayerDropOut<type_t>::Create(double drop_out,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
+
+ BatchSize=batch_size;
+
  DropOut=drop_out;
  Training=false;
 
@@ -172,7 +164,7 @@ void CNetLayerDropOut<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerDropOut<type_t>::SetOutput(CTensor<type_t> &output)
+void CNetLayerDropOut<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output)
 {
  throw("Слою DropOut нельзя задать выходное значение!");
 }
@@ -183,7 +175,7 @@ void CNetLayerDropOut<type_t>::SetOutput(CTensor<type_t> &output)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerDropOut<type_t>::GetOutput(CTensor<type_t> &output)
+void CNetLayerDropOut<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output)
 {
  throw("От слоя DropOut нельзя получить выходное значение!");
 }
@@ -196,24 +188,27 @@ void CNetLayerDropOut<type_t>::Forward(void)
  if (Training==false) return;
  //создаём матрицу исключения
 
- type_t mult=static_cast<type_t>(1.0/(1.0-DropOut));
-
- size_t size_x=cTensor_H_DropOut.GetSizeX();
- size_t size_y=cTensor_H_DropOut.GetSizeY();
- size_t size_z=cTensor_H_DropOut.GetSizeZ();
- cTensor_H_DropOut.Zero();
- for(size_t z=0;z<size_z;z++)
+ for(size_t n=0;n<BatchSize;n++)
  {
-  for(size_t y=0;y<size_y;y++)
+  type_t mult=static_cast<type_t>(1.0/(1.0-DropOut));
+
+  size_t size_x=cTensor_H_DropOut_Array[n].GetSizeX();
+  size_t size_y=cTensor_H_DropOut_Array[n].GetSizeY();
+  size_t size_z=cTensor_H_DropOut_Array[n].GetSizeZ();
+  cTensor_H_DropOut_Array[n].Zero();
+  for(size_t z=0;z<size_z;z++)
   {
-   for(size_t x=0;x<size_x;x++)
+   for(size_t y=0;y<size_y;y++)
    {
-    if (GetRandValue(1)>=DropOut) cTensor_H_DropOut.SetElement(z,y,x,mult);
+    for(size_t x=0;x<size_x;x++)
+    {
+     if (CRandom<type_t>::GetRandValue(1)>=DropOut) cTensor_H_DropOut_Array[n].SetElement(z,y,x,mult);
+    }
    }
   }
+  //умножаем входной тензор на тензор исключения поэлементно
+  CTensorMath<type_t>::TensorItemProduction(cTensor_H_Array[n],PrevLayerPtr->GetOutputTensor(n),cTensor_H_DropOut_Array[n]);
  }
- //умножаем входной тензор на тензор исключения поэлементно
- CTensorMath<type_t>::TensorItemProduction(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_H_DropOut);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -221,10 +216,10 @@ void CNetLayerDropOut<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerDropOut<type_t>::GetOutputTensor(void)
+CTensor<type_t>& CNetLayerDropOut<type_t>::GetOutputTensor(size_t unit_index)
 {
- if (Training==true) return(cTensor_H);
- return(PrevLayerPtr->GetOutputTensor());
+ if (Training==true) return(cTensor_H_Array[unit_index]);
+ return(PrevLayerPtr->GetOutputTensor(unit_index));
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать указатель на последующий слой
@@ -292,10 +287,17 @@ void CNetLayerDropOut<type_t>::TrainingStart(void)
 {
  Training=true;
  //создаём все вспомогательные тензоры
- CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor();
- cTensor_H=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
- cTensor_H_DropOut=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
- cTensor_Delta=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+ cTensor_H_Array.resize(BatchSize);
+ cTensor_H_DropOut_Array.resize(BatchSize);
+ cTensor_Delta_Array.resize(BatchSize);
+
+ CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor(0);
+ for(size_t n=0;n<BatchSize;n++)
+ {
+  cTensor_H_Array[n]=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+  cTensor_H_DropOut_Array[n]=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+  cTensor_Delta_Array[n]=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+ }
  cTensor_PrevLayerError=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
 }
 //----------------------------------------------------------------------------------------------------
@@ -307,9 +309,9 @@ void CNetLayerDropOut<type_t>::TrainingStop(void)
 {
  Training=false;
  //удаляем все вспомогательные тензоры
- cTensor_H=CTensor<type_t>(1,1,1);
- cTensor_H_DropOut=CTensor<type_t>(1,1,1);
- cTensor_Delta=CTensor<type_t>(1,1,1);
+ cTensor_H_Array.clear();
+ cTensor_H_DropOut_Array.clear();
+ cTensor_Delta_Array.clear();
  cTensor_PrevLayerError=CTensor<type_t>(1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
@@ -319,10 +321,13 @@ void CNetLayerDropOut<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerDropOut<type_t>::TrainingBackward(bool create_delta_weight)
 {
- //умножаем тензор ошибки на тензор исключения поэлементно
- CTensorMath<type_t>::TensorItemProduction(cTensor_PrevLayerError,cTensor_Delta,cTensor_H_DropOut);
- //задаём ошибку предыдущего слоя
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
+ for(size_t n=0;n<BatchSize;n++)
+ {
+  //умножаем тензор ошибки на тензор исключения поэлементно
+  CTensorMath<type_t>::TensorItemProduction(cTensor_PrevLayerError,cTensor_Delta_Array[n],cTensor_H_DropOut_Array[n]);
+  //задаём ошибку предыдущего слоя
+  PrevLayerPtr->SetOutputError(n,cTensor_PrevLayerError);
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -347,9 +352,9 @@ void CNetLayerDropOut<type_t>::TrainingUpdateWeight(double speed,double iteratio
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerDropOut<type_t>::GetDeltaTensor(void)
+CTensor<type_t>& CNetLayerDropOut<type_t>::GetDeltaTensor(size_t unit_index)
 {
- return(cTensor_Delta);
+ return(cTensor_Delta_Array[unit_index]);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать ошибку и расчитать дельту
@@ -357,9 +362,9 @@ CTensor<type_t>& CNetLayerDropOut<type_t>::GetDeltaTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerDropOut<type_t>::SetOutputError(CTensor<type_t>& error)
+void CNetLayerDropOut<type_t>::SetOutputError(size_t unit_index,CTensor<type_t>& error)
 {
- cTensor_Delta=error;
+ cTensor_Delta_Array[unit_index]=error;
 }
 
 //----------------------------------------------------------------------------------------------------

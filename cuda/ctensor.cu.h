@@ -120,6 +120,7 @@ class CTensor
   CCUDADeviceVector<type_t>& GetDeviceVector(void) const;///<получить класс хранения данных на устройстве
   void Unitary(void);///<привести к единичному виду
   void Zero(void);///<обнулить тензор
+  void Fill(type_t value);///<задать тензор числом
   void Move(CTensor<type_t> &cTensor);///<переместить тензор
   void CopyItem(CTensor<type_t> &cTensor);///<скопировать только элементы
   void CopyItemToHost(type_t *item_array,size_t size);///<скопировать элементы из массива в хост
@@ -152,7 +153,7 @@ class CTensor
 
   void Print(const std::string &name,bool print_value=true) const;///<вывод тензора на экран
   void PrintToFile(const std::string &file_name,const std::string &name,bool print_value=true) const;///<вывод тензора в файл
-  bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="") const;///<сравнение тензоровzz
+  bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="",bool print_value=true) const;///<сравнение тензоровzz
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -317,7 +318,6 @@ CCUDADeviceVector<type_t>& CTensor<type_t>::GetDeviceVector(void) const
 template<class type_t>
 void CTensor<type_t>::Unitary(void)
 {
- CopyFromDevice();
  type_t *o_ptr=&Item[0];
  for(size_t z=0;z<Size_Z;z++)
  {
@@ -338,7 +338,6 @@ void CTensor<type_t>::Unitary(void)
 template<class type_t>
 void CTensor<type_t>::Zero(void)
 {
- CopyFromDevice();
  type_t *o_ptr=&Item[0];
  for(size_t z=0;z<Size_Z;z++)
  {
@@ -353,6 +352,25 @@ void CTensor<type_t>::Zero(void)
  SetHostOnChange();
 }
 
+//----------------------------------------------------------------------------------------------------
+//задать тензор числом
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensor<type_t>::Fill(type_t value)
+{
+ type_t *o_ptr=&Item[0];
+ for(size_t z=0;z<Size_Z;z++)
+ {
+  for(size_t y=0;y<Size_Y;y++)
+  {
+   for(size_t x=0;x<Size_X;x++,o_ptr++)
+   {
+    *o_ptr=value;
+   }
+  }
+ }
+ SetHostOnChange();
+}
 //----------------------------------------------------------------------------------------------------
 //переместить тензор
 //----------------------------------------------------------------------------------------------------
@@ -672,7 +690,7 @@ void CTensor<type_t>::PrintToFile(const std::string &file_name,const std::string
 ///!сравнение тензоров
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::string &name) const
+bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::string &name,bool print_value) const
 {
  char str[255];
 
@@ -684,13 +702,13 @@ bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::
  bool ret=true;
 
  sprintf(str,"***** %s *****",name.c_str());
- SYSTEM::PutMessageToConsole(str);
+ if (print_value==true) SYSTEM::PutMessageToConsole(str);
  sprintf(str,"Z:%i Y:%i X:%i",static_cast<int>(Size_Z),static_cast<int>(Size_Y),static_cast<int>(Size_X));
- SYSTEM::PutMessageToConsole(str);
+ if (print_value==true) SYSTEM::PutMessageToConsole(str);
  for(size_t z=0;z<GetSizeZ();z++)
  {
   sprintf(str,"-----%i-----",static_cast<int>(z));
-  SYSTEM::PutMessageToConsole(str);
+  if (print_value==true) SYSTEM::PutMessageToConsole(str);
   for(size_t y=0;y<GetSizeY();y++)
   {
    std::string line;
@@ -702,10 +720,10 @@ bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::
 	line+=str;
     if (fabs(e1-e2)>EPS) ret=false;
    }
-   SYSTEM::PutMessageToConsole(line);
+   if (print_value==true) SYSTEM::PutMessageToConsole(line);
   }
  }
- SYSTEM::PutMessageToConsole("");
+ if (print_value==true) SYSTEM::PutMessageToConsole("");
  return(ret);
 }
 

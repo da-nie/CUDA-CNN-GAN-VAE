@@ -1,126 +1,126 @@
 # depslib dependency file v1.0
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/ccolormodel.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/ccolormodel.cpp
 	"ccolormodel.h"
 	<math.h>
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/ccolormodel.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/ccolormodel.h
 	<stdio.h>
 	<stdint.h>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/cdatastreamfile.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/cdatastreamfile.cpp
 	"cdatastreamfile.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/cdatastreamfile.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/cdatastreamfile.h
 	<string>
 	<memory>
 	<fstream>
 	"idatastream.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/idatastream.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/idatastream.h
 	<stdint.h>
 	<string>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/craiifilein.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/craiifilein.cpp
 	"craiifilein.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/craiifilein.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/craiifilein.h
 	<stdio.h>
 	<string>
 	<fstream>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/craiifileout.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/craiifileout.cpp
 	"craiifileout.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/craiifileout.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/craiifileout.h
 	<stdio.h>
 	<string>
 	<fstream>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/idatastream.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/idatastream.cpp
 	"idatastream.h"
 	"cdatastreamfile.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/tga.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/tga.cpp
 	"tga.h"
 	"craiifilein.h"
 	"craiifileout.h"
 	<string.h>
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/tga.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/tga.h
 	<stdio.h>
 	<stdint.h>
 
-1686044155 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensor.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensor.cpp
 	"ctensor.h"
 
-1731347844 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensor.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensor.h
 	<vector>
 	<math.h>
 	"../common/idatastream.h"
 	"../system/system.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/system/system.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/system/system.h
 	<vector>
 	<string>
 
-1686044155 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensorapplyfunc.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensorapplyfunc.cpp
 	"ctensorapplyfunc.h"
 
-1737197811 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensorapplyfunc.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensorapplyfunc.h
 	"ctensor.h"
 	"ctensormath.h"
 
-1731424381 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensormath.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensormath.h
 	"ctensor.h"
 
-1686044155 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensorconv.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensorconv.cpp
 	"ctensorconv.h"
 
-1742313755 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensorconv.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensorconv.h
 	"ctensor.h"
 	"ctensormath.h"
 	<vector>
 
-1686044155 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensormath.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensormath.cpp
 	"ctensormath.h"
 
-1686044155 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensortest.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensortest.cpp
 	"ctensortest.h"
 
-1686044155 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensortest.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensortest.h
 	"ctensor.h"
 	"../system/system.h"
 	"ctensormath.h"
 	"ctensorapplyfunc.h"
 	"ctensorconv.h"
 
-1686044155 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/tensor.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/tensor.cpp
 	"tensor.h"
 
-1686044155 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/tensor.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/tensor.h
 	"ctensor.h"
 	"ctensormath.h"
 	"ctensorconv.h"
 	"ctensorapplyfunc.h"
 	"ctensortest.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu
 	"ccudatimespent.cu.h"
 
-1731344752 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu.h
 	<stdio.h>
 	<stdint.h>
 	<cuda_runtime.h>
 	<cuda_runtime_api.h>
 	"handle_error.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/handle_error.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/handle_error.cu.h
 	"../system/system.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensor.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensor.cu
 	"ctensor.cu.h"
 
-1741102699 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensor.cu.h
+1744470040 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensor.cu.h
 	"../settings.h"
 	"../cpu/ctensor.h"
 	<vector>
@@ -132,9 +132,9 @@
 	"../system/system.h"
 	"ccudadevicevector.cu.h"
 
-1742315276 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/settings.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/settings.h
 
-1741101316 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudadevicevector.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudadevicevector.cu.h
 	<stdio.h>
 	<stdint.h>
 	<cuda_runtime.h>
@@ -142,24 +142,24 @@
 	"handle_error.cu.h"
 	"../system/system.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu
 	"ctensorapplyfunc.cu.h"
 
-1737197767 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu.h
 	"../settings.h"
 	"../cpu/ctensorapplyfunc.h"
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 
-1741100034 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
+1744474076 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
 	"../settings.h"
 	"../cpu/ctensormath.h"
 	"ctensor.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu
 	"ctensorconv.cu.h"
 
-1742313801 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu.h
 	"../settings.h"
 	"../cpu/ctensorconv.h"
 	"ctensor.cu.h"
@@ -167,43 +167,40 @@
 	<vector>
 	"ccudatimespent.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu
 	"ctensormath.cu.h"
 
-1741106462 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu
 	"ctimestamp.cu.h"
 	"../system/system.h"
 
-1741106402 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu.h
 	<string>
 	<cuda_runtime.h>
 	<cuda_runtime_api.h>
 	"ccudatimespent.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu
 	"ctensortest.cu.h"
 
-1742313833 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu.h
 	"ctensor.cu.h"
 	"../system/system.h"
 	"ctensormath.cu.h"
 	"ctensorapplyfunc.cu.h"
 	"ctensorconv.cu.h"
 
-1743436958 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/cuda.cu
+1744447703 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/cuda.cu
 	"cuda.cu.h"
 	<cstdio>
 	<ctime>
 	<stdio.h>
 	<stdint.h>
 	"handle_error.cu.h"
-	"netmodel/cmodel_sorter.cu.h"
 	"netmodel/cmodel_gan.cu.h"
-	"netmodel/cmodel_srgan.cu.h"
-	"netmodel/cmodel_vae.cu.h"
 	"../system/system.h"
 
-1731344731 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/cuda.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/cuda.cu.h
 
 1743519200 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_sorter.cu.h
 	<string>
@@ -230,7 +227,7 @@
 	"../tensor.cu.h"
 	"../../libjpeg/jpeglib.h"
 
-1742755664 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu.h
+1744457209 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -239,29 +236,30 @@
 	"neuron.cu.h"
 	"../common/crandom.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu.h
+1744448236 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu.h
 	<stdio.h>
 
-1731344738 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/tensor.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/tensor.cu.h
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 	"ctensorconv.cu.h"
 	"ctensorapplyfunc.cu.h"
 	"ctensortest.cu.h"
 
-1736963805 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/neuron.cu.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/neuron.cu.h
 	<stdio.h>
 	<stdint.h>
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu.h
+1744455297 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
+	"../common/crandom.h"
 	"inetlayer.cu.h"
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1743519490 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu.h
+1744457417 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -271,7 +269,7 @@
 	"neuron.cu.h"
 	"../common/crandom.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu.h
+1744449243 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -279,7 +277,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1742497054 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
+1744457469 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -289,7 +287,7 @@
 	"neuron.cu.h"
 	"../common/crandom.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu.h
+1744457510 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -298,7 +296,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu.h
+1744456202 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -307,7 +305,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu.h
+1744457536 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -316,7 +314,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu.h
+1744457972 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -325,24 +323,24 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jpeglib.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jpeglib.h
 	"jconfig.h"
 	"jmorecfg.h"
 	"jpegint.h"
 	"jerror.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jconfig.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jconfig.h
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jmorecfg.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jmorecfg.h
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jpegint.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jpegint.h
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jerror.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jerror.h
 
-1743247720 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_gan.cu.h
+1744562228 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_gan.cu.h
 	"cmodel_basicgan.cu.h"
 
-1743436911 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicgan.cu.h
+1744562316 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicgan.cu.h
 	<string>
 	<vector>
 	<array>
@@ -356,7 +354,7 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1742835807 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodelmain.cu.h
+1744474358 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodelmain.cu.h
 	<string>
 	<vector>
 	<array>
@@ -382,7 +380,7 @@
 	"../tensor.cu.h"
 	"../../common/crandom.h"
 
-1736963415 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu.h
+1744457229 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -390,7 +388,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
+1744562498 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -432,23 +430,23 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/tensor.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/tensor.cu
 	"tensor.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/cdjpeg.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/cdjpeg.c
 	"cdjpeg.h"
 	<ctype.h>
 	<signal.h>
 	<fcntl.h>
 	<io.h>
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/cdjpeg.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/cdjpeg.h
 	"jinclude.h"
 	"jpeglib.h"
 	"jerror.h"
 	"cderror.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jinclude.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jinclude.h
 	"jconfig.h"
 	<stddef.h>
 	<stdlib.h>
@@ -457,151 +455,151 @@
 	<strings.h>
 	<string.h>
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/cderror.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/cderror.h
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jaricom.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jaricom.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcapimin.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcapimin.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcapistd.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcapistd.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcarith.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcarith.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jccoefct.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jccoefct.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jccolor.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jccolor.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcdctmgr.c
-	"jinclude.h"
-	"jpeglib.h"
-	"jdct.h"
-
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdct.h
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jchuff.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcinit.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcmainct.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcmarker.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcmaster.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcomapi.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcparam.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcprepct.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcsample.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jctrans.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdapimin.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdapistd.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdarith.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdatadst.c
-	"jinclude.h"
-	"jpeglib.h"
-	"jerror.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdatasrc.c
-	"jinclude.h"
-	"jpeglib.h"
-	"jerror.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdcoefct.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdcolor.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jddctmgr.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcdctmgr.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdhuff.c
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdct.h
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jchuff.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdinput.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcinit.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdmainct.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcmainct.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdmarker.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcmarker.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdmaster.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcmaster.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdmerge.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcomapi.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdpostct.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcparam.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdsample.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcprepct.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdtrans.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jcsample.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jerror.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jctrans.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdapimin.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdapistd.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdarith.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdatadst.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jerror.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdatasrc.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jerror.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdcoefct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdcolor.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jddctmgr.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdhuff.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdinput.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdmainct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdmarker.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdmaster.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdmerge.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdpostct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdsample.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jdtrans.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jerror.c
 	<windows.h>
 	"jinclude.h"
 	"jpeglib.h"
@@ -609,157 +607,157 @@
 	"jerror.h"
 	"jerror.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jversion.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jversion.h
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jfdctflt.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jfdctflt.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jfdctfst.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jfdctfst.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jfdctint.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jfdctint.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jidctflt.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jidctflt.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jidctfst.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jidctfst.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jidctint.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jidctint.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jmemansi.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jmemansi.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jmemsys.h"
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jmemsys.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jmemsys.h
 	<Files.h>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jmemmgr.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jmemmgr.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jmemsys.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jquant1.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jquant1.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jquant2.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jquant2.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jutils.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jutils.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdbmp.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdbmp.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdcolmap.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdcolmap.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdgif.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdgif.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdppm.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdppm.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdrle.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdrle.c
 	"cdjpeg.h"
 	<rle.h>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdswitch.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdswitch.c
 	"cdjpeg.h"
 	<ctype.h>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdtarga.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/rdtarga.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/transupp.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/transupp.c
 	"jinclude.h"
 	"jpeglib.h"
 	"transupp.h"
 	<ctype.h>
 
-1712386978 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/transupp.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/transupp.h
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrbmp.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrbmp.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrgif.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrgif.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrppm.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrppm.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrrle.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrrle.c
 	"cdjpeg.h"
 	<rle.h>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrtarga.c
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/wrtarga.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/main.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/main.cpp
 	"cuda/cuda.cu.h"
 	<stdio.h>
 	<stdlib.h>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu
 	"cnetlayeraveragepooling.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu
 	"cnetlayerbackconvolution.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu
 	"cnetlayerbatchnormalization.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu
 	"cnetlayerconvolution.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu
 	"cnetlayerconvolutioninput.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu
 	"cnetlayerdropout.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu
 	"cnetlayerfunction.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu
 	"cnetlayerlinear.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu
 	"cnetlayermaxpooling.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu
 	"cnetlayermaxpooling.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu
 	"cnetlayerupsampling.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu
 	"inetlayer.cu.h"
 
-1736963799 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/neuron.cu
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/neuron.cu
 	"neuron.cu.h"
 	<math.h>
 	<stdio.h>
 
-1712386978 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/system/system.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/system/system.cpp
 	"system.h"
 	<dirent.h>
 	<string.h>
@@ -1529,128 +1527,128 @@
 	<sys/times.h>
 	<unistd.h>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/ccolormodel.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/ccolormodel.cpp
 	"ccolormodel.h"
 	<math.h>
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/ccolormodel.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/ccolormodel.h
 	<stdio.h>
 	<stdint.h>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/cdatastreamfile.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/cdatastreamfile.cpp
 	"cdatastreamfile.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/cdatastreamfile.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/cdatastreamfile.h
 	<string>
 	<memory>
 	<fstream>
 	"idatastream.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/idatastream.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/idatastream.h
 	<stdint.h>
 	<string>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/craiifilein.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/craiifilein.cpp
 	"craiifilein.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/craiifilein.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/craiifilein.h
 	<stdio.h>
 	<string>
 	<fstream>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/craiifileout.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/craiifileout.cpp
 	"craiifileout.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/craiifileout.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/craiifileout.h
 	<stdio.h>
 	<string>
 	<fstream>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/idatastream.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/idatastream.cpp
 	"idatastream.h"
 	"cdatastreamfile.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/tga.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/tga.cpp
 	"tga.h"
 	"craiifilein.h"
 	"craiifileout.h"
 	<string.h>
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/tga.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/tga.h
 	<stdio.h>
 	<stdint.h>
 
-1686044155 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensor.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensor.cpp
 	"ctensor.h"
 
-1731347844 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensor.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensor.h
 	<vector>
 	<math.h>
 	"../common/idatastream.h"
 	"../system/system.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/system/system.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/system/system.h
 	<vector>
 	<string>
 
-1686044155 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensorapplyfunc.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensorapplyfunc.cpp
 	"ctensorapplyfunc.h"
 
-1737197811 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensorapplyfunc.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensorapplyfunc.h
 	"ctensor.h"
 	"ctensormath.h"
 
-1731424381 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensormath.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensormath.h
 	"ctensor.h"
 
-1686044155 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensorconv.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensorconv.cpp
 	"ctensorconv.h"
 
-1742313755 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensorconv.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensorconv.h
 	"ctensor.h"
 	"ctensormath.h"
 	<vector>
 
-1686044155 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensormath.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensormath.cpp
 	"ctensormath.h"
 
-1686044155 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensortest.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensortest.cpp
 	"ctensortest.h"
 
-1686044155 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensortest.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/ctensortest.h
 	"ctensor.h"
 	"../system/system.h"
 	"ctensormath.h"
 	"ctensorapplyfunc.h"
 	"ctensorconv.h"
 
-1686044155 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/tensor.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/tensor.cpp
 	"tensor.h"
 
-1686044155 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/tensor.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cpu/tensor.h
 	"ctensor.h"
 	"ctensormath.h"
 	"ctensorconv.h"
 	"ctensorapplyfunc.h"
 	"ctensortest.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu
 	"ccudatimespent.cu.h"
 
-1731344752 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu.h
 	<stdio.h>
 	<stdint.h>
 	<cuda_runtime.h>
 	<cuda_runtime_api.h>
 	"handle_error.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/handle_error.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/handle_error.cu.h
 	"../system/system.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensor.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensor.cu
 	"ctensor.cu.h"
 
-1741102699 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensor.cu.h
+1744470040 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensor.cu.h
 	"../settings.h"
 	"../cpu/ctensor.h"
 	<vector>
@@ -1662,9 +1660,9 @@
 	"../system/system.h"
 	"ccudadevicevector.cu.h"
 
-1742315276 /home/da-nie/Working/CUDA-CNN-GAN-VAE/settings.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/settings.h
 
-1741101316 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ccudadevicevector.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ccudadevicevector.cu.h
 	<stdio.h>
 	<stdint.h>
 	<cuda_runtime.h>
@@ -1672,24 +1670,24 @@
 	"handle_error.cu.h"
 	"../system/system.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu
 	"ctensorapplyfunc.cu.h"
 
-1737197767 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu.h
 	"../settings.h"
 	"../cpu/ctensorapplyfunc.h"
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 
-1741100034 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
+1744474076 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
 	"../settings.h"
 	"../cpu/ctensormath.h"
 	"ctensor.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu
 	"ctensorconv.cu.h"
 
-1742313801 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu.h
 	"../settings.h"
 	"../cpu/ctensorconv.h"
 	"ctensor.cu.h"
@@ -1697,43 +1695,40 @@
 	<vector>
 	"ccudatimespent.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu
 	"ctensormath.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu
 	"ctensortest.cu.h"
 
-1742313833 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu.h
 	"ctensor.cu.h"
 	"../system/system.h"
 	"ctensormath.cu.h"
 	"ctensorapplyfunc.cu.h"
 	"ctensorconv.cu.h"
 
-1741106462 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu
 	"ctimestamp.cu.h"
 	"../system/system.h"
 
-1741106402 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu.h
 	<string>
 	<cuda_runtime.h>
 	<cuda_runtime_api.h>
 	"ccudatimespent.cu.h"
 
-1742653539 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/cuda.cu
+1744447703 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/cuda.cu
 	"cuda.cu.h"
 	<cstdio>
 	<ctime>
 	<stdio.h>
 	<stdint.h>
 	"handle_error.cu.h"
-	"netmodel/cmodel_sorter.cu.h"
 	"netmodel/cmodel_gan.cu.h"
-	"netmodel/cmodel_srgan.cu.h"
-	"netmodel/cmodel_vae.cu.h"
 	"../system/system.h"
 
-1731344731 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/cuda.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/cuda.cu.h
 
 1742652619 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_sorter.cu.h
 	<string>
@@ -1760,7 +1755,7 @@
 	"../tensor.cu.h"
 	"../../libjpeg/jpeglib.h"
 
-1742755664 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu.h
+1744457209 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -1769,29 +1764,30 @@
 	"neuron.cu.h"
 	"../common/crandom.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu.h
+1744448236 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu.h
 	<stdio.h>
 
-1731344738 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/tensor.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/tensor.cu.h
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 	"ctensorconv.cu.h"
 	"ctensorapplyfunc.cu.h"
 	"ctensortest.cu.h"
 
-1736963805 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/neuron.cu.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/neuron.cu.h
 	<stdio.h>
 	<stdint.h>
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu.h
+1744455297 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
+	"../common/crandom.h"
 	"inetlayer.cu.h"
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1742918806 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu.h
+1744457417 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -1801,7 +1797,7 @@
 	"neuron.cu.h"
 	"../common/crandom.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu.h
+1744449243 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -1809,7 +1805,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1742497054 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
+1744457469 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -1819,7 +1815,7 @@
 	"neuron.cu.h"
 	"../common/crandom.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu.h
+1744457510 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -1828,7 +1824,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu.h
+1744456202 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -1837,7 +1833,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu.h
+1744457536 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -1846,7 +1842,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu.h
+1744457972 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -1855,24 +1851,24 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jpeglib.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jpeglib.h
 	"jconfig.h"
 	"jmorecfg.h"
 	"jpegint.h"
 	"jerror.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jconfig.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jconfig.h
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jmorecfg.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jmorecfg.h
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jpegint.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jpegint.h
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jerror.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jerror.h
 
-1743247720 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_gan.cu.h
+1744532297 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_gan.cu.h
 	"cmodel_basicgan.cu.h"
 
-1743257753 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicgan.cu.h
+1744531662 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicgan.cu.h
 	<string>
 	<vector>
 	<array>
@@ -1886,7 +1882,7 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1742835807 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodelmain.cu.h
+1744474358 /home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodelmain.cu.h
 	<string>
 	<vector>
 	<array>
@@ -1912,7 +1908,7 @@
 	"../tensor.cu.h"
 	"../../common/crandom.h"
 
-1736963415 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu.h
+1744457229 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -1920,7 +1916,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
+1744531318 /home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -1962,23 +1958,23 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/tensor.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/cuda/tensor.cu
 	"tensor.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/cdjpeg.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/cdjpeg.c
 	"cdjpeg.h"
 	<ctype.h>
 	<signal.h>
 	<fcntl.h>
 	<io.h>
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/cdjpeg.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/cdjpeg.h
 	"jinclude.h"
 	"jpeglib.h"
 	"jerror.h"
 	"cderror.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jinclude.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jinclude.h
 	"jconfig.h"
 	<stddef.h>
 	<stdlib.h>
@@ -1987,151 +1983,151 @@
 	<strings.h>
 	<string.h>
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/cderror.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/cderror.h
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jaricom.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jaricom.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcapimin.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcapimin.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcapistd.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcapistd.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcarith.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcarith.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jccoefct.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jccoefct.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jccolor.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jccolor.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcdctmgr.c
-	"jinclude.h"
-	"jpeglib.h"
-	"jdct.h"
-
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdct.h
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jchuff.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcinit.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcmainct.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcmarker.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcmaster.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcomapi.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcparam.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcprepct.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcsample.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jctrans.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdapimin.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdapistd.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdarith.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdatadst.c
-	"jinclude.h"
-	"jpeglib.h"
-	"jerror.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdatasrc.c
-	"jinclude.h"
-	"jpeglib.h"
-	"jerror.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdcoefct.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdcolor.c
-	"jinclude.h"
-	"jpeglib.h"
-
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jddctmgr.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcdctmgr.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdhuff.c
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdct.h
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jchuff.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdinput.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcinit.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdmainct.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcmainct.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdmarker.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcmarker.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdmaster.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcmaster.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdmerge.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcomapi.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdpostct.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcparam.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdsample.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcprepct.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdtrans.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jcsample.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jerror.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jctrans.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdapimin.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdapistd.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdarith.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdatadst.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jerror.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdatasrc.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jerror.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdcoefct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdcolor.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jddctmgr.c
+	"jinclude.h"
+	"jpeglib.h"
+	"jdct.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdhuff.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdinput.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdmainct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdmarker.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdmaster.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdmerge.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdpostct.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdsample.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jdtrans.c
+	"jinclude.h"
+	"jpeglib.h"
+
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jerror.c
 	<windows.h>
 	"jinclude.h"
 	"jpeglib.h"
@@ -2139,157 +2135,157 @@
 	"jerror.h"
 	"jerror.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jversion.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jversion.h
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jfdctflt.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jfdctflt.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jfdctfst.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jfdctfst.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jfdctint.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jfdctint.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jidctflt.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jidctflt.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jidctfst.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jidctfst.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jidctint.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jidctint.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jdct.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jmemansi.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jmemansi.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jmemsys.h"
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jmemsys.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jmemsys.h
 	<Files.h>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jmemmgr.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jmemmgr.c
 	"jinclude.h"
 	"jpeglib.h"
 	"jmemsys.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jquant1.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jquant1.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jquant2.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jquant2.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jutils.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/jutils.c
 	"jinclude.h"
 	"jpeglib.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdbmp.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdbmp.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdcolmap.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdcolmap.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdgif.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdgif.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdppm.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdppm.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdrle.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdrle.c
 	"cdjpeg.h"
 	<rle.h>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdswitch.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdswitch.c
 	"cdjpeg.h"
 	<ctype.h>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdtarga.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/rdtarga.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/transupp.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/transupp.c
 	"jinclude.h"
 	"jpeglib.h"
 	"transupp.h"
 	<ctype.h>
 
-1712386978 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/transupp.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/transupp.h
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrbmp.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrbmp.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrgif.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrgif.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrppm.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrppm.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrrle.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrrle.c
 	"cdjpeg.h"
 	<rle.h>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrtarga.c
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/libjpeg/wrtarga.c
 	"cdjpeg.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/main.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/main.cpp
 	"cuda/cuda.cu.h"
 	<stdio.h>
 	<stdlib.h>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu
 	"cnetlayeraveragepooling.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu
 	"cnetlayerbackconvolution.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu
 	"cnetlayerbatchnormalization.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu
 	"cnetlayerconvolution.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu
 	"cnetlayerconvolutioninput.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu
 	"cnetlayerdropout.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu
 	"cnetlayerfunction.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu
 	"cnetlayerlinear.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu
 	"cnetlayermaxpooling.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu
 	"cnetlayermaxpooling.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu
 	"cnetlayerupsampling.cu.h"
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu
 	"inetlayer.cu.h"
 
-1736963799 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/neuron.cu
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/netlayer/neuron.cu
 	"neuron.cu.h"
 	<math.h>
 	<stdio.h>
 
-1712386978 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/system/system.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/system/system.cpp
 	"system.h"
 	<dirent.h>
 	<string.h>
@@ -2297,21 +2293,21 @@
 	<sys/times.h>
 	<unistd.h>
 
-1742495974 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/crandom.cpp
+1744446149 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/crandom.cpp
 	"crandom.h"
 	<math.h>
 
-1742751797 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/crandom.h
+1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/common/crandom.h
 	<stdio.h>
 	<stdint.h>
 	<stdlib.h>
 	<math.h>
 
-1742495974 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/crandom.cpp
+1744446149 source:/home/da-nie/Working/CUDA-CNN-GAN-VAE/common/crandom.cpp
 	"crandom.h"
 	<math.h>
 
-1742751797 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/crandom.h
+1744446149 /home/da-nie/Working/CUDA-CNN-GAN-VAE/common/crandom.h
 	<stdio.h>
 	<stdint.h>
 	<stdlib.h>
