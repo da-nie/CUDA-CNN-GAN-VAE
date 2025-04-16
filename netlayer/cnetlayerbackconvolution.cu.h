@@ -391,7 +391,7 @@ void CNetLayerBackConvolution<type_t>::TrainingStart(void)
  //создаём все вспомогательные тензоры
  cTensor_Delta_Array.resize(BatchSize);
  for(size_t n=0;n<BatchSize;n++) cTensor_Delta_Array[n]=cTensor_H_Array[n];
- cTensor_PrevLayerError=PrevLayerPtr->GetOutputTensor();
+ cTensor_PrevLayerError=PrevLayerPtr->GetOutputTensor(0);
  //создаём тензор поправок ядер слоя
  cTensor_dKernel=cTensor_Kernel;
  //создаём поправки сдвигов слоя

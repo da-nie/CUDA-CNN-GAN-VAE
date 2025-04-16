@@ -277,7 +277,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1744457469 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
+1744731786 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -296,7 +296,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1744456202 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu.h
+1744731760 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -337,10 +337,10 @@
 
 1744446149 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jerror.h
 
-1744562228 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_gan.cu.h
+1744823741 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_gan.cu.h
 	"cmodel_basicgan.cu.h"
 
-1744562316 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicgan.cu.h
+1744739451 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicgan.cu.h
 	<string>
 	<vector>
 	<array>
@@ -388,7 +388,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1744562498 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
+1744819975 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"

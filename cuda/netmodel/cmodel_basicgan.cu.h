@@ -1035,9 +1035,9 @@ void CModelBasicGAN<type_t>::TestTrainingGeneratorNet(bool mnist)
  char str[STRING_BUFFER_SIZE];
  SYSTEM::MakeDirectory("Test");
 
- ITERATION_OF_SAVE_IMAGE=100;
- ITERATION_OF_SAVE_NET=100;
- BATCH_SIZE=1;
+ ITERATION_OF_SAVE_IMAGE=10;
+ ITERATION_OF_SAVE_NET=10;
+ BATCH_SIZE=4;
 
  //загружаем изображения
  //if (LoadMNISTImage("mnist.bin",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH,RealImage,RealImageIndex)==false)

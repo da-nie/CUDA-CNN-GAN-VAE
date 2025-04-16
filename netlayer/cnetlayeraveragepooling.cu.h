@@ -154,9 +154,9 @@ void CNetLayerAveragePooling<type_t>::Create(size_t pooling_y,size_t pooling_x,I
  if (prev_layer_ptr==NULL) throw("Слой обратной субдискретизации не может быть входным!");//слой без предшествующего считается входным
 
  //размер входного тензора
- size_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- size_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- size_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ size_t input_x=PrevLayerPtr->GetOutputTensor(0).GetSizeX();
+ size_t input_y=PrevLayerPtr->GetOutputTensor(0).GetSizeY();
+ size_t input_z=PrevLayerPtr->GetOutputTensor(0).GetSizeZ();
  //размер выходного тензора
  size_t output_x=input_x/pooling_x;
  size_t output_y=input_y/pooling_y;
@@ -316,7 +316,7 @@ void CNetLayerAveragePooling<type_t>::TrainingStart(void)
  //создаём все вспомогательные тензоры
  cTensor_Delta_Array.resize(BatchSize);
  for(size_t n=0;n<BatchSize;n++) cTensor_Delta_Array[n]=cTensor_H_Array[n];
- cTensor_PrevLayerError=PrevLayerPtr->GetOutputTensor();
+ cTensor_PrevLayerError=PrevLayerPtr->GetOutputTensor(0);
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
