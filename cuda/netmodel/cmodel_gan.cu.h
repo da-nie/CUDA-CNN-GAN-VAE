@@ -71,7 +71,7 @@ CModelGAN<type_t>::CModelGAN(void)
 {
  IMAGE_HEIGHT=192/2;
  IMAGE_WIDTH=256/2;
- IMAGE_DEPTH=1;
+ IMAGE_DEPTH=3;
  NOISE_LAYER_SIDE_X=8;
  NOISE_LAYER_SIDE_Y=8;
  NOISE_LAYER_SIDE_Z=IMAGE_DEPTH;
@@ -87,7 +87,7 @@ CModelGAN<type_t>::CModelGAN(void)
  ITERATION_OF_SAVE_IMAGE=1;
  ITERATION_OF_SAVE_NET=1;
 
- BATCH_SIZE=3;
+ BATCH_SIZE=5;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
