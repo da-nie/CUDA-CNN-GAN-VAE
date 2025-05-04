@@ -476,8 +476,6 @@ void CNetLayerConvolution<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerConvolution<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
- //speed/=Kernel_Amount;
-
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   double beta1=0.9;

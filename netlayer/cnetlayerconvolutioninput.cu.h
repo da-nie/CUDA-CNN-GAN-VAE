@@ -148,7 +148,7 @@ void CNetLayerConvolutionInput<type_t>::Reset(void)
 template<class type_t>
 void CNetLayerConvolutionInput<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output)
 {
- *cTensor_H_Array[unit_index]=CopyItem(output);
+ cTensor_H_Array[unit_index]=output;
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить выход слоя

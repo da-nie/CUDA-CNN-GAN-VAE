@@ -406,8 +406,8 @@ void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
    size_t size_x=cTensor_PrevLayerError.GetSizeX();
    size_t size_y=cTensor_PrevLayerError.GetSizeY();
    size_t size_z=cTensor_PrevLayerError.GetSizeZ();
-   cTensor_PrevLayerError.ReinterpretSize(1,size_x*size_y*size_z,1);
 
+   cTensor_PrevLayerError.ReinterpretSize(1,size_x*size_y*size_z,1);
    CTensorMath<type_t>::TransponseMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta_Array[n]);
    cTensor_PrevLayerError.RestoreSize();
    //задаём ошибку предыдущего слоя

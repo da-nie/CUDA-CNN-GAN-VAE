@@ -100,12 +100,12 @@ class CModelBasicVAE:public CModelMain<type_t>
   void SaveTrainingParam(void);///<сохранить параметры обучения
   void CreateFakeImage(CTensor<type_t> &cTensor_Image);///<создать мнимое изображение с помощью декодировщика
   void TrainingCoderAndDecoder(size_t mini_batch_index,double &cost);///<обучение кодировщика и декодировщика
-  void SaveRandomImage(void);///<сохрани  size_t ITERATION_OF_SAVE_IMAGE;///<какую итерацию сохранять изображения
+  void SaveRandomImage(void);///<какую итерацию сохранять изображения
   void SaveKitImage(void);///<сохранить изображение из набора
   void Training(void);///<обучение нейросети
   virtual void TrainingNet(bool mnist);///<запуск обучения нейросети
-  void TestTrainingCoder(void);///<тест обучения генератора
-  void TestTrainingCoderNet(bool mnist);///<запуск теста обучения генератора
+  void TestTrainingCoderDecoder(void);///<тест обучения связки кодировщик-декодировщик
+  void TestTrainingCoderDecoderNet(bool mnist);///<запуск теста обучения сборки кодировщик-декодировщик
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -224,12 +224,27 @@ void CModelBasicVAE<type_t>::CreateFakeImage(CTensor<type_t> &cTensor_Image)
 {
  CTensor<type_t> cTensor_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
  if (IsExit()==true) throw("Стоп");
- CRandom<type_t>::SetRandomNormal(cTensor_Input,-100,100);
- CoderNet[CoderNet.size()-1]->SetOutput(cTensor_Input);//входной вектор
+/*
+ for(size_t n=0;n<BATCH_SIZE;n++)
+ {
+  CRandom<type_t>::SetRandomNormal(cTensor_Input,0,1);
+  CoderNet[CoderNet.size()-1]->SetOutput(n,cTensor_Input);//входной вектор
+ }
+ */
+
+ //выполняем прямой проход по сети
+ for(size_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
  //выполняем прямой проход по сети
  for(size_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
  //получаем ответ сети
- cTensor_Image=DecoderNet[DecoderNet.size()-1]->GetOutputTensor();
+ for(size_t n=0;n<BATCH_SIZE;n++)
+ {
+  cTensor_Image=DecoderNet[DecoderNet.size()-1]->GetOutputTensor(n);
+  char str[255];
+  sprintf(str,"Test/test-current-%i.tga",n);
+  SaveImage(cTensor_Image,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+ }
+ cTensor_Image=DecoderNet[DecoderNet.size()-1]->GetOutputTensor(0);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -247,55 +262,70 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(size_t mini_batch_index,dou
   {
    CTimeStamp cTimeStamp("Задание изображения:");
    //кодер подключён к изображению
-   size_t size=RealImage[RealImageIndex[b+mini_batch_index*BATCH_SIZE]].size();
-   type_t *ptr=&RealImage[RealImageIndex[b+mini_batch_index*BATCH_SIZE]][0];
-   CoderNet[0]->GetOutputTensor().CopyItemToDevice(ptr,size);
+   size_t img=RealImageIndex[b+mini_batch_index*BATCH_SIZE];
+   size_t size=RealImage[img].size();
+   type_t *ptr=&RealImage[img][0];
    cTensor_Image.CopyItemToDevice(ptr,size);
+   CoderNet[0]->SetOutput(b,cTensor_Image);
   }
-  //вычисляем сеть кодировщика
-  {
-   CTimeStamp cTimeStamp("Вычисление кодировщика:");
-   for(size_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
-  }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
-  //вычисляем сеть кодировщика
-  {
-   CTimeStamp cTimeStamp("Вычисление декодировщика:");
-   for(size_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
-  }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+ }
+ //вычисляем сеть кодировщика
+ {
+  CTimeStamp cTimeStamp("Вычисление кодировщика:");
+  for(size_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
+ }
+ SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+ //вычисляем сеть кодировщика
+ {
+  CTimeStamp cTimeStamp("Вычисление декодировщика:");
+  for(size_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
+ }
+ SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+ for(size_t b=0;b<BATCH_SIZE;b++)
+ {
   {
    CTimeStamp cTimeStamp("Вычисление ошибки:");
-   CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(),cTensor_Image);
-   cTensor_Error.CopyFromDevice();
-   for(size_t x=0;x<cTensor_Error.GetSizeX();x++)
+   CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(b),CoderNet[0]->GetOutputTensor(b));
+  }
+/*
+  char str[255];
+  sprintf(str,"Test/input-%i.tga",b);
+  SaveImage(CoderNet[0]->GetOutputTensor(b),str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+  sprintf(str,"Test/output-%i.tga",b);
+  SaveImage(DecoderNet[DecoderNet.size()-1]->GetOutputTensor(b),str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+  sprintf(str,"Test/error-%i.tga",b);
+  SaveImage(cTensor_Error,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+*/
+  {
+   CTimeStamp cTimeStamp("Задание ошибки:");
+   DecoderNet[DecoderNet.size()-1]->SetOutputError(b,cTensor_Error);
+  }
+  //считаем ошибку
+  double error=0;
+  for(size_t x=0;x<cTensor_Error.GetSizeX();x++)
+  {
+   for(size_t y=0;y<cTensor_Error.GetSizeY();y++)
    {
-    for(size_t y=0;y<cTensor_Error.GetSizeY();y++)
+    for(size_t z=0;z<cTensor_Error.GetSizeZ();z++)
     {
-     for(size_t z=0;z<cTensor_Error.GetSizeZ();z++)
-     {
-      type_t c=cTensor_Error.GetElement(z,y,x);
-      cost+=c*c;
-     }
+     type_t c=cTensor_Error.GetElement(z,y,x);
+     error+=c*c;
     }
    }
   }
-  {
-   CTimeStamp cTimeStamp("Задание ошибки:");
-   DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
-  }
-  //выполняем вычисление весов декодировщика
-  {
-   CTimeStamp cTimeStamp("Обучение декодировщика:");
-   for(size_t m=0,n=DecoderNet.size()-1;m<DecoderNet.size();m++,n--) DecoderNet[n]->TrainingBackward();
-  }
-  //выполняем вычисление весов кодировщика
-  {
-   CTimeStamp cTimeStamp("Обучение кодировщика:");
-   for(size_t m=0,n=CoderNet.size()-1;m<CoderNet.size();m++,n--) CoderNet[n]->TrainingBackward();
-  }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+  if (error>cost) cost=error;
  }
+ //выполняем вычисление весов декодировщика
+ {
+  CTimeStamp cTimeStamp("Обучение декодировщика:");
+  for(size_t m=0,n=DecoderNet.size()-1;m<DecoderNet.size();m++,n--) DecoderNet[n]->TrainingBackward();
+ }
+ //выполняем вычисление весов кодировщика
+ {
+  CTimeStamp cTimeStamp("Обучение кодировщика:");
+  for(size_t m=0,n=CoderNet.size()-1;m<CoderNet.size();m++,n--) CoderNet[n]->TrainingBackward();
+ }
+ SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
 }
 //----------------------------------------------------------------------------------------------------
 //сохранить случайное изображение с декодировщика
@@ -318,6 +348,9 @@ void CModelBasicVAE<type_t>::SaveRandomImage(void)
   //cTensor.PrintToFile(str,"Изображение",true);
  }
  counter++;
+
+ //CoderNet[0]->GetOutput(0,cTensor);
+ //SaveImage(cTensor,"Test/test-input.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
 }
 //----------------------------------------------------------------------------------------------------
 //сохранить изображение из набора
@@ -344,7 +377,7 @@ void CModelBasicVAE<type_t>::Training(void)
 {
  char str_b[STRING_BUFFER_SIZE];
 
- const double speed=SPEED;
+ const double speed=SPEED/(static_cast<double>(BATCH_SIZE));
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
 
  size_t image_amount=RealImage.size();
@@ -375,6 +408,7 @@ void CModelBasicVAE<type_t>::Training(void)
    SYSTEM::PutMessageToConsole("");
   }
 
+  double max_cost=0;
   for(uint32_t batch=0;batch<BATCH_AMOUNT;batch++)
   {
    if (IsExit()==true) throw("Стоп");
@@ -399,31 +433,32 @@ void CModelBasicVAE<type_t>::Training(void)
     //корректируем веса
     {
      CTimeStamp cTimeStamp("Обновление весов кодировщика:");
-     for(size_t n=0;n<CoderNet.size();n++)
-     {
-      CoderNet[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
-     }
+     for(size_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
     }
     //корректируем веса генератора
     {
      CTimeStamp cTimeStamp("Обновление весов декодировщика:");
-     for(size_t n=0;n<DecoderNet.size();n++)
-     {
-      DecoderNet[n]->TrainingUpdateWeight(speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
-     }
+     for(size_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
     }
     SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
 
     str="Ошибка:";
     str+=std::to_string(static_cast<long double>(cost));
     SYSTEM::PutMessageToConsole(str);
+
+    if (cost>max_cost) max_cost=cost;
    }
 
    float gpu_time=cCUDATimeSpent.Stop();
    sprintf(str_b,"На минипакет ушло:%.2f мс.",gpu_time);
    SYSTEM::PutMessageToConsole(str_b);
+   sprintf(str_b,"Максимальная ошибка:%.2f",max_cost);
+   SYSTEM::PutMessageToConsole(str_b);
    SYSTEM::PutMessageToConsole("");
   }
+  FILE *file=fopen("cost.txt","ab");
+  fprintf(file,"%f\r\n",max_cost);
+  fclose(file);
   Iteration++;
  }
 }
@@ -497,6 +532,210 @@ void CModelBasicVAE<type_t>::TrainingNet(bool mnist)
  SaveNet();
 }
 
+
+//----------------------------------------------------------------------------------------------------
+//тест обучения связки кодировщик-декодировщик
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
+{
+ static CTensor<type_t> cTensor_Error=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+
+ //учим первому изображению
+ CTensor<type_t> cTensor_Etalon=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+ size_t size=RealImage[0].size();
+ type_t *ptr=&RealImage[0][0];
+ cTensor_Etalon.CopyItemToDevice(ptr,size);
+
+ char str_b[STRING_BUFFER_SIZE];
+
+ const double speed=SPEED/BATCH_SIZE;
+ size_t max_iteration=1000000000;//максимальное количество итераций обучения
+
+ size_t image_amount=RealImage.size();
+
+ std::string str;
+
+ while(Iteration<max_iteration)
+ {
+  SYSTEM::PutMessageToConsole("----------");
+  SYSTEM::PutMessageToConsole("Итерация:"+std::to_string(static_cast<long double>(Iteration+1)));
+
+  if (Iteration%ITERATION_OF_SAVE_NET==0)
+  {
+   SYSTEM::PutMessageToConsole("Save net.");
+   SaveNet();
+  }
+  long double begin_time=SYSTEM::GetSecondCounter();
+
+  for(size_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingResetDeltaWeight();
+  for(size_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingResetDeltaWeight();
+
+  for(size_t b=0;b<BATCH_SIZE;b++)
+  {
+   if (IsExit()==true) throw("Стоп");
+   //задаём изображение для кодировщика
+   {
+    CTimeStamp cTimeStamp("Задание изображения:");
+    //кодер подключён к изображению
+    CoderNet[0]->SetOutput(b,cTensor_Etalon);
+   }
+  }
+  //вычисляем сеть кодировщика
+  {
+   CTimeStamp cTimeStamp("Вычисление кодировщика:");
+   for(size_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
+  }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
+  //вычисляем сеть декодировщика
+  {
+   CTimeStamp cTimeStamp("Вычисление декодировщика:");
+   for(size_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
+  }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+  double cost=0;
+  for(size_t b=0;b<BATCH_SIZE;b++)
+  {
+   {
+    CTimeStamp cTimeStamp("Вычисление ошибки:");
+    CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(b),CoderNet[0]->GetOutputTensor(b));
+
+
+
+   }
+   {
+    CTimeStamp cTimeStamp("Задание ошибки:");
+    DecoderNet[DecoderNet.size()-1]->SetOutputError(b,cTensor_Error);
+   }
+   for(size_t x=0;x<cTensor_Error.GetSizeX();x++)
+   {
+    for(size_t y=0;y<cTensor_Error.GetSizeY();y++)
+    {
+     for(size_t z=0;z<cTensor_Error.GetSizeZ();z++)
+     {
+      type_t c=cTensor_Error.GetElement(z,y,x);
+      cost+=c*c;
+     }
+    }
+   }
+  }
+  cost/=static_cast<double>(BATCH_SIZE);
+  //выполняем вычисление весов декодировщика
+  {
+   CTimeStamp cTimeStamp("Обучение декодировщика:");
+   for(size_t m=0,n=DecoderNet.size()-1;m<DecoderNet.size();m++,n--) DecoderNet[n]->TrainingBackward();
+  }
+  //выполняем вычисление весов кодировщика
+  {
+   CTimeStamp cTimeStamp("Обучение кодировщика:");
+   for(size_t m=0,n=CoderNet.size()-1;m<CoderNet.size();m++,n--) CoderNet[n]->TrainingBackward();
+  }
+  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+  //корректируем веса декодировщика
+  {
+   CTimeStamp cTimeStamp("Обновление весов декодировщика:");
+   for(size_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+  }
+  //корректируем веса кодировщика
+  {
+   CTimeStamp cTimeStamp("Обновление весов кодировщика:");
+   for(size_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+  }
+  str="Ошибка кодировщика-декодировщика:";
+  str+=std::to_string((long double)cost);
+  SYSTEM::PutMessageToConsole(str);
+
+  long double end_time=SYSTEM::GetSecondCounter();
+  float cpu_time=static_cast<float>((end_time-begin_time)*1000.0);
+
+  sprintf(str_b,"На минипакет ушло: %.2f мс.\r\n",cpu_time);
+  SYSTEM::PutMessageToConsole(str_b);
+  SYSTEM::PutMessageToConsole("");
+
+  if (Iteration%ITERATION_OF_SAVE_IMAGE==0)
+  {
+   SYSTEM::PutMessageToConsole("Save image.");
+   SaveImage(DecoderNet[DecoderNet.size()-1]->GetOutputTensor(0),"Test/test-current.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+   SaveImage(cTensor_Etalon,"Test/etalon.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+  }
+
+  Iteration++;
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//запуск теста обучения сборки кодировщик-декодировщик
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelBasicVAE<type_t>::TestTrainingCoderDecoderNet(bool mnist)
+{
+ char str[STRING_BUFFER_SIZE];
+ SYSTEM::MakeDirectory("Test");
+
+ ITERATION_OF_SAVE_IMAGE=100;
+ ITERATION_OF_SAVE_NET=100;
+ BATCH_SIZE=1;
+
+ //загружаем изображения
+ //if (LoadMNISTImage("mnist.bin",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH,RealImage,RealImageIndex)==false)
+ if (LoadImage("RealImage",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH,RealImage,RealImageIndex)==false)
+ {
+  SYSTEM::PutMessage("Не удалось загрузить образы изображений!");
+  return;
+ }
+ SYSTEM::PutMessage("Образы изображений загружены.");
+ //дополняем набор до кратного размеру пакета
+ size_t image_amount=RealImage.size();
+ BATCH_AMOUNT=image_amount/BATCH_SIZE;
+ if (BATCH_AMOUNT==0) BATCH_AMOUNT=1;
+ if (image_amount%BATCH_SIZE!=0)
+ {
+  size_t index=0;
+  for(size_t n=image_amount%BATCH_SIZE;n<BATCH_SIZE;n++,index++)
+  {
+   RealImageIndex.push_back(RealImageIndex[index%image_amount]);
+  }
+  image_amount=RealImageIndex.size();
+  BATCH_AMOUNT=image_amount/BATCH_SIZE;
+ }
+ sprintf(str,"Изображений:%i Минипакетов:%i",image_amount,BATCH_AMOUNT);
+ SYSTEM::PutMessageToConsole(str);
+
+ cTensor_Image=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+
+ CreateCoder();
+ CreateDecoder();
+
+ for(size_t n=0;n<CoderNet.size();n++) CoderNet[n]->Reset();
+ for(size_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->Reset();
+ LoadNet();
+
+ //включаем обучение
+ for(size_t n=0;n<CoderNet.size();n++)
+ {
+  CoderNet[n]->TrainingModeAdam();
+  CoderNet[n]->TrainingStart();
+ }
+ for(size_t n=0;n<DecoderNet.size();n++)
+ {
+  DecoderNet[n]->TrainingModeAdam();
+  DecoderNet[n]->TrainingStart();
+ }
+
+ //загружаем параметры обучения
+ LoadTrainingParam();
+
+ TestTrainingCoderDecoder();
+
+ //отключаем обучение
+ for(size_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingStop();
+ for(size_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingStop();
+
+ SaveNet();
+}
+
+
 //****************************************************************************************************
 //открытые функции
 //****************************************************************************************************
@@ -511,7 +750,7 @@ void CModelBasicVAE<type_t>::Execute(void)
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
  if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
- //TestTrainingCoderNet(true);
+ //TestTrainingCoderDecoderNet(true);
  TrainingNet(true);
 }
 
