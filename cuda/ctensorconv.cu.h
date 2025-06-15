@@ -68,7 +68,7 @@ class CTensorConv
   //-закрытые функции-----------------------------------------------------------------------------------
 };
 
-static const size_t CONV_TENSOR_OPERATION_BLOCK_SIZE=16;
+static const size_t CONV_TENSOR_OPERATION_BLOCK_SIZE=32;
 
 //****************************************************************************************************
 //конструктор и деструктор
@@ -554,13 +554,13 @@ struct STensorKernel_BackwardConvolution_Delta
 
   if (sx<0 || sy<0) return(0);
 
-  if (sy%Conv_Stride_Y!=0) return(0);
-  if (sx%Conv_Stride_X!=0) return(0);
+  int32_t sy_s=sy/Conv_Stride_Y;
+  int32_t sx_s=sx/Conv_Stride_X;
 
-  sy/=Conv_Stride_Y;
-  sx/=Conv_Stride_X;
+  if (sy!=sy_s*Conv_Stride_Y) return(0);
+  if (sx!=sx_s*Conv_Stride_X) return(0);
 
-  return(sTensorKernel_Delta.GetElement(sz,sy,sx));
+  return(sTensorKernel_Delta.GetElement(sz,sy_s,sx_s));
  }
  __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
@@ -584,15 +584,15 @@ struct STensorKernel_BackwardConvolution_Delta
 
   if (sx<0 || sy<0) return;
 
-  if (sy%Conv_Stride_Y!=0) return;
-  if (sx%Conv_Stride_X!=0) return;
+  int32_t sy_s=sy/Conv_Stride_Y;
+  int32_t sx_s=sx/Conv_Stride_X;
 
-  sy/=Conv_Stride_Y;
-  sx/=Conv_Stride_X;
+  if (sy!=sy_s*Conv_Stride_Y) return;
+  if (sx!=sx_s*Conv_Stride_X) return;
 
   value=0;
 
-  sTensorKernel_Delta.SetElement(sz,sy,sx,value);
+  sTensorKernel_Delta.SetElement(sz,sy_s,sx_s,value);
  }
 
  __host__ __device__ size_t GetSizeX(void)
@@ -954,13 +954,10 @@ struct STensorKernel_DeltaWeightAndBias_Delta
   int32_t dx=sx-dy*NewDelta_X;
 
   //пересчитываем в новые размеры матрицы поправок
-  if (dx%Stride_X==0 && dy%Stride_Y==0)
-  {
-   dx=dx/Stride_X;
-   dy=dy/Stride_Y;
-   return(sTensorKernel_Delta.GetElement(sy,dy,dx));
-  }
-  else return(0);
+  int32_t dx_s=dx/Stride_X;
+  int32_t dy_s=dy/Stride_Y;
+  if (dx==dx_s*Stride_X && dy==dy_s*Stride_Y) return(sTensorKernel_Delta.GetElement(sy,dy_s,dx_s));
+  return(0);
  }
  __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
@@ -971,12 +968,9 @@ struct STensorKernel_DeltaWeightAndBias_Delta
   int32_t dx=sx-dy*NewDelta_X;
 
   //пересчитываем в новые размеры матрицы поправок
-  if (dx%Stride_X==0 && dy%Stride_Y==0)
-  {
-   dx=dx/Stride_X;
-   dy=dy/Stride_Y;
-   sTensorKernel_Delta.SetElement(sy,dy,dx,value);
-  }
+  int32_t dx_s=dx/Stride_X;
+  int32_t dy_s=dy/Stride_Y;
+  if (dx==dx_s*Stride_X && dy==dy_s*Stride_Y) sTensorKernel_Delta.SetElement(sy,dy_s,dx_s,value);
  }
 
  __host__ __device__ size_t GetSizeX(void)
