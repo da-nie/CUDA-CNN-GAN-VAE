@@ -68,8 +68,6 @@ class CTensorConv
   //-закрытые функции-----------------------------------------------------------------------------------
 };
 
-static const size_t CONV_TENSOR_OPERATION_BLOCK_SIZE=32;
-
 //****************************************************************************************************
 //конструктор и деструктор
 //****************************************************************************************************
@@ -133,8 +131,8 @@ struct STensorKernel_ForwardConvolution_Image
  {
   if (z>=Size_Z) z=0;
   STensorKernel_ForwardConvolution_Image<type_t> sub_tensor;
-  sub_tensor.Size_X=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Size_Y=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
   sub_tensor.Size_Z=1;
   sub_tensor.Dst_X=Dst_X;
   sub_tensor.Dst_Y=Dst_Y;
@@ -147,12 +145,12 @@ struct STensorKernel_ForwardConvolution_Image
   sub_tensor.Conv_Padding_X=Conv_Padding_X;
   sub_tensor.Conv_Padding_Y=Conv_Padding_Y;
   sub_tensor.sTensorKernel_Image=sTensorKernel_Image;
-  sub_tensor.Offset_X=Offset_X+x*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Offset_Y=Offset_Y+y*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
 
   //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_X) sub_tensor.Size_X=Size_X%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  if ((y+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_Y) sub_tensor.Size_Y=Size_Y%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
 
   return(sub_tensor);
  }
@@ -361,19 +359,19 @@ struct STensorKernel_BackwardConvolution_Kernel
 
   sub_tensor.sTensorKernel_Kernel=sTensorKernel_Kernel;
 
-  sub_tensor.Size_X=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Size_Y=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
   sub_tensor.Size_Z=1;
   sub_tensor.Kernel_X=Kernel_X;
   sub_tensor.Kernel_Y=Kernel_Y;
   sub_tensor.Kernel_Z=Kernel_Z;
-  sub_tensor.Offset_X=Offset_X+x*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Offset_Y=Offset_Y+y*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
   sub_tensor.Kernel_Amount=Kernel_Amount;
 
   //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_X) sub_tensor.Size_X=Size_X%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  if ((y+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_Y) sub_tensor.Size_Y=Size_Y%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
 
   return(sub_tensor);
  }
@@ -508,8 +506,8 @@ struct STensorKernel_BackwardConvolution_Delta
  {
   if (z>=Size_Z) z=0;
   STensorKernel_BackwardConvolution_Delta<type_t> sub_tensor;
-  sub_tensor.Size_X=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Size_Y=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
   sub_tensor.Size_Z=1;
   sub_tensor.Dst_X=Dst_X;
   sub_tensor.Dst_Y=Dst_Y;
@@ -522,12 +520,12 @@ struct STensorKernel_BackwardConvolution_Delta
   sub_tensor.Conv_Padding_X=Conv_Padding_X;
   sub_tensor.Conv_Padding_Y=Conv_Padding_Y;
   sub_tensor.sTensorKernel_Delta=sTensorKernel_Delta;
-  sub_tensor.Offset_X=Offset_X+x*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Offset_Y=Offset_Y+y*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
 
   //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_X) sub_tensor.Size_X=Size_X%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  if ((y+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_Y) sub_tensor.Size_Y=Size_Y%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
 
   return(sub_tensor);
  }
@@ -762,8 +760,8 @@ struct STensorKernel_DeltaWeightAndBias_Image
  {
   if (z>=Size_Z) z=0;
   STensorKernel_DeltaWeightAndBias_Image<type_t> sub_tensor;
-  sub_tensor.Size_X=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Size_Y=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
   sub_tensor.Size_Z=1;
   sub_tensor.Dst_X=Dst_X;
   sub_tensor.Dst_Y=Dst_Y;
@@ -777,12 +775,12 @@ struct STensorKernel_DeltaWeightAndBias_Image
   sub_tensor.Conv_Padding_X=Conv_Padding_X;
   sub_tensor.Conv_Padding_Y=Conv_Padding_Y;
   sub_tensor.sTensorKernel_Image=sTensorKernel_Image;
-  sub_tensor.Offset_X=Offset_X+x*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Offset_Y=Offset_Y+y*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
 
   //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_X) sub_tensor.Size_X=Size_X%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  if ((y+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_Y) sub_tensor.Size_Y=Size_Y%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
 
   return(sub_tensor);
  }
@@ -926,12 +924,12 @@ struct STensorKernel_DeltaWeightAndBias_Delta
  {
   if (z>=Size_Z) z=0;
   STensorKernel_DeltaWeightAndBias_Delta<type_t> sub_tensor;
-  sub_tensor.Size_X=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Size_Y=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
   sub_tensor.Size_Z=1;
   sub_tensor.sTensorKernel_Delta=sTensorKernel_Delta;
-  sub_tensor.Offset_X=Offset_X+x*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  sub_tensor.Offset_Y=Offset_Y+y*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
 
   sub_tensor.Stride_X=Stride_X;
   sub_tensor.Stride_Y=Stride_Y;
@@ -939,8 +937,8 @@ struct STensorKernel_DeltaWeightAndBias_Delta
   sub_tensor.NewDelta_Y=NewDelta_Y;
 
   //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_X) sub_tensor.Size_X=Size_X%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
-  if ((y+1)*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE>Size_Y) sub_tensor.Size_Y=Size_Y%CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;
+  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
+  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_MUL);
 
   return(sub_tensor);
  }

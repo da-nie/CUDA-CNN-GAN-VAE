@@ -73,8 +73,6 @@ struct cudaDeviceProp
   sprintf(str,"Max Threads dim: %lux%lux%lu",static_cast<long unsigned int>(devProp.maxThreadsDim[0]),static_cast<long unsigned int>(devProp.maxThreadsDim[1]),static_cast<long unsigned int>(devProp.maxThreadsDim[2]));
   SYSTEM::PutMessageToConsole(str);
 
-
-  SYSTEM::PutMessageToConsole(str);
   sprintf(str,"Total constant memory  : %lu",devProp.totalConstMem);
   SYSTEM::PutMessageToConsole(str);
  }

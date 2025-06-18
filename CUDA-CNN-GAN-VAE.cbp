@@ -14,7 +14,7 @@
 				<Compiler>
 					<Add option="-std=c++11" />
 					<Add option="-ccbin=g++" />
-					<Add option="-gencode=arch=compute_61,code=sm_61" />
+					<Add option="-gencode=arch=compute_60,code=sm_60" />
 					<Add option="-I /usr/local/cuda-11.7/include" />
 					<Add option="-L /usr/local/cuda-11.7/lib64" />
 				</Compiler>
