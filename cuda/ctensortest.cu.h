@@ -659,6 +659,7 @@ bool CTensorTest<type_t>::Test(void)
  //умножение тензоров
  SYSTEM::PutMessageToConsole("Тест умножения тензоров.");
  cTensorC=cTensorA*cTensorB;
+ cTensorC.Print("Mul");
  if (cTensorC.GetElement(0,0,0)!=7) return(false);
  if (cTensorC.GetElement(0,0,1)!=10) return(false);
  if (cTensorC.GetElement(0,1,0)!=15) return(false);

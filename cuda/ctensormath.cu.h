@@ -1087,6 +1087,130 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  cTensor_Output.SetDeviceOnChange();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+
+
+#define BLOCK_SIZE 32
+#define PADDING 1 // Для избежания банковых конфликтов
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для умножения тензоров
+//----------------------------------------------------------------------------------------------------
+template<class type_t,class kernel_output_t,class kernel_left_t,class kernel_right_t>
+__global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel_left_t tensor_left,kernel_right_t tensor_right)
+{
+ const int z=threadIdx.z;
+ const int row=threadIdx.y;
+ const int col=threadIdx.x;
+
+ // Глобальные координаты блока
+ const int global_row=blockIdx.y*BLOCK_SIZE+row;
+ const int global_col=blockIdx.x*BLOCK_SIZE+col*4;
+
+ // Shared memory с padding
+ __shared__ float As[BLOCK_SIZE][BLOCK_SIZE];
+ __shared__ float Bs[BLOCK_SIZE][BLOCK_SIZE+PADDING];
+
+ // Регистры для накопления результатов
+ float c_val[4]={0,0,0,0};
+
+ for(size_t t=0;t<tensor_left.Size_X;t+=BLOCK_SIZE)
+ {
+  // Загрузка векторизованных данных в As
+  //float4 a_vec = reinterpret_cast<const float4*>(&A[global_row * K + t + col * 4])[0];
+  As[row][col*4+0]=tensor_left.GetElement(z,global_row,col*4+t+0);
+  As[row][col*4+1]=tensor_left.GetElement(z,global_row,col*4+t+1);
+  As[row][col*4+2]=tensor_left.GetElement(z,global_row,col*4+t+2);
+  As[row][col*4+3]=tensor_left.GetElement(z,global_row,col*4+t+3);
+
+  // Загрузка и транспонирование данных в Bs
+  //float4 b_vec = reinterpret_cast<const float4*>(&B[(t + row) * N + global_col])[0];
+  Bs[col*4+0][row]=tensor_right.GetElement(z,t+row,global_col+0);
+  Bs[col*4+1][row]=tensor_right.GetElement(z,t+row,global_col+1);
+  Bs[col*4+2][row]=tensor_right.GetElement(z,t+row,global_col+2);
+  Bs[col*4+3][row]=tensor_right.GetElement(z,t+row,global_col+3);
+
+  __syncthreads();
+  // Вычисление произведения
+  for(int k=0;k<BLOCK_SIZE;++k)
+  {
+   float a=As[row][k];
+
+   c_val[0]+=a*Bs[col*4+0][k];
+   c_val[1]+=a*Bs[col*4+1][k];
+   c_val[2]+=a*Bs[col*4+2][k];
+   c_val[3]+=a*Bs[col*4+3][k];
+  }
+  __syncthreads();
+ }
+ // Сохранение результатов векторизованной записью
+ if (global_col<tensor_output.Size_X && global_row<tensor_output.Size_Y)
+ {
+  tensor_output.SetElement(z,global_row,global_col+0,c_val[0]);
+  tensor_output.SetElement(z,global_row,global_col+1,c_val[1]);
+  tensor_output.SetElement(z,global_row,global_col+2,c_val[2]);
+  tensor_output.SetElement(z,global_row,global_col+3,c_val[3]);
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//умножить тензоры
+//----------------------------------------------------------------------------------------------------
+template<class type_t> template<class kernel_output_t,class kernel_left_t,class kernel_right_t>
+__host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,kernel_output_t &sTensorKernel_Output,const CTensor<type_t> &cTensor_Left,kernel_left_t &sTensorKernel_Left,const CTensor<type_t> &cTensor_Right,kernel_right_t &sTensorKernel_Right)
+{
+ if (sTensorKernel_Left.Size_X!=sTensorKernel_Right.Size_Y  || sTensorKernel_Left.Size_Z!=sTensorKernel_Right.Size_Z ||
+     sTensorKernel_Output.Size_Y!=sTensorKernel_Left.Size_Y || sTensorKernel_Output.Size_X!=sTensorKernel_Right.Size_X ||
+     sTensorKernel_Output.Size_Z!=sTensorKernel_Right.Size_Z)
+ {
+  throw "CTensor::MulAbstract: Размерности тензоров не совпадают!";
+ }
+ //копируем данные с устройство
+ cTensor_Left.CopyToDevice();
+ cTensor_Right.CopyToDevice();
+
+ //разбиваем выходной тензор на блоки по TENSOR_OPERATION_BLOCK_SIZExTENSOR_OPERATION_BLOCK_SIZE элементов
+ //для каждого из этих элементов запускаем по нити (всего TENSOR_OPERATION_BLOCK_SIZExTENSOR_OPERATION_BLOCK_SIZE нитей)
+
+ dim3 threads(BLOCK_SIZE/4,BLOCK_SIZE);
+ dim3 blocks((sTensorKernel_Right.Size_X+BLOCK_SIZE-1)/BLOCK_SIZE,(sTensorKernel_Left.Size_Y+BLOCK_SIZE-1)/BLOCK_SIZE,sTensorKernel_Output.Size_Z);
+
+ CUDATensorMulTensorFunction<type_t,kernel_output_t,kernel_left_t,kernel_right_t><<<blocks,threads>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+*/
+
+
+
+
+
 //----------------------------------------------------------------------------------------------------
 //умножить тензоры
 //----------------------------------------------------------------------------------------------------
