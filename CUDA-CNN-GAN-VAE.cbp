@@ -15,8 +15,10 @@
 					<Add option="-std=c++11" />
 					<Add option="-ccbin=g++" />
 					<Add option="-gencode=arch=compute_60,code=sm_60" />
-					<Add option="-I /usr/local/cuda-11.7/include" />
-					<Add option="-L /usr/local/cuda-11.7/lib64" />
+					<Add option="-I /usr/local/cuda/include" />
+					<Add option="-L /usr/local/cuda/lib64" />
+					<Add option="--fmad=true" />
+					<Add option="--use_fast_math" />
 				</Compiler>
 			</Target>
 		</Build>

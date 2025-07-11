@@ -81,14 +81,14 @@ struct cudaDeviceProp
  HANDLE_ERROR(cudaDeviceReset());
  HANDLE_ERROR(cudaGetLastError());
 
- //CModelSorter<float> cModelSorter;
- //cModelSorter.Execute();
+ CModelSorter<float> cModelSorter;
+ cModelSorter.Execute();
 
  //CModelGAN<float> cModelGAN;
  //cModelGAN.Execute();
 
- CModelVAE<float> cModelVAE;
- cModelVAE.Execute();
+ //CModelVAE<float> cModelVAE;
+ //cModelVAE.Execute();
 /*
  CModelSR_GAN<float> cModelSR_GAN;
  cModelSR_GAN.Execute();

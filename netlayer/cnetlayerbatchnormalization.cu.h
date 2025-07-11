@@ -277,38 +277,48 @@ void CNetLayerBatchNormalization<type_t>::Forward(void)
 */
  type_t N=static_cast<type_t>(BatchSize);
  //используем Tensor_XHAT_Array вместо Tensor_XMU_Array - всё равно Tensor_XMU_Array нужно только здесь, а Tensor_XHAT_Array до заполнения не используется
-
- //считаем среднее для каждого элемента пакета по всем пакетам
- //mu = 1./N * np.sum(x, axis = 0)
- cTensor_TmpA.Zero();
- for(size_t n=0;n<BatchSize;n++)
- {
-  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor(n);
-  CTensorMath<type_t>::Add(cTensor_TmpA,cTensor_TmpA,input,1.0,1.0/N);
- }
-
- //считаем разность от среднего для каждого пакета
- //xmu = x - mu
- CTensorMath<type_t>::Add(cTensor_NewMean,cTensor_NewMean,cTensor_TmpA,Momentum,1.0-Momentum);
-
- for(size_t n=0;n<BatchSize;n++)
- {
-  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor(n);
-  CTensorMath<type_t>::Sub(cTensor_XHAT_Array[n],input,cTensor_TmpA,1.0,1.0);
- }
-
- //возводим в квадрат xmu и вычисляем дисперсию
- //sq = xmu ** 2
- //var = 1./N * np.sum(sq, axis = 0)
  CTensor<type_t> &cTensor_VAR=cTensor_TmpB;
- cTensor_VAR.Zero();
- for(size_t n=0;n<BatchSize;n++)
+ if (cTensor_DXHAT_Array.size()>0)//режим обучения
  {
-  CTensorMath<type_t>::Pow2(cTensor_TmpA,cTensor_XHAT_Array[n],1);
-  CTensorMath<type_t>::Add(cTensor_VAR,cTensor_VAR,cTensor_TmpA,1,1.0/N);
+  //считаем среднее для каждого элемента пакета по всем пакетам
+  //mu = 1./N * np.sum(x, axis = 0)
+  cTensor_TmpA.Zero();
+  for(size_t n=0;n<BatchSize;n++)
+  {
+   CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor(n);
+   CTensorMath<type_t>::Add(cTensor_TmpA,cTensor_TmpA,input,1.0,1.0/N);
+  }
+  //считаем разность от среднего для каждого пакета
+  //xmu = x - mu
+  CTensorMath<type_t>::Add(cTensor_NewMean,cTensor_NewMean,cTensor_TmpA,Momentum,1.0-Momentum);
+
+  for(size_t n=0;n<BatchSize;n++)
+  {
+   CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor(n);
+   CTensorMath<type_t>::Sub(cTensor_XHAT_Array[n],input,cTensor_TmpA,1.0,1.0);
+  }
+  //возводим в квадрат xmu и вычисляем дисперсию
+  //sq = xmu ** 2
+  //var = 1./N * np.sum(sq, axis = 0)
+  cTensor_VAR.Zero();
+  for(size_t n=0;n<BatchSize;n++)
+  {
+   CTensorMath<type_t>::Pow2(cTensor_TmpA,cTensor_XHAT_Array[n],1);
+   CTensorMath<type_t>::Add(cTensor_VAR,cTensor_VAR,cTensor_TmpA,1,1.0/N);
+  }
+  CTensorMath<type_t>::Add(cTensor_NewVariable,cTensor_NewVariable,cTensor_VAR,Momentum,1.0-Momentum);
+ }
+ else//режим работы
+ {
+  cTensor_VAR=cTensor_Variable;
+  //считаем разность от среднего
+  for(size_t n=0;n<BatchSize;n++)
+  {
+   CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor(n);
+   CTensorMath<type_t>::Sub(cTensor_XHAT_Array[n],input,cTensor_Mean,1.0,1.0);
+  }
  }
 
- CTensorMath<type_t>::Add(cTensor_NewVariable,cTensor_NewVariable,cTensor_VAR,Momentum,1.0-Momentum);
 
  //printf("VAR:%f Middle:%f\r\n",cTensor_VAR.GetElement(0,0,0),cTensor_TmpA.GetElement(0,0,0));
 
@@ -571,7 +581,7 @@ void CNetLayerBatchNormalization<type_t>::TrainingBackward(bool create_delta_wei
   PrevLayerPtr->SetOutputError(n,cTensor_PrevLayerError);
  }
 
- printf("Layer:%i Gamma:%f Beta:%f -> ",Layer,cTensor_Gamma.GetElement(0,0,0),cTensor_Beta.GetElement(0,0,0));
+ printf("Layer:%i Gamma:%f Beta:%f -> ",static_cast<int>(Layer),cTensor_Gamma.GetElement(0,0,0),cTensor_Beta.GetElement(0,0,0));
  printf("dGamma:%f dBeta:%f\r\n",cTensor_dGamma.GetElement(0,0,0),cTensor_dBeta.GetElement(0,0,0));
 
 }
