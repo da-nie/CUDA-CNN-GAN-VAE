@@ -99,6 +99,7 @@ class CTensor
   const type_t* GetColumnPtr(size_t z,size_t y) const;///<получить указатель на строку тензора
   void Unitary(void);///<привести к единичному виду
   void Zero(void);///<обнулить тензор
+  void Fill(type_t value);///<задать тензор числом
   void Move(CTensor<type_t> &cTensor);///<переместить тензор
   void CopyItem(CTensor<type_t> &cTensor);///<скопировать только элементы
   void CopyItemToHost(type_t *item_array,size_t size);///<скопировать элементы из массива в хост
@@ -131,7 +132,7 @@ class CTensor
 
   void Print(const std::string &name,bool print_value=true) const;///<вывод тензора на экран
   void PrintToFile(const std::string &file_name,const std::string &name,bool print_value=true) const;///<вывод тензора в файл
-  bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="") const;///<сравнение тензоровzz
+  bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="") const;///<сравнение тензоров
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -303,7 +304,24 @@ void CTensor<type_t>::Zero(void)
   }
  }
 }
-
+//----------------------------------------------------------------------------------------------------
+//задать тензор числом
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensor<type_t>::Fill(type_t value)
+{
+ type_t *o_ptr=&Item[0];
+ for(size_t z=0;z<Size_Z;z++)
+ {
+  for(size_t y=0;y<Size_Y;y++)
+  {
+   for(size_t x=0;x<Size_X;x++,o_ptr++)
+   {
+    *o_ptr=value;
+   }
+  }
+ }
+}
 //----------------------------------------------------------------------------------------------------
 //переместить тензор
 //----------------------------------------------------------------------------------------------------

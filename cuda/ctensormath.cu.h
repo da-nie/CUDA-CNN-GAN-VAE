@@ -1813,12 +1813,12 @@ __global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_
  type_t v=tensor_v.GetElement(z,yp,xp);
 
  m=beta1*m+(1.0-beta1)*dw;
- type_t mc=m/(1.0-pow(beta1,iteration));
-
  v=beta2*v+(1.0-beta2)*dw*dw;
+
+ type_t mc=m/(1.0-pow(beta1,iteration));
  type_t vc=v/(1.0-pow(beta2,iteration));
 
- dw=speed*mc/sqrt(vc+epsilon);
+ dw=speed*mc/(sqrt(vc)+epsilon);
 
  tensor_m.SetElement(z,yp,xp,m);
  tensor_v.SetElement(z,yp,xp,v);

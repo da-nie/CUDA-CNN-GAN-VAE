@@ -607,6 +607,7 @@ template<class type_t>
 void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,double iteration)
 {
 /*
+ printf("Update!\r\n");
  printf("Layer:%i Gamma:%f Beta:%f -> ",Layer,cTensor_Gamma.GetElement(0,0,0),cTensor_Beta.GetElement(0,0,0));
  printf("dGamma:%f dBeta:%f\r\n",cTensor_dGamma.GetElement(0,0,0),cTensor_dBeta.GetElement(0,0,0));
 */
@@ -621,9 +622,12 @@ void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,doub
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
-  CTensorMath<type_t>::Sub(cTensor_Gamma,cTensor_Gamma,cTensor_dGamma,1.0,speed);
-  CTensorMath<type_t>::Sub(cTensor_Beta,cTensor_Beta,cTensor_dBeta,1.0,speed);
+  CTensorMath<type_t>::Sub(cTensor_Gamma,cTensor_Gamma,cTensor_dGamma,1,speed);
+  CTensorMath<type_t>::Sub(cTensor_Beta,cTensor_Beta,cTensor_dBeta,1,speed);
  }
+
+ //printf("Layer:%i NewGamma:%f NewBeta:%f\r\n",Layer,cTensor_Gamma.GetElement(0,0,0),cTensor_Beta.GetElement(0,0,0));
+
 
  cTensor_Mean=cTensor_NewMean;
  cTensor_Variable=cTensor_NewVariable;

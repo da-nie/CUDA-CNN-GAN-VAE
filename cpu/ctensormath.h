@@ -53,9 +53,13 @@ class CTensorMath
   //-деструктор-----------------------------------------------------------------------------------------
  public:
   //-открытые функции-----------------------------------------------------------------------------------
+  static void Inv(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<вычислить обратный тензор
+  static void Div(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<поделить тензоры
   static void Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры
   static void Sub(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<вычесть тензоры
   static void AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias);///<добавить смещения к элементам тензора (смещения одинаковы для x и y, но по z смещения разные)
+  static void Pow2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale=1);///<возведение элементов тензора в квадрат
+  static void SQRT(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_sqrt_value);//вычисление квадратного корня из элементов тензора
   static void SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input);///<вычислить сумму элементов по X и Y для каждого Z
 
   template<class kernel_output_t,class kernel_left_t,class kernel_right_t>
@@ -141,6 +145,59 @@ CTensor<type_t> operator*(const type_t &value_left,const CTensor<type_t> &cTenso
 //****************************************************************************************************
 
 //----------------------------------------------------------------------------------------------------
+//вычисление обратного тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Inv(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::Inv: Размерности тензоров не совпадают!";
+ }
+ const type_t *i_ptr=&cTensor_Input.Item[0];
+ type_t *o_ptr=&cTensor_Output.Item[0];
+
+ for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ {
+  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  {
+   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,i_ptr++)
+   {
+    *o_ptr=1.0/(*i_ptr);
+   }
+  }
+ }
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//поделить тензоры
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Div(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale,type_t right_scale)
+{
+ if (cTensor_Left.Size_X!=cTensor_Right.Size_X || cTensor_Left.Size_Y!=cTensor_Right.Size_Y || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
+     cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
+ {
+  throw "CTensor::Div: Размерности тензоров не совпадают!";
+ }
+ const type_t *left_ptr=&cTensor_Left.Item[0];
+ const type_t *right_ptr=&cTensor_Right.Item[0];
+ type_t *o_ptr=&cTensor_Output.Item[0];
+
+ for(size_t z=0;z<cTensor_Left.Size_Z;z++)
+ {
+  for(size_t y=0;y<cTensor_Left.Size_Y;y++)
+  {
+   for(size_t x=0;x<cTensor_Left.Size_X;x++,o_ptr++,left_ptr++,right_ptr++)
+   {
+    *o_ptr=left_scale*(*left_ptr)/(right_scale*(*right_ptr));
+   }
+  }
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
 //сложить тензоры
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
@@ -222,6 +279,60 @@ void CTensorMath<type_t>::AddBias(CTensor<type_t> &cTensor_Working,const CTensor
 }
 
 //----------------------------------------------------------------------------------------------------
+//возведение элементов тензора в квадрат
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Pow2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::Pow2: Размерности тензоров не совпадают!";
+ }
+
+ const type_t *i_ptr=&cTensor_Input.Item[0];
+ type_t *o_ptr=&cTensor_Output.Item[0];
+
+ for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ {
+  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  {
+   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,i_ptr++)
+   {
+    type_t e=(*i_ptr);
+    *o_ptr=scale*e*e;
+   }
+  }
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//вычисление квадратного корня из элементов тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SQRT(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_sqrt_value)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::SQRT: Размерности тензоров не совпадают!";
+ }
+
+ const type_t *i_ptr=&cTensor_Input.Item[0];
+ type_t *o_ptr=&cTensor_Output.Item[0];
+
+ for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ {
+  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  {
+   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,i_ptr++)
+   {
+    type_t e=(*i_ptr);
+    *o_ptr=(sqrt(e+add_sqrt_value))*scale;
+   }
+  }
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
 //вычислить сумму элементов по X и Y для каждого Z
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
@@ -250,8 +361,6 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
   *output_ptr=summ;
  }
 }
-
-
 
 //----------------------------------------------------------------------------------------------------
 //умножить тензоры
@@ -641,12 +750,12 @@ void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &
     type_t v=cTensor_V.GetElement(z,y,x);
 
     m=beta1*m+(1.0-beta1)*dw;
-    type_t mc=m/(1.0-pow(beta1,iteration));
-
     v=beta2*v+(1.0-beta2)*dw*dw;
+
+    type_t mc=m/(1.0-pow(beta1,iteration));
     type_t vc=v/(1.0-pow(beta2,iteration));
 
-    dw=speed*mc/sqrt(vc+epsilon);
+    dw=speed*mc/(sqrt(vc)+epsilon);
 
     cTensor_M.SetElement(z,y,x,m);
     cTensor_V.SetElement(z,y,x,v);
