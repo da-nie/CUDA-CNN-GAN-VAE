@@ -550,12 +550,12 @@ struct STensorKernel_BackwardConvolution_Delta
   int32_t sy=dy+ky-Conv_Padding_Y;
   int32_t sx=dx+kx-Conv_Padding_X;
 
-  if (sx<0 || sy<0) return(0);
+  if (sx<0 || sy<0 || sz<0) return(0);
 
   int32_t sy_s=sy/Conv_Stride_Y;
-  int32_t sx_s=sx/Conv_Stride_X;
-
   if (sy!=sy_s*Conv_Stride_Y) return(0);
+
+  int32_t sx_s=sx/Conv_Stride_X;
   if (sx!=sx_s*Conv_Stride_X) return(0);
 
   return(sTensorKernel_Delta.GetElement(sz,sy_s,sx_s));
@@ -580,16 +580,16 @@ struct STensorKernel_BackwardConvolution_Delta
   int32_t sy=dy+ky-Conv_Padding_Y;
   int32_t sx=dx+kx-Conv_Padding_X;
 
-  if (sx<0 || sy<0) return;
+  if (sx<0 || sy<0 || sz<0) return;
 
   int32_t sy_s=sy/Conv_Stride_Y;
   int32_t sx_s=sx/Conv_Stride_X;
 
-  if (sy!=sy_s*Conv_Stride_Y) return;
-  if (sx!=sx_s*Conv_Stride_X) return;
-
-  value=0;
-
+  if (sy!=sy_s*Conv_Stride_Y) value=0;
+  else//чтобы сэкономить время
+  {
+   if (sx!=sx_s*Conv_Stride_X) value=0;
+  }
   sTensorKernel_Delta.SetElement(sz,sy_s,sx_s,value);
  }
 

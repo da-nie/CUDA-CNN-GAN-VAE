@@ -62,7 +62,6 @@ class CTensorMath
   //-константы------------------------------------------------------------------------------------------
   static const size_t TENSOR_OPERATION_BLOCK_SIZE_SCALE=2;///<размер множителя блока операций с тензорами
   static const size_t TENSOR_OPERATION_BLOCK_SIZE=16;///<размер блока операций с тензорами
-
  private:
   //-переменные-----------------------------------------------------------------------------------------
  public:
@@ -76,10 +75,10 @@ class CTensorMath
   static void Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры
   static void AddValue(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t tensor_scale,type_t value);///<прибавить к каждому элементу тензора число
   static void Sub(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<вычесть тензоры
-  static void SubValue(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t tensor_scale,type_t value);//отнять от каждого элемента тензора число
+  static void SubValue(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t tensor_scale,type_t value);///<отнять от каждого элемента тензора число
   static void Set(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale=1,type_t add_value=0);///<скопировать тензор с масштабированием
   static void Pow2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale=1);///<возведение элементов тензора в квадрат
-  static void SQRT(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_sqrt_value);//вычисление квадратного корня из элементов тензора
+  static void SQRT(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_sqrt_value);///<вычисление квадратного корня из элементов тензора
   static void AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias);///<добавить смещения к элементам тензора (смещения одинаковы для x и y, но по z смещения разные)
   static void SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input);///<вычислить сумму элементов по X и Y для каждого Z
 
@@ -156,7 +155,7 @@ struct STensorKernel
  __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
   if (x>=Size_X || y>=Size_Y || z>=Size_Z) return(0);
-  return TensorData_Ptr[z*StrideZ+y*StrideX+x];
+  return(TensorData_Ptr[z*StrideZ+y*StrideX+x]);
  }
  __forceinline__ __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
@@ -164,17 +163,17 @@ struct STensorKernel
   TensorData_Ptr[z*StrideZ+y*StrideX+x]=value;
  }
 
- __forceinline__ __host__ __device__ size_t GetSizeX(void)
+ __forceinline__ __host__ __device__ size_t GetSizeX(void) const
  {
   return(Size_X);
  }
 
- __forceinline__ __host__ __device__ size_t GetSizeY(void)
+ __forceinline__ __host__ __device__ size_t GetSizeY(void) const
  {
   return(Size_Y);
  }
 
- __forceinline__ __host__ __device__ size_t GetSizeZ(void)
+ __forceinline__ __host__ __device__ size_t GetSizeZ(void) const
  {
   return(Size_Z);
  }
@@ -1073,9 +1072,9 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
  kernel_output_t Csub=tensor_output.GetSubTensor(z,blockRow,blockCol);
 
  type_t Cvalue[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE];
- for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++)
+ for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++)
  {
-  for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++)
+  for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++)
   {
    Cvalue[ky][kx]=0;
   }
@@ -1096,12 +1095,12 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
   // Shared memory used to store Asub and Bsub respectively
   // Load Asub and Bsub from device memory to shared memory
   // Each thread loads one element of each sub-tensor
-  for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++)
+  size_t py=oy;
+  for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,py++)
   {
-   size_t px=ox+kx;
-   for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++)
+   size_t px=ox;
+   for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++,px++)
    {
-    size_t py=oy+ky;
     As[py][px]=Asub.GetElement(0,py,px);
     Bs[py][px]=Bsub.GetElement(0,py,px);
    }
@@ -1111,20 +1110,18 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
   // before starting the computation
   __syncthreads();
 
-  for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++)
+  type_t *a_ptr_init=&As[oy][0];
+  for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,a_ptr_init+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE)
   {
-   type_t *b_ptr_init=&Bs[0][ox+kx];
-   for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++)
+   type_t *b_ptr_init=&Bs[0][ox];
+   for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++,b_ptr_init++)
    {
-    type_t *a_ptr_init=&As[oy+ky][0];
-
     type_t *a_ptr=a_ptr_init;
     type_t *b_ptr=b_ptr_init;
 
     type_t &cv=Cvalue[ky][kx];
     // Multiply Asub and Bsub together
     for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;e++,a_ptr++,b_ptr+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE) cv+=(*a_ptr)*(*b_ptr);
-    //for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE;e++) Cvalue[ky][kx]+=As[oy+ky][e]*Bs[e][ox+kx];
     // Synchronize to make sure that the preceding
     // computation is done before loading two new
     // sub-matrices of A and B in the next iteration
@@ -1135,16 +1132,15 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
  // Write Csub to device memory
  // Each thread writes one element
 
-  for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++)
+ size_t py=oy;
+ for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,py++)
+ {
+  size_t px=ox;
+  for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++,px++)
   {
-   size_t px=ox+kx;
-   for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++)
-   {
-    size_t py=oy+ky;
-    Csub.SetElement(0,py,px,Cvalue[ky][kx]);
-   }
+   Csub.SetElement(0,py,px,Cvalue[ky][kx]);
   }
-
+ }
  __syncthreads();
 }
 

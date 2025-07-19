@@ -154,7 +154,7 @@ CModelSorter<type_t>::CModelSorter(void)
 {
  IMAGE_WIDTH=224/2;
  IMAGE_HEIGHT=224/2;
- IMAGE_DEPTH=1;
+ IMAGE_DEPTH=3;
  BATCH_SIZE=100;
 
  GROUP_SIZE=10;
