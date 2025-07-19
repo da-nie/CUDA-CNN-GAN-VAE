@@ -122,12 +122,12 @@ struct STensorKernel_ForwardConvolution_Image
   Set(cTensor,input_y,input_x,kernel_y,kernel_x,stride_y,stride_x,padding_y,padding_x,dst_y,dst_x);
  }
 
- __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
+ __forceinline__ __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
  {
   return(NULL);
  }
 
- __host__ __device__ STensorKernel_ForwardConvolution_Image<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __forceinline__ __host__ __device__ STensorKernel_ForwardConvolution_Image<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
  {
   if (z>=Size_Z) z=0;
   STensorKernel_ForwardConvolution_Image<type_t> sub_tensor;
@@ -155,7 +155,7 @@ struct STensorKernel_ForwardConvolution_Image
   return(sub_tensor);
  }
 
- __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
+ __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
@@ -200,17 +200,17 @@ struct STensorKernel_ForwardConvolution_Image
   sTensorKernel_Image.SetElement(sz,sy,sx,value);
  }
 
- __host__ __device__ size_t GetSizeX(void)
+ __forceinline__ __host__ __device__ size_t GetSizeX(void) const
  {
   return(Size_X);
  }
 
- __host__ __device__ size_t GetSizeY(void)
+ __forceinline__ __host__ __device__ size_t GetSizeY(void) const
  {
   return(Size_Y);
  }
 
- __host__ __device__ size_t GetSizeZ(void)
+ __forceinline__ __host__ __device__ size_t GetSizeZ(void) const
  {
   return(Size_Z);
  }
@@ -348,12 +348,12 @@ struct STensorKernel_BackwardConvolution_Kernel
   Set(cTensor_Kernel,kernel_x,kernel_y,kernel_z,kernel_amount);
  }
 
- __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
+ __forceinline__ __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
  {
   return(NULL);
  }
 
- __host__ __device__ STensorKernel_BackwardConvolution_Kernel<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1
+ __forceinline__ __host__ __device__ STensorKernel_BackwardConvolution_Kernel<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1
  {
   STensorKernel_BackwardConvolution_Kernel<type_t> sub_tensor;
 
@@ -376,7 +376,7 @@ struct STensorKernel_BackwardConvolution_Kernel
   return(sub_tensor);
  }
 
- __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
+ __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
   int32_t sx=x+Offset_X;
   int32_t sy=y+Offset_Y;
@@ -395,7 +395,7 @@ struct STensorKernel_BackwardConvolution_Kernel
 
   return(sTensorKernel_Kernel.GetElement(0,ki,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y));
  }
- __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
   int32_t sx=x+Offset_X;
   int32_t sy=y+Offset_Y;
@@ -414,17 +414,17 @@ struct STensorKernel_BackwardConvolution_Kernel
   sTensorKernel_Kernel.SetElement(0,sy,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y,value);
  }
 
- __host__ __device__ size_t GetSizeX(void)
+ __forceinline__ __host__ __device__ size_t GetSizeX(void) const
  {
   return(Size_X);
  }
 
- __host__ __device__ size_t GetSizeY(void)
+ __forceinline__ __host__ __device__ size_t GetSizeY(void) const
  {
   return(Size_Y);
  }
 
- __host__ __device__ size_t GetSizeZ(void)
+ __forceinline__ __host__ __device__ size_t GetSizeZ(void) const
  {
   return(Size_Z);
  }
@@ -497,12 +497,12 @@ struct STensorKernel_BackwardConvolution_Delta
   Set(cTensor,input_y,input_x,kernel_y,kernel_x,stride_y,stride_x,padding_y,padding_x,dst_y,dst_x);
  }
 
- __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
+ __forceinline__ __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
  {
   return(NULL);
  }
 
- __host__ __device__ STensorKernel_BackwardConvolution_Delta<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __forceinline__ __host__ __device__ STensorKernel_BackwardConvolution_Delta<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
  {
   if (z>=Size_Z) z=0;
   STensorKernel_BackwardConvolution_Delta<type_t> sub_tensor;
@@ -530,7 +530,7 @@ struct STensorKernel_BackwardConvolution_Delta
   return(sub_tensor);
  }
 
- __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
+ __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
@@ -560,7 +560,7 @@ struct STensorKernel_BackwardConvolution_Delta
 
   return(sTensorKernel_Delta.GetElement(sz,sy_s,sx_s));
  }
- __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
@@ -593,17 +593,17 @@ struct STensorKernel_BackwardConvolution_Delta
   sTensorKernel_Delta.SetElement(sz,sy_s,sx_s,value);
  }
 
- __host__ __device__ size_t GetSizeX(void)
+ __forceinline__ __host__ __device__ size_t GetSizeX(void) const
  {
   return(Size_X);
  }
 
- __host__ __device__ size_t GetSizeY(void)
+ __forceinline__ __host__ __device__ size_t GetSizeY(void) const
  {
   return(Size_Y);
  }
 
- __host__ __device__ size_t GetSizeZ(void)
+ __forceinline__ __host__ __device__ size_t GetSizeZ(void) const
  {
   return(Size_Z);
  }
@@ -751,12 +751,12 @@ struct STensorKernel_DeltaWeightAndBias_Image
   Set(cTensor,input_y,input_x,kernel_y,kernel_x,stride_y,stride_x,padding_y,padding_x,dst_y,dst_x);
  }
 
- __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
+ __forceinline__ __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
  {
   return(NULL);
  }
 
- __host__ __device__ STensorKernel_DeltaWeightAndBias_Image<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __forceinline__ __host__ __device__ STensorKernel_DeltaWeightAndBias_Image<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
  {
   if (z>=Size_Z) z=0;
   STensorKernel_DeltaWeightAndBias_Image<type_t> sub_tensor;
@@ -785,7 +785,7 @@ struct STensorKernel_DeltaWeightAndBias_Image
   return(sub_tensor);
  }
 
- __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
+ __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
@@ -807,7 +807,7 @@ struct STensorKernel_DeltaWeightAndBias_Image
 
   return(sTensorKernel_Image.GetElement(sz,sy,sx));
  }
- __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
@@ -830,17 +830,17 @@ struct STensorKernel_DeltaWeightAndBias_Image
   sTensorKernel_Image.SetElement(sz,sy,sx,value);
  }
 
- __host__ __device__ size_t GetSizeX(void)
+ __forceinline__ __host__ __device__ size_t GetSizeX(void) const
  {
   return(Size_X);
  }
 
- __host__ __device__ size_t GetSizeY(void)
+ __forceinline__ __host__ __device__ size_t GetSizeY(void) const
  {
   return(Size_Y);
  }
 
- __host__ __device__ size_t GetSizeZ(void)
+ __forceinline__ __host__ __device__ size_t GetSizeZ(void) const
  {
   return(Size_Z);
  }
@@ -915,12 +915,12 @@ struct STensorKernel_DeltaWeightAndBias_Delta
   Set(cTensor,new_delta_y,new_delta_x,stride_y,stride_x);
  }
 
- __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
+ __forceinline__ __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
  {
   return(NULL);
  }
 
- __host__ __device__ STensorKernel_DeltaWeightAndBias_Delta<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __forceinline__ __host__ __device__ STensorKernel_DeltaWeightAndBias_Delta<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
  {
   if (z>=Size_Z) z=0;
   STensorKernel_DeltaWeightAndBias_Delta<type_t> sub_tensor;
@@ -943,7 +943,7 @@ struct STensorKernel_DeltaWeightAndBias_Delta
   return(sub_tensor);
  }
 
- __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
+ __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
   int32_t sx=x+Offset_X;
   int32_t sy=y+Offset_Y;
@@ -957,7 +957,7 @@ struct STensorKernel_DeltaWeightAndBias_Delta
   if (dx==dx_s*Stride_X && dy==dy_s*Stride_Y) return(sTensorKernel_Delta.GetElement(sy,dy_s,dx_s));
   return(0);
  }
- __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
   int32_t sx=x+Offset_X;
   int32_t sy=y+Offset_Y;
@@ -971,17 +971,17 @@ struct STensorKernel_DeltaWeightAndBias_Delta
   if (dx==dx_s*Stride_X && dy==dy_s*Stride_Y) sTensorKernel_Delta.SetElement(sy,dy_s,dx_s,value);
  }
 
- __host__ __device__ size_t GetSizeX(void)
+ __forceinline__ __host__ __device__ size_t GetSizeX(void) const
  {
   return(Size_X);
  }
 
- __host__ __device__ size_t GetSizeY(void)
+ __forceinline__ __host__ __device__ size_t GetSizeY(void) const
  {
   return(Size_Y);
  }
 
- __host__ __device__ size_t GetSizeZ(void)
+ __forceinline__ __host__ __device__ size_t GetSizeZ(void) const
  {
   return(Size_Z);
  }

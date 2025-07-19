@@ -129,12 +129,12 @@ struct STensorKernel
   Set(cTensor);
  }
 
- __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
+ __forceinline__ __host__ __device__ type_t* GetTensorDataPtr(size_t z)///<получить указатель на элементы с глубиной z
  {
   return(&TensorData_Ptr[z*StrideZ]);
  }
 
- __host__ __device__ STensorKernel<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1
+ __forceinline__ __host__ __device__ STensorKernel<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1
  {
   STensorKernel<type_t> sub_tensor;
 
@@ -153,28 +153,28 @@ struct STensorKernel
   return(sub_tensor);
  }
 
- __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
+ __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
   if (x>=Size_X || y>=Size_Y || z>=Size_Z) return(0);
   return TensorData_Ptr[z*StrideZ+y*StrideX+x];
  }
- __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
   if (x>=Size_X || y>=Size_Y || z>=Size_Z) return;
   TensorData_Ptr[z*StrideZ+y*StrideX+x]=value;
  }
 
- __host__ __device__ size_t GetSizeX(void)
+ __forceinline__ __host__ __device__ size_t GetSizeX(void)
  {
   return(Size_X);
  }
 
- __host__ __device__ size_t GetSizeY(void)
+ __forceinline__ __host__ __device__ size_t GetSizeY(void)
  {
   return(Size_Y);
  }
 
- __host__ __device__ size_t GetSizeZ(void)
+ __forceinline__ __host__ __device__ size_t GetSizeZ(void)
  {
   return(Size_Z);
  }
