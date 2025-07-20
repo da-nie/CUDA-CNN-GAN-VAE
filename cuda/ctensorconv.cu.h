@@ -585,11 +585,8 @@ struct STensorKernel_BackwardConvolution_Delta
   int32_t sy_s=sy/Conv_Stride_Y;
   int32_t sx_s=sx/Conv_Stride_X;
 
-  if (sy!=sy_s*Conv_Stride_Y) value=0;
-  else//чтобы сэкономить время
-  {
-   if (sx!=sx_s*Conv_Stride_X) value=0;
-  }
+  if ((sy!=sy_s*Conv_Stride_Y) || (sx!=sx_s*Conv_Stride_X)) value=0;
+
   sTensorKernel_Delta.SetElement(sz,sy_s,sx_s,value);
  }
 
@@ -685,22 +682,6 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
  int32_t new_input_y=kernel_y*kernel_x*input_z;
  int32_t new_input_x=dst_x*dst_y;
 
- /*
- //перестроим тензоры ядер в строку по глубине и переворачиваем их на 180
- CTensor<type_t> cTensor_NewKernel(1,kernel_z,kernel_x*kernel_y*input_z);
-
- for(size_t z=0;z<kernel_z;z++)
- {
-  type_t *d_ptr=cTensor_NewKernel.GetColumnPtr(0,z);
-  for(size_t k=0;k<cTensor_Kernel.size();k++)
-  {
-   cTensor_Kernel[k].CopyFromDevice();
-   const type_t *s_ptr=cTensor_Kernel[k].GetColumnPtr(z,0)+kernel_y*kernel_x-1;
-   for(size_t g=0;g<kernel_y*kernel_x;g++,d_ptr++,s_ptr--) *d_ptr=*s_ptr;
-  }
- }
- cTensor_NewKernel.SetHostOnChange();
- */
  //умножаем матрицы
  cTensor_OutputDelta.ReinterpretSize(1,output_z,new_input_x);
 
@@ -709,6 +690,7 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
  STensorKernel_BackwardConvolution_Delta<type_t> sTensorKernel_Delta(cTensor_Delta,new_input_y,new_input_x,kernel_y,kernel_x,stride_y,stride_x,padding_y,padding_x,dst_y,dst_x);
 
  CTensorMath<type_t>::MulAbstract(cTensor_OutputDelta,sTensorKernel_OutputDelta,cTensor_Kernel,sTensorKernel_Kernel,cTensor_Delta,sTensorKernel_Delta);
+
  cTensor_OutputDelta.RestoreSize();
  cTensor_OutputDelta.SetDeviceOnChange();
 }

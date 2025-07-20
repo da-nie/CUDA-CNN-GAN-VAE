@@ -1110,21 +1110,26 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
   // before starting the computation
   __syncthreads();
 
-  type_t *a_ptr_init=&As[oy][0];
-  for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,a_ptr_init+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE)
+  //выполняем умножение только для тех элементов, которые не выходят за размер выходного тензора
+  if ((blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE+oy<tensor_output.Size_Y) &&
+      (blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE+ox<tensor_output.Size_X))
   {
-   type_t *b_ptr_init=&Bs[0][ox];
-   for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++,b_ptr_init++)
+   type_t *a_ptr_init=&As[oy][0];
+   for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,a_ptr_init+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE)
    {
-    type_t *a_ptr=a_ptr_init;
-    type_t *b_ptr=b_ptr_init;
+    type_t *b_ptr_init=&Bs[0][ox];
+    for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++,b_ptr_init++)
+    {
+     type_t *a_ptr=a_ptr_init;
+     type_t *b_ptr=b_ptr_init;
 
-    type_t &cv=Cvalue[ky][kx];
-    // Multiply Asub and Bsub together
-    for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;e++,a_ptr++,b_ptr+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE) cv+=(*a_ptr)*(*b_ptr);
-    // Synchronize to make sure that the preceding
-    // computation is done before loading two new
-    // sub-matrices of A and B in the next iteration
+     type_t &cv=Cvalue[ky][kx];
+     // Multiply Asub and Bsub together
+     for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;e++,a_ptr++,b_ptr+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE) cv+=(*a_ptr)*(*b_ptr);
+     // Synchronize to make sure that the preceding
+     // computation is done before loading two new
+     // sub-matrices of A and B in the next iteration
+    }
    }
   }
   __syncthreads();

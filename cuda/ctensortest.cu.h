@@ -54,10 +54,10 @@ class CTensorTest
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
   static bool TestForwardConvolution(void);///<протестировать прямую свёртку тензоров
-  static bool TestForwardConvolutionWithStepAndPadding(void);//протестировать прямую свёртку тензоров c шагом и дополнением
-  static bool TestCreateDeltaWeightAndBiasWithStepAndPadding(void);//протестировать создание поправок c шагом и дополнением
-  static bool TestCreateDeltaWeightAndBias(void);//протестировать создание поправок
-  static bool TestBackwardConvolutionWithStepAndPadding(void);//протестировать обратную свёртку с шагом и дополнением
+  static bool TestForwardConvolutionWithStepAndPadding(void);///<протестировать прямую свёртку тензоров c шагом и дополнением
+  static bool TestCreateDeltaWeightAndBiasWithStepAndPadding(void);///<протестировать создание поправок c шагом и дополнением
+  static bool TestCreateDeltaWeightAndBias(void);///<протестировать создание поправок
+  static bool TestBackwardConvolutionWithStepAndPadding(void);///<протестировать обратную свёртку с шагом и дополнением
 };
 
 //****************************************************************************************************
