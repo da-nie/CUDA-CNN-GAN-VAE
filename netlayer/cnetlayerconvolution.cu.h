@@ -218,10 +218,15 @@ void CNetLayerConvolution<type_t>::Reset(void)
 {
  if (PrevLayerPtr==NULL) return;
 
+ //размер входного тензора
+ size_t input_x=PrevLayerPtr->GetOutputTensor(0).GetSizeX();
+ size_t input_y=PrevLayerPtr->GetOutputTensor(0).GetSizeY();
+ size_t input_z=PrevLayerPtr->GetOutputTensor(0).GetSizeZ();
+
  for(size_t n=0;n<Kernel_Amount;n++)
  {
-  type_t size=static_cast<type_t>(Kernel_X*Kernel_Y*Kernel_Amount);
-  type_t koeff=static_cast<type_t>(sqrt(2.0/size));
+  type_t size=static_cast<type_t>(Kernel_X*Kernel_Y*input_z);
+  type_t koeff=static_cast<type_t>(sqrt(6.0/size));
   CTensor<type_t> cTensor_Rand(1,1,size);
   //CRandom<type_t>::SetRandomNormal(cTensor_Rand,-koeff,koeff);
 
@@ -236,13 +241,13 @@ void CNetLayerConvolution<type_t>::Reset(void)
   }
  }
  //сдвиги
- type_t size=static_cast<type_t>(Kernel_Amount);
+ type_t size=static_cast<type_t>(input_z);
  type_t koeff=static_cast<type_t>(sqrt(2.0/size));
  for(size_t z=0;z<Kernel_Amount;z++)
  {
   //используем метод инициализации He (Ге)
   //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
-  type_t init=0;//rnd*koeff;
+  type_t init=0.1;//rnd*koeff;
   cTensor_Bias.SetElement(z,0,0,init);
  }
 }

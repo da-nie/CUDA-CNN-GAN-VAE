@@ -1095,6 +1095,7 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
   // Shared memory used to store Asub and Bsub respectively
   // Load Asub and Bsub from device memory to shared memory
   // Each thread loads one element of each sub-tensor
+
   size_t py=oy;
   for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,py++)
   {

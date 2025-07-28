@@ -181,7 +181,7 @@ void CNetLayerLinear<type_t>::Reset(void)
  if (PrevLayerPtr==NULL) return;
 
  type_t size=static_cast<type_t>(cTensor_W.GetSizeX());//нормируется только по количеству входов нейрона
- type_t koeff=static_cast<type_t>(sqrt(2.0/size));
+ type_t koeff=static_cast<type_t>(sqrt(6.0/size));
  CTensor<type_t> cTensor_Rand(1,1,size);
  //веса
  for(size_t y=0;y<cTensor_W.GetSizeY();y++)
@@ -204,7 +204,7 @@ void CNetLayerLinear<type_t>::Reset(void)
  {
   //используем метод инициализации He (Ге)
   //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
-  type_t init=0;//rnd*koeff;
+  type_t init=0.1;//rnd*koeff;
   cTensor_B.SetElement(0,y,0,init);
  }
 }
