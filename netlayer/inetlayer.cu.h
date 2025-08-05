@@ -40,6 +40,9 @@ class INetLayer
    TRAINING_MODE_GRADIENT,///<градиентный спуск
    TRAINING_MODE_ADAM///<обучение по алгоритму Adam
   };
+  double Beta1;///<параметры алгоритма Adam
+  double Beta2;
+  double Epsilon;
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
  private:
@@ -77,9 +80,12 @@ class INetLayer
   {
    TrainingMode=TRAINING_MODE_GRADIENT;
   }
-  void TrainingModeAdam(void)///<включить режим обучения "алгоритм Adam"
+  void TrainingModeAdam(double beta1=0.9,double beta2=0.999,double epsilon=1E-8)///<включить режим обучения "алгоритм Adam"
   {
    TrainingMode=TRAINING_MODE_ADAM;
+   Beta1=beta1;
+   Beta2=beta2;
+   Epsilon=epsilon;
   }
   TRAINING_MODE GetTrainingMode(void)///<получить выбранный режим обучения
   {

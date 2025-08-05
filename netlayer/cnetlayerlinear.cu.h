@@ -64,6 +64,10 @@ class CNetLayerLinear:public INetLayer<type_t>
   CTensor<type_t> cTensor_MB;///<тензор фильтра 1 сдвигов
   CTensor<type_t> cTensor_VB;///<тензор фильтра 2 сдвигов
 
+  using INetLayer<type_t>::Beta1;///<параметры алгоритма Adam
+  using INetLayer<type_t>::Beta2;
+  using INetLayer<type_t>::Epsilon;
+
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerLinear(size_t neurons,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);
@@ -451,16 +455,13 @@ void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration
 {
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
-  double beta1=0.9;
-  double beta2=0.999;
-  static const double epsilon=1E-8;
-
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,speed,beta1,beta2,epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,speed,beta1,beta2,epsilon,iteration);
+  CTensorMath<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,BatchSize,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorMath<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,BatchSize,speed,Beta1,Beta2,Epsilon,iteration);
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
+  speed/=static_cast<double>(BatchSize);
   CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed);
   CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed);
  }

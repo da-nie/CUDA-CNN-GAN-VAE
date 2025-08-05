@@ -274,13 +274,13 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(size_t mini_batch_index,dou
   CTimeStamp cTimeStamp("Вычисление кодировщика:");
   for(size_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
  //вычисляем сеть кодировщика
  {
   CTimeStamp cTimeStamp("Вычисление декодировщика:");
   for(size_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
  for(size_t b=0;b<BATCH_SIZE;b++)
  {
   {
@@ -325,7 +325,7 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(size_t mini_batch_index,dou
   CTimeStamp cTimeStamp("Обучение кодировщика:");
   for(size_t m=0,n=CoderNet.size()-1;m<CoderNet.size();m++,n--) CoderNet[n]->TrainingBackward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
 }
 //----------------------------------------------------------------------------------------------------
 //сохранить случайное изображение с декодировщика
@@ -377,7 +377,7 @@ void CModelBasicVAE<type_t>::Training(void)
 {
  char str_b[STRING_BUFFER_SIZE];
 
- const double speed=SPEED/(static_cast<double>(BATCH_SIZE));
+ const double speed=SPEED;
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
 
  size_t image_amount=RealImage.size();
@@ -440,7 +440,7 @@ void CModelBasicVAE<type_t>::Training(void)
      CTimeStamp cTimeStamp("Обновление весов декодировщика:");
      for(size_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
     }
-    SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
 
     str="Ошибка:";
     str+=std::to_string(static_cast<long double>(cost));
@@ -549,7 +549,7 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
 
  char str_b[STRING_BUFFER_SIZE];
 
- const double speed=SPEED/BATCH_SIZE;
+ const double speed=SPEED;
  size_t max_iteration=1000000000;//максимальное количество итераций обучения
 
  size_t image_amount=RealImage.size();
@@ -586,14 +586,14 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
    CTimeStamp cTimeStamp("Вычисление кодировщика:");
    for(size_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
   }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
 
   //вычисляем сеть декодировщика
   {
    CTimeStamp cTimeStamp("Вычисление декодировщика:");
    for(size_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
   }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
   double cost=0;
   for(size_t b=0;b<BATCH_SIZE;b++)
   {
@@ -631,7 +631,7 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
    CTimeStamp cTimeStamp("Обучение кодировщика:");
    for(size_t m=0,n=CoderNet.size()-1;m<CoderNet.size();m++,n--) CoderNet[n]->TrainingBackward();
   }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
   //корректируем веса декодировщика
   {
    CTimeStamp cTimeStamp("Обновление весов декодировщика:");

@@ -100,7 +100,7 @@ class CTensorMath
   static void MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,size_t pooling_x,size_t pooling_y);///<обратный проход при увеличении разрешения тензора выборкой большего элемента
   static void Clip(CTensor<type_t> &cTensor,type_t min_value,type_t max_value);///<выполнить отсечку значений тензора
 
-  static void Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,double speed,double beta1,double beta2,double epsilon,double iteration);///<выполнить алгоритм Adam к весовому тензору
+  static void Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,size_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration);///<выполнить алгоритм Adam к весовому тензору
 
 
  private:
@@ -1796,7 +1796,7 @@ void CTensorMath<type_t>::Clip(CTensor<type_t> &cTensor,type_t min_value,type_t 
 //функция CUDA для выполнения алгоритма Adam
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_t> tensor_dweight,STensorKernel<type_t> tensor_m,STensorKernel<type_t> tensor_v,double speed,double beta1,double beta2,double epsilon,double iteration)
+__global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_t> tensor_dweight,STensorKernel<type_t> tensor_m,STensorKernel<type_t> tensor_v,size_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration)
 {
  size_t blockCol=blockIdx.x;
  size_t blockRow=blockIdx.y;
@@ -1813,6 +1813,8 @@ __global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_
  type_t dw=tensor_dweight.GetElement(z,yp,xp);
  type_t m=tensor_m.GetElement(z,yp,xp);
  type_t v=tensor_v.GetElement(z,yp,xp);
+
+ dw/=static_cast<type_t>(batch_size);
 
  m=beta1*m+(1.0-beta1)*dw;
  v=beta2*v+(1.0-beta2)*dw*dw;
@@ -1836,7 +1838,7 @@ __global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_
 //!выполнить алгоритм Adam к весовому тензору
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,double speed,double beta1,double beta2,double epsilon,double iteration)
+void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,size_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration)
 {
  if (cTensor_Weight.Size_X!=cTensor_dWeight.Size_X || cTensor_Weight.Size_Y!=cTensor_dWeight.Size_Y || cTensor_Weight.Size_Z!=cTensor_dWeight.Size_Z ||
      cTensor_Weight.Size_X!=cTensor_M.Size_X || cTensor_Weight.Size_Y!=cTensor_M.Size_Y || cTensor_Weight.Size_Z!=cTensor_M.Size_Z ||
@@ -1869,7 +1871,7 @@ void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &
  if (blocks.y==0) blocks.y=1;
  if (blocks.z==0) blocks.z=1;
 
- CUDAAdam<type_t><<<blocks,thread>>>(sTensorKernel_Weight,sTensorKernel_dWeight,sTensorKernel_M,sTensorKernel_V,speed,beta1,beta2,epsilon,iteration);
+ CUDAAdam<type_t><<<blocks,thread>>>(sTensorKernel_Weight,sTensorKernel_dWeight,sTensorKernel_M,sTensorKernel_V,batch_size,speed,beta1,beta2,epsilon,iteration);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 

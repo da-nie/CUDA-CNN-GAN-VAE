@@ -262,12 +262,12 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
    CTimeStamp cTimeStamp("Вычисление генератора:");
    for(size_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
   }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
   {
    CTimeStamp cTimeStamp("Вычисление дискриминатора:");
    for(size_t layer=0;layer<DiscriminatorNet.size();layer++) DiscriminatorNet[layer]->Forward();
   }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
   //вычисляем ошибку
   {
    CTimeStamp cTimeStamp("Получение ответа:");
@@ -276,8 +276,8 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
   {
    CTimeStamp cTimeStamp("Расчёт ошибки дискриминатора:");
    fake_output=cTensor_Discriminator_Output.GetElement(0,0,0);
-   double disc_error=SafeLog(fake_output);//прямая метка
-   //double disc_error=(fake_output-1);//прямая метка
+   //double disc_error=SafeLog(fake_output);//прямая метка
+   double disc_error=(fake_output-1);//прямая метка
 
    gen_cost+=disc_error*disc_error;
    cTensor_Discriminator_Error.SetElement(0,0,0,disc_error);
@@ -297,13 +297,13 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
    CTimeStamp cTimeStamp("Обучение дискриминатора (получение ошибок):");
    for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward(false);
   }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
   //выполняем вычисление весов генератора
   {
    CTimeStamp cTimeStamp("Обучение генератора:");
    for(size_t m=0,n=GeneratorNet.size()-1;m<GeneratorNet.size();m++,n--) GeneratorNet[n]->TrainingBackward();
   }
-  SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
 
   //обучение дискриминатора (ещё один проход в обратном направлении)
 
@@ -311,8 +311,8 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
   {
    CTimeStamp cTimeStamp("Расчёт ошибки для дискриминатора:");
    fake_output=cTensor_Discriminator_Output.GetElement(0,0,0);
-   double disc_fake_error=-SafeLog(1.0-fake_output);//прямая метка
-   //double disc_fake_error=(fake_output-0);//прямая метка
+   //double disc_fake_error=-SafeLog(1.0-fake_output);//прямая метка
+   double disc_fake_error=(fake_output-0);//прямая метка
 
    disc_cost+=disc_fake_error*disc_fake_error;
    cTensor_Discriminator_Error.SetElement(0,0,0,disc_fake_error);
@@ -329,7 +329,6 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
   }
  }
 }
-
 
 //----------------------------------------------------------------------------------------------------
 //обучение дискриминатора на фальшивом наборе
@@ -353,12 +352,12 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFake(double &disc_cost)
   CTimeStamp cTimeStamp("Вычисление генератора:");
   for(size_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
  {
   CTimeStamp cTimeStamp("Вычисление дискриминатора:");
   for(size_t layer=0;layer<DiscriminatorNet.size();layer++) DiscriminatorNet[layer]->Forward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
  for(size_t b=0;b<BATCH_SIZE;b++)
  {
   //вычисляем ошибку
@@ -370,8 +369,10 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFake(double &disc_cost)
   {
    CTimeStamp cTimeStamp("Расчёт ошибки для дискриминатора:");
    fake_output=cTensor_Discriminator_Output.GetElement(0,0,0);
-   double disc_fake_error=-SafeLog(1.0-fake_output);//прямая метка
+   //double disc_fake_error=-SafeLog(1.0-fake_output);//прямая метка
    //double disc_fake_error=(fake_output-0);//прямая метка
+   double disc_fake_error=1+fake_output;
+   if (disc_fake_error<0) disc_fake_error=0;
 
    if (b==0)
    {
@@ -424,7 +425,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,d
   CTimeStamp cTimeStamp("Вычисление дискриминатора:");
   for(size_t layer=0;layer<DiscriminatorNet.size();layer++) DiscriminatorNet[layer]->Forward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
  for(size_t b=0;b<BATCH_SIZE;b++)
  {
   //вычисляем ошибку последнего слоя
@@ -435,8 +436,11 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,d
   {
    CTimeStamp cTimeStamp("Вычисление ошибки:");
    real_output=cTensor_Discriminator_Output.GetElement(0,0,0);
-   double disc_real_error=SafeLog(real_output);//прямая метка
-   //double disc_real_error=(real_output-1);//прямая метка
+   //double disc_real_error=SafeLog(real_output);//прямая метка
+//   double disc_real_error=(real_output-1);//прямая метка
+   double disc_real_error=1-real_output;//прямая метка
+   if (disc_real_error<0) disc_real_error=0;
+   disc_real_error=-disc_real_error;
 
    if (b==0)
    {
@@ -445,6 +449,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,d
    }
 
    cost+=disc_real_error*disc_real_error;
+
    cTensor_Discriminator_Error.SetElement(0,0,0,disc_real_error);
   }
   {
@@ -453,12 +458,12 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorReal(size_t mini_batch_index,d
    DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(b,cTensor_Discriminator_Error);
   }
  }
+
  //выполняем вычисление весов
  {
   CTimeStamp cTimeStamp("Обучение дискриминатора:");
   for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
 }
 
 
@@ -488,12 +493,12 @@ void CModelBasicGAN<type_t>::TrainingGenerator(double &cost,double &middle_answe
   CTimeStamp cTimeStamp("Вычисление генератора:");
   for(size_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
  {
   CTimeStamp cTimeStamp("Вычисление дискриминатора:");
   for(size_t layer=0;layer<DiscriminatorNet.size();layer++) DiscriminatorNet[layer]->Forward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
  for(size_t b=0;b<BATCH_SIZE;b++)
  {
   //вычисляем ошибку
@@ -506,8 +511,10 @@ void CModelBasicGAN<type_t>::TrainingGenerator(double &cost,double &middle_answe
   {
    CTimeStamp cTimeStamp("Расчёт ошибки дискриминатора:");
    fake_output=cTensor_Discriminator_Output.GetElement(0,0,0);
-   double disc_error=SafeLog(fake_output);//прямая метка
-   //double disc_error=(fake_output-1);//прямая метка
+   //double disc_error=SafeLog(fake_output);//прямая метка
+   double disc_error=-fake_output;//прямая метка
+
+   disc_error=-disc_error;
 
    if (b==0)
    {
@@ -528,13 +535,13 @@ void CModelBasicGAN<type_t>::TrainingGenerator(double &cost,double &middle_answe
   CTimeStamp cTimeStamp("Обучение дискриминатора (получение ошибок):");
   for(size_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward(false);
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
  //выполняем вычисление весов генератора
  {
   CTimeStamp cTimeStamp("Обучение генератора:");
   for(size_t m=0,n=GeneratorNet.size()-1;m<GeneratorNet.size();m++,n--) GeneratorNet[n]->TrainingBackward();
  }
- SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
  middle_answer/=static_cast<double>(BATCH_SIZE);
 }
 //----------------------------------------------------------------------------------------------------
@@ -546,11 +553,12 @@ void CModelBasicGAN<type_t>::SaveRandomImage(void)
  static size_t counter=0;
 
  char str[STRING_BUFFER_SIZE];
- for(size_t n=0;n<BATCH_SIZE*0+1;n++)
+ for(size_t n=0;n<BATCH_SIZE;n++)
  {
+  counter=0;
   CreateFakeImage(cTensor_Generator_Output);
   sprintf(str,"Test/test%05i-%03i.tga",static_cast<int>(counter),static_cast<int>(n));
-  //SaveImage(cTensor_Generator_Output,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+  SaveImage(cTensor_Generator_Output,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   if (n==0) SaveImage(cTensor_Generator_Output,"Test/test-current.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   sprintf(str,"Test/test%03i.txt",n);
   cTensor_Generator_Output.PrintToFile(str,"Изображение",true);
@@ -646,8 +654,8 @@ void CModelBasicGAN<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов дискриминатора на фальшивых изображениях:");
     for(size_t n=0;n<DiscriminatorNet.size();n++)
     {
-     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
-    // DiscriminatorNet[n]->ClipWeight(-clip,clip);
+     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1);
+     //DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
    //корректируем веса генератора
@@ -655,7 +663,7 @@ void CModelBasicGAN<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов генератора:");
     for(size_t n=0;n<GeneratorNet.size();n++)
     {
-     GeneratorNet[n]->TrainingUpdateWeight(gen_speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
+     GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration+1);
      //GeneratorNet[n]->ClipWeight(-clip,clip);//не нужно делать для генератора!
     }
    }
@@ -669,11 +677,11 @@ void CModelBasicGAN<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов дискриминатора на настоящих изображениях:");
     for(size_t n=0;n<DiscriminatorNet.size();n++)
     {
-     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
+     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1);
      //DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
-   SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
+
 
    str="Ошибка дискриминатора:";
    str+=std::to_string(static_cast<long double>(disc_cost));
@@ -747,6 +755,13 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
    str+=std::to_string(static_cast<long double>(BATCH_AMOUNT));
    SYSTEM::PutMessageToConsole(str);
 
+   if (batch%10==0)
+   {
+    SaveRandomImage();
+    SYSTEM::PutMessageToConsole("Save image.");
+   }
+
+
    {
     cCUDATimeSpent.Start();
 
@@ -757,28 +772,18 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
 
     for(size_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingResetDeltaWeight();
     TrainingDiscriminatorFake(disc_cost);
-    /*
-    //корректируем веса дискриминатора
-    {
-     CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
-     for(size_t n=0;n<DiscriminatorNet.size();n++)
-     {
-      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
-     // DiscriminatorNet[n]->ClipWeight(-clip,clip);
-     }
-    }
-    for(size_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingResetDeltaWeight();
-    */
     TrainingDiscriminatorReal(batch,disc_cost);
+
     //корректируем веса дискриминатора
     {
      CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
      for(size_t n=0;n<DiscriminatorNet.size();n++)
      {
-      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
-     // DiscriminatorNet[n]->ClipWeight(-clip,clip);
+      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1);
+      //DiscriminatorNet[n]->ClipWeight(-clip,clip);
      }
     }
+
 
     for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingResetDeltaWeight();
     TrainingGenerator(gen_cost,middle_answer);
@@ -787,12 +792,11 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
      CTimeStamp cTimeStamp("Обновление весов генератора:");
      for(size_t n=0;n<GeneratorNet.size();n++)
      {
-      GeneratorNet[n]->TrainingUpdateWeight(gen_speed/(static_cast<double>(BATCH_SIZE)),Iteration+1);
+      GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration+1);
       //GeneratorNet[n]->ClipWeight(-clip,clip);//не нужно делать для генератора!
      }
     }
 
-    SYSTEM::PauseInMs(CUDA_PAUSE_MS);//чтобы не перегревать видеокарту
 
     str="Ошибка дискриминатора:";
     str+=std::to_string((long double)disc_cost);
@@ -836,12 +840,12 @@ void CModelBasicGAN<type_t>::TrainingNet(bool mnist)
  //включаем обучение
  for(size_t n=0;n<GeneratorNet.size();n++)
  {
-  GeneratorNet[n]->TrainingModeAdam();
+  GeneratorNet[n]->TrainingModeAdam(0.5,0.9);
   GeneratorNet[n]->TrainingStart();
  }
  for(size_t n=0;n<DiscriminatorNet.size();n++)
  {
-  DiscriminatorNet[n]->TrainingModeAdam();
+  DiscriminatorNet[n]->TrainingModeAdam(0.5,0.9);
   DiscriminatorNet[n]->TrainingStart();
  }
 
@@ -874,6 +878,7 @@ void CModelBasicGAN<type_t>::TrainingNet(bool mnist)
  LoadTrainingParam();
  //запускаем обучение
  //Training();
+
  TrainingSeparable();
  //отключаем обучение
  for(size_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingStop();
@@ -1095,8 +1100,8 @@ void CModelBasicGAN<type_t>::Execute(void)
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
  if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
- TestTrainingGeneratorNet(true);
- //TrainingNet(true);
+ //TestTrainingGeneratorNet(true);
+ TrainingNet(true);
 }
 
 #endif

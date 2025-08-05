@@ -1053,8 +1053,11 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
  }
  cTensor_dKernel.SetHostOnChange();
 
- //считаем поправку к вектору сдвига
- CTensorMath<type_t>::SummXY(cTensor_dBias,cTensor_Delta);
+ CTensor<type_t> dB=cTensor_dBias;
+
+ cTensor_dBias.CopyToDevice();
+ CTensorMath<type_t>::SummXY(dB,cTensor_Delta);
+ CTensorMath<type_t>::Add(cTensor_dBias,cTensor_dBias,dB,1,1);
  cTensor_dBias.CopyFromDevice();
 }
 
