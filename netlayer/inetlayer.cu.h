@@ -43,6 +43,8 @@ class INetLayer
   double Beta1;///<параметры алгоритма Adam
   double Beta2;
   double Epsilon;
+
+  bool Mark;///метка (применяется для любых операций пользователя: например, можно пометить слои, которые не нужно загружать в данный момент времени)
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
  private:
@@ -53,6 +55,7 @@ class INetLayer
   INetLayer(void)
   {
    TrainingMode=TRAINING_MODE_GRADIENT;
+   Mark=false;
   };
   //-деструктор-----------------------------------------------------------------------------------------
   virtual ~INetLayer() {};
@@ -65,7 +68,7 @@ class INetLayer
   virtual CTensor<type_t>& GetOutputTensor(size_t unit_index)=0;///<получить ссылку на выходной тензор
   virtual void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)=0;///<задать указатель на последующий слой
   virtual bool Save(IDataStream *iDataStream_Ptr)=0;///<сохранить параметры слоя
-  virtual bool Load(IDataStream *iDataStream_Ptr)=0;///<загрузить параметры слоя
+  virtual bool Load(IDataStream *iDataStream_Ptr,bool check_size=false)=0;///<загрузить параметры слоя
   virtual bool SaveTrainingParam(IDataStream *iDataStream_Ptr)=0;///<сохранить параметры обучения слоя
   virtual bool LoadTrainingParam(IDataStream *iDataStream_Ptr)=0;///<загрузить параметры обучения слоя
   virtual void TrainingStart(void)=0;///<начать процесс обучения
@@ -76,6 +79,15 @@ class INetLayer
   virtual CTensor<type_t>& GetDeltaTensor(size_t unit_index)=0;///<получить ссылку на тензор дельты слоя
   virtual void SetOutputError(size_t unit_index,CTensor<type_t>& error)=0;///<задать ошибку и расчитать дельту
   virtual void ClipWeight(type_t min,type_t max)=0;///<ограничить веса в диапазон
+
+  void SetMark(bool state)///<установить или снять метку
+  {
+   Mark=state;
+  }
+  bool IsMark(void)///<узнать, установлена ли метка
+  {
+   return(Mark);
+  }
   void TrainingModeGradient(void)///<включить режим обучения "градиентный спуск"
   {
    TrainingMode=TRAINING_MODE_GRADIENT;

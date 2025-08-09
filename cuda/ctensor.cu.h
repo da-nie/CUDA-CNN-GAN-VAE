@@ -140,7 +140,7 @@ class CTensor
   friend CTensor<type_t> operator*<type_t>(const type_t &value_left,const CTensor<type_t> &cTensor_Right);///<оператор "*"
 
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить тензор
-  bool Load(IDataStream *iDataStream_Ptr);///<загрузить тензор
+  bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить тензор
 
   void ExchangeSizeXY(void) const;///<обменять размеры по X и по Y местами
   void ReinterpretSize(size_t size_z,size_t size_y,size_t size_x) const;///<интерпретировать размер по-новому
@@ -481,12 +481,22 @@ bool CTensor<type_t>::Save(IDataStream *iDataStream_Ptr)
 //загрузить тензор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CTensor<type_t>::Load(IDataStream *iDataStream_Ptr)
+bool CTensor<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
  //загружаем размерность тензора
- Size_Z=iDataStream_Ptr->LoadUInt32();
- Size_Y=iDataStream_Ptr->LoadUInt32();
- Size_X=iDataStream_Ptr->LoadUInt32();
+
+ if (check_size==true)
+ {
+  if (Size_Z!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки тензора: неверный размер Z.");
+  if (Size_Y!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки тензора: неверный размер Y.");
+  if (Size_X!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки тензора: неверный размер X.");
+ }
+ else
+ {
+  Size_Z=iDataStream_Ptr->LoadUInt32();
+  Size_Y=iDataStream_Ptr->LoadUInt32();
+  Size_X=iDataStream_Ptr->LoadUInt32();
+ }
 
  std::vector<type_t> item(Size_X*Size_Y*Size_Z);
  Item.clear();

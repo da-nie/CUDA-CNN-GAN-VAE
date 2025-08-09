@@ -161,7 +161,7 @@ void CModelBasicGAN<type_t>::LoadNet(void)
  {
   fclose(file);
   std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("disc_neuronet.net",false));
-  LoadNetLayers(iDataStream_Disc_Ptr.get(),DiscriminatorNet);
+  LoadNetLayers(iDataStream_Disc_Ptr.get(),DiscriminatorNet,true);
   SYSTEM::PutMessageToConsole("Сеть дискриминатора загружена.");
  }
  file=fopen("gen_neuronet.net","rb");
@@ -169,7 +169,7 @@ void CModelBasicGAN<type_t>::LoadNet(void)
  {
   fclose(file);
   std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("gen_neuronet.net",false));
-  LoadNetLayers(iDataStream_Gen_Ptr.get(),GeneratorNet);
+  LoadNetLayers(iDataStream_Gen_Ptr.get(),GeneratorNet,false);
   SYSTEM::PutMessageToConsole("Сеть генератора загружена.");
  }
 }
@@ -181,10 +181,10 @@ template<class type_t>
 void CModelBasicGAN<type_t>::SaveNet(void)
 {
  std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("disc_neuronet.net",true));
- SaveNetLayers(iDataStream_Disc_Ptr.get(),DiscriminatorNet);
+ SaveNetLayers(iDataStream_Disc_Ptr.get(),DiscriminatorNet,true);
 
  std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("gen_neuronet.net",true));
- SaveNetLayers(iDataStream_Gen_Ptr.get(),GeneratorNet);
+ SaveNetLayers(iDataStream_Gen_Ptr.get(),GeneratorNet,false);
 }
 //----------------------------------------------------------------------------------------------------
 //загрузить параметры обучения
@@ -197,7 +197,7 @@ void CModelBasicGAN<type_t>::LoadTrainingParam(void)
  {
   fclose(file);
   std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("disc_training_param.net",false));
-  LoadNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),DiscriminatorNet,Iteration);
+  LoadNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),DiscriminatorNet,Iteration,true);
   SYSTEM::PutMessageToConsole("Параметры обучения дискриминатора загружены.");
  }
  file=fopen("gen_training_param.net","rb");
@@ -205,7 +205,7 @@ void CModelBasicGAN<type_t>::LoadTrainingParam(void)
  {
   fclose(file);
   std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("gen_training_param.net",false));
-  LoadNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),GeneratorNet,Iteration);
+  LoadNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),GeneratorNet,Iteration,false);
   SYSTEM::PutMessageToConsole("Параметры обучения генератора загружены.");
  }
 }
@@ -216,10 +216,10 @@ template<class type_t>
 void CModelBasicGAN<type_t>::SaveTrainingParam(void)
 {
  std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("disc_training_param.net",true));
- SaveNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),DiscriminatorNet,Iteration);
+ SaveNetLayersTrainingParam(iDataStream_Disc_Ptr.get(),DiscriminatorNet,Iteration,true);
 
  std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("gen_training_param.net",true));
- SaveNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),GeneratorNet,Iteration);
+ SaveNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),GeneratorNet,Iteration,false);
 }
 
 //----------------------------------------------------------------------------------------------------

@@ -69,7 +69,7 @@ class CNetLayerDropOut:public INetLayer<type_t>
   CTensor<type_t>& GetOutputTensor(size_t unit_index);///<получить ссылку на выходной тензор
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
-  bool Load(IDataStream *iDataStream_Ptr);///<загрузить параметры слоя
+  bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить параметры слоя
   bool SaveTrainingParam(IDataStream *iDataStream_Ptr);///<сохранить параметры обучения слоя
   bool LoadTrainingParam(IDataStream *iDataStream_Ptr);///<загрузить параметры обучения слоя
 
@@ -251,7 +251,7 @@ bool CNetLayerDropOut<type_t>::Save(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerDropOut<type_t>::Load(IDataStream *iDataStream_Ptr)
+bool CNetLayerDropOut<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
  DropOut=iDataStream_Ptr->LoadDouble();
  return(true);

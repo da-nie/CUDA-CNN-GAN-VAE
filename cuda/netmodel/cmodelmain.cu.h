@@ -75,10 +75,10 @@ class CModelMain
   bool LoadMNISTImage(const std::string &file_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);///<загрузить образы изображений из MNIST
   bool LoadImage(const std::string &path_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);///<загрузить образы изображений
   bool CreateResamplingImage(size_t input_image_width,size_t input_image_height,size_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image_output);///<создать изображения другого разрешения
-  void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить слои сети
-  void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить слои сети
-  void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration);///<сохранить параметры обучения слоёв сети
-  void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration);///<загрузить параметры обучения слоёв сети
+  void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<сохранить слои сети
+  void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<загрузить слои сети
+  void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration,bool backward=false);///<сохранить параметры обучения слоёв сети
+  void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration,bool backward=false);///<загрузить параметры обучения слоёв сети
   void ExchangeImageIndex(std::vector<size_t> &index);///<перемешать индексы изображений
   void SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t output_image_width,size_t output_image_height,size_t output_image_depth);///<сохранить изображение
   void SpeedTest(void);///<тест скорости
@@ -400,18 +400,34 @@ bool CModelMain<type_t>::CreateResamplingImage(size_t input_image_width,size_t i
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net)
+void CModelMain<type_t>::SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward)
 {
- for(size_t n=0;n<net.size();n++) net[n]->Save(iDataStream_Ptr);
+ if (backward==false) for(size_t n=0;n<net.size();n++) net[n]->Save(iDataStream_Ptr);
+                 else for(size_t n=net.size();n>0;n--) net[n-1]->Save(iDataStream_Ptr);
 }
 //----------------------------------------------------------------------------------------------------
 /*!загрузить слои сети
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net)
+void CModelMain<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward)
 {
- for(size_t n=0;n<net.size();n++) net[n]->Load(iDataStream_Ptr);
+ if (backward==false)
+ {
+  for(size_t n=0;n<net.size();n++)
+  {
+   if (net[n]->IsMark()==true) continue;
+   net[n]->Load(iDataStream_Ptr,true);
+  }
+ }
+ else
+ {
+  for(size_t n=net.size();n>0;n--)
+  {
+   if (net[n-1]->IsMark()==true) continue;
+   net[n-1]->Load(iDataStream_Ptr,true);
+  }
+ }
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -419,21 +435,36 @@ void CModelMain<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration)
+void CModelMain<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration,bool backward)
 {
- for(size_t n=0;n<net.size();n++) net[n]->SaveTrainingParam(iDataStream_Ptr);
  iDataStream_Ptr->SaveUInt32(iteration);
-
+ if (backward==false) for(size_t n=0;n<net.size();n++) net[n]->SaveTrainingParam(iDataStream_Ptr);
+                 else for(size_t n=net.size();n>0;n--) net[n-1]->SaveTrainingParam(iDataStream_Ptr);
 }
 //----------------------------------------------------------------------------------------------------
 /*!загрузить параметры обучения слоёв сети
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration)
+void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration,bool backward)
 {
- for(size_t n=0;n<net.size();n++) net[n]->LoadTrainingParam(iDataStream_Ptr);
  iteration=iDataStream_Ptr->LoadUInt32();
+ if (backward==false)
+ {
+  for(size_t n=0;n<net.size();n++)
+  {
+   if (net[n]->IsMark()==true) continue;
+   net[n]->LoadTrainingParam(iDataStream_Ptr);
+  }
+ }
+ else
+ {
+  for(size_t n=net.size();n>0;n--)
+  {
+   if (net[n-1]->IsMark()==true) continue;
+   net[n-1]->LoadTrainingParam(iDataStream_Ptr);
+  }
+ }
 }
 //----------------------------------------------------------------------------------------------------
 //перемешать индексы изображений

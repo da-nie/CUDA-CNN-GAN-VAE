@@ -84,7 +84,7 @@ class CNetLayerLinear:public INetLayer<type_t>
   CTensor<type_t>& GetOutputTensor(size_t unit_index);///<получить ссылку на выходной тензор
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
-  bool Load(IDataStream *iDataStream_Ptr);///<загрузить параметры слоя
+  bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить параметры слоя
   bool SaveTrainingParam(IDataStream *iDataStream_Ptr);///<сохранить параметры обучения слоя
   bool LoadTrainingParam(IDataStream *iDataStream_Ptr);///<загрузить параметры обучения слоя
 
@@ -305,10 +305,10 @@ bool CNetLayerLinear<type_t>::Save(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerLinear<type_t>::Load(IDataStream *iDataStream_Ptr)
+bool CNetLayerLinear<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
- cTensor_W.Load(iDataStream_Ptr);
- cTensor_B.Load(iDataStream_Ptr);
+ cTensor_W.Load(iDataStream_Ptr,check_size);
+ cTensor_B.Load(iDataStream_Ptr,check_size);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------

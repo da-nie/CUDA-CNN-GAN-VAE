@@ -74,7 +74,7 @@ class CNetLayerMaxDePooling:public INetLayer<type_t>
   CTensor<type_t>& GetOutputTensor(size_t unit_index);///<получить ссылку на выходной тензор
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
-  bool Load(IDataStream *iDataStream_Ptr);///<загрузить параметры слоя
+  bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить параметры слоя
   bool SaveTrainingParam(IDataStream *iDataStream_Ptr);///<сохранить параметры обучения слоя
   bool LoadTrainingParam(IDataStream *iDataStream_Ptr);///<загрузить параметры обучения слоя
 
@@ -302,10 +302,18 @@ bool CNetLayerMaxDePooling<type_t>::Save(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerMaxDePooling<type_t>::Load(IDataStream *iDataStream_Ptr)
+bool CNetLayerMaxDePooling<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
- DePooling_X=iDataStream_Ptr->LoadUInt32();
- DePooling_Y=iDataStream_Ptr->LoadUInt32();
+ if (check_size==true)
+ {
+  if (DePooling_X!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки слоя увеличения максимумом: неверный коэффициент масштабирования по X.");
+  if (DePooling_Y!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки слоя увеличения максимумом: неверный коэффициент масштабирования по Y.");
+ }
+ else
+ {
+  DePooling_X=iDataStream_Ptr->LoadUInt32();
+  DePooling_Y=iDataStream_Ptr->LoadUInt32();
+ }
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
