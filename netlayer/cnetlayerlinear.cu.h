@@ -49,12 +49,12 @@ class CNetLayerLinear:public INetLayer<type_t>
   CTensor<type_t> cTensor_W;///<тензор весов слоя
   CTensor<type_t> cTensor_B;///<тензор сдвигов слоя
 
-  std::vector<CTensor<type_t>> cTensor_H_Array;///<тензоры значений нейронов до функции активации
+  CTensor<type_t> cTensor_H;///<тензор значений нейронов до функции активации
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_dW;///<тензор поправок весов слоя
   CTensor<type_t> cTensor_dB;///<тензор поправок сдвигов слоя
-  std::vector<CTensor<type_t>> cTensor_Delta_Array;///<тензоры дельты слоя
+  CTensor<type_t> cTensor_Delta;///<тензор дельты слоя
   CTensor<type_t> cTensor_TmpdW;///<вспомогательный тензор поправок весов слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
 
@@ -78,10 +78,10 @@ class CNetLayerLinear:public INetLayer<type_t>
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(size_t neurons,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию весов и сдвигов
-  void SetOutput(size_t unit_index,CTensor<type_t> &output);///<задать выход слоя
-  void GetOutput(size_t unit_index,CTensor<type_t> &output);///<получить выход слоя
+  void SetOutput(CTensor<type_t> &output);///<задать выход слоя
+  void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
-  CTensor<type_t>& GetOutputTensor(size_t unit_index);///<получить ссылку на выходной тензор
+  CTensor<type_t>& GetOutputTensor(void);///<получить ссылку на выходной тензор
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
   bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить параметры слоя
@@ -93,9 +93,9 @@ class CNetLayerLinear:public INetLayer<type_t>
   void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
-  CTensor<type_t>& GetDeltaTensor(size_t unit_index);///<получить ссылку на тензор дельты слоя
+  CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(size_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
+  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
@@ -154,23 +154,21 @@ void CNetLayerLinear<type_t>::Create(size_t neurons,INetLayer<type_t> *prev_laye
 
  BatchSize=batch_size;
 
- cTensor_H_Array.resize(BatchSize);
-
- for(size_t n=0;n<BatchSize;n++) cTensor_H_Array[n]=CTensor<type_t>(1,neurons,1);
+ cTensor_H=CTensor<type_t>(BatchSize,1,neurons,1);
 
  if (prev_layer_ptr==NULL)//слой без предшествующего считается входным
  {
-  cTensor_W=CTensor<type_t>(1,1,1);
-  cTensor_B=CTensor<type_t>(1,1,1);
+  cTensor_W=CTensor<type_t>(1,1,1,1);
+  cTensor_B=CTensor<type_t>(1,1,1,1);
  }
  else
  {
-  size_t size_x=PrevLayerPtr->GetOutputTensor(0).GetSizeX();
-  size_t size_y=PrevLayerPtr->GetOutputTensor(0).GetSizeY();
-  size_t size_z=PrevLayerPtr->GetOutputTensor(0).GetSizeZ();
+  size_t size_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+  size_t size_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+  size_t size_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
 
-  cTensor_W=CTensor<type_t>(1,neurons,size_x*size_y*size_z);
-  cTensor_B=CTensor<type_t>(1,neurons,1);
+  cTensor_W=CTensor<type_t>(1,1,neurons,size_x*size_y*size_z);
+  cTensor_B=CTensor<type_t>(1,1,neurons,1);
   //задаём предшествующему слою, что мы его последующий слой
   prev_layer_ptr->SetNextLayerPtr(this);
  }
@@ -198,7 +196,7 @@ void CNetLayerLinear<type_t>::Reset(void)
    type_t rnd=static_cast<type_t>(CRandom<type_t>::GetRandValue(2.0)-1.0);
    type_t init=rnd*koeff;
    //type_t init=cTensor_Rand.GetElement(0,0,x);
-   cTensor_W.SetElement(0,y,x,init);
+   cTensor_W.SetElement(0,0,y,x,init);
   }
  }
  //сдвиги
@@ -209,7 +207,7 @@ void CNetLayerLinear<type_t>::Reset(void)
   //используем метод инициализации He (Ге)
   //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
   type_t init=0.1;//rnd*koeff;
-  cTensor_B.SetElement(0,y,0,init);
+  cTensor_B.SetElement(0,0,y,0,init);
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -219,12 +217,13 @@ void CNetLayerLinear<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output)
 {
- //if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerLinear<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
- //if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerLinear<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
- //if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerLinear<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
- cTensor_H_Array[unit_index]=output;
+ //if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ //if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ //if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ //if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerLinear<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ cTensor_H=output;
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать выход слоя
@@ -233,12 +232,13 @@ void CNetLayerLinear<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &outpu
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerLinear<type_t>::GetOutput(CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerLinear<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
- if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerLinear<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
- if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerLinear<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
- output=cTensor_H_Array[unit_index];
+ if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerLinear<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerLinear<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerLinear<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerLinear<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ output=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
@@ -248,21 +248,18 @@ void CNetLayerLinear<type_t>::Forward(void)
 {
  if (PrevLayerPtr==NULL) return;//для входного слоя ничего делать не нужно
 
- for(size_t n=0;n<BatchSize;n++)
- {
-  //Z=WxZprev
-  //приводим входной тензор к линии
-  size_t size_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
-  size_t size_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
-  size_t size_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
-  PrevLayerPtr->GetOutputTensor(n).ReinterpretSize(1,size_x*size_y*size_z,1);
+ //Z=WxZprev
+ //приводим входной тензор к линии по X*Y*Z
+ size_t size_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ size_t size_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ size_t size_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,1,size_x*size_y*size_z,1);
 
-  CTensorMath<type_t>::Mul(cTensor_H_Array[n],cTensor_W,PrevLayerPtr->GetOutputTensor(n));
+ CTensorMath<type_t>::Mul(cTensor_H,cTensor_W,PrevLayerPtr->GetOutputTensor());
 
-  PrevLayerPtr->GetOutputTensor(n).RestoreSize();
+ PrevLayerPtr->GetOutputTensor().RestoreSize();
 
-  CTensorMath<type_t>::Add(cTensor_H_Array[n],cTensor_H_Array[n],cTensor_B);
- }
+ CTensorMath<type_t>::Add(cTensor_H,cTensor_H,cTensor_B);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -270,9 +267,9 @@ void CNetLayerLinear<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerLinear<type_t>::GetOutputTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerLinear<type_t>::GetOutputTensor(void)
 {
- return(cTensor_H_Array[unit_index]);
+ return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать указатель на последующий слой
@@ -350,18 +347,17 @@ template<class type_t>
 void CNetLayerLinear<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
- cTensor_dW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
- cTensor_TmpdW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
- cTensor_dB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
+ cTensor_dW=CTensor<type_t>(1,1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
+ cTensor_TmpdW=CTensor<type_t>(BatchSize,1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
+ cTensor_dB=CTensor<type_t>(1,1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
 
- cTensor_Delta_Array.resize(BatchSize);
- for(size_t n=0;n<BatchSize;n++) cTensor_Delta_Array[n]=CTensor<type_t>(1,cTensor_H_Array[n].GetSizeY(),cTensor_H_Array[n].GetSizeX());
+ cTensor_Delta=CTensor<type_t>(BatchSize,1,cTensor_H.GetSizeY(),cTensor_H.GetSizeX());
 
  //для алгоритма Adam
- cTensor_MW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
- cTensor_VW=CTensor<type_t>(1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
- cTensor_MB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
- cTensor_VB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
+ cTensor_MW=CTensor<type_t>(1,1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
+ cTensor_VW=CTensor<type_t>(1,1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
+ cTensor_MB=CTensor<type_t>(1,1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
+ cTensor_VB=CTensor<type_t>(1,1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
 
  cTensor_MW.Zero();
  cTensor_VW.Zero();
@@ -370,8 +366,8 @@ void CNetLayerLinear<type_t>::TrainingStart(void)
 
  if (PrevLayerPtr!=NULL)
  {
-  CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor(0);
-  cTensor_PrevLayerError=CTensor<type_t>(prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
+  CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor();
+  cTensor_PrevLayerError=CTensor<type_t>(BatchSize,prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -382,17 +378,17 @@ template<class type_t>
 void CNetLayerLinear<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
- cTensor_dW=CTensor<type_t>(1,1,1);
- cTensor_TmpdW=CTensor<type_t>(1,1,1);
- cTensor_dB=CTensor<type_t>(1,1,1);
- cTensor_PrevLayerError=CTensor<type_t>(1,1,1);
+ cTensor_dW=CTensor<type_t>(1,1,1,1);
+ cTensor_TmpdW=CTensor<type_t>(1,1,1,1);
+ cTensor_dB=CTensor<type_t>(1,1,1,1);
+ cTensor_PrevLayerError=CTensor<type_t>(1,1,1,1);
 
- cTensor_MW=CTensor<type_t>(1,1,1);
- cTensor_VW=CTensor<type_t>(1,1,1);
- cTensor_MB=CTensor<type_t>(1,1,1);
- cTensor_VB=CTensor<type_t>(1,1,1);
+ cTensor_MW=CTensor<type_t>(1,1,1,1);
+ cTensor_VW=CTensor<type_t>(1,1,1,1);
+ cTensor_MB=CTensor<type_t>(1,1,1,1);
+ cTensor_VB=CTensor<type_t>(1,1,1,1);
 
- cTensor_Delta_Array.clear();
+ cTensor_Delta=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -401,38 +397,34 @@ void CNetLayerLinear<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
 {
+ if (PrevLayerPtr==NULL) return;//это входной слой
+
  //вычисляем ошибку предыдущего слоя (D=tr(W)xDnext)
- if (PrevLayerPtr!=NULL)//это не входной слой
+ //считаем ошибку предыдущего слоя
+ size_t size_x=cTensor_PrevLayerError.GetSizeX();
+ size_t size_y=cTensor_PrevLayerError.GetSizeY();
+ size_t size_z=cTensor_PrevLayerError.GetSizeZ();
+
+ cTensor_PrevLayerError.ReinterpretSize(BatchSize,1,size_x*size_y*size_z,1);
+ CTensorMath<type_t>::TransponseMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta);
+ cTensor_PrevLayerError.RestoreSize();
+ //задаём ошибку предыдущего слоя
+ PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
+
+ if (create_delta_weight==true)
  {
-  for(size_t n=0;n<BatchSize;n++)
-  {
-   //считаем ошибку предыдущего слоя
-   size_t size_x=cTensor_PrevLayerError.GetSizeX();
-   size_t size_y=cTensor_PrevLayerError.GetSizeY();
-   size_t size_z=cTensor_PrevLayerError.GetSizeZ();
+  CTensor<type_t> &h=PrevLayerPtr->GetOutputTensor();
+  size_x=h.GetSizeX();
+  size_y=h.GetSizeY();
+  size_z=h.GetSizeZ();
+  h.ReinterpretSize(BatchSize,1,1,size_x*size_y*size_z);
 
-   cTensor_PrevLayerError.ReinterpretSize(1,size_x*size_y*size_z,1);
-   CTensorMath<type_t>::TransponseMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta_Array[n]);
-   cTensor_PrevLayerError.RestoreSize();
-   //задаём ошибку предыдущего слоя
-   PrevLayerPtr->SetOutputError(n,cTensor_PrevLayerError);
+  CTensorMath<type_t>::Mul(cTensor_TmpdW,cTensor_Delta,h);
 
-   if (create_delta_weight==true)
-   {
-    CTensor<type_t> &h=PrevLayerPtr->GetOutputTensor(n);
-    size_x=h.GetSizeX();
-    size_y=h.GetSizeY();
-    size_z=h.GetSizeZ();
-    h.ReinterpretSize(1,1,size_x*size_y*size_z);
+  h.RestoreSize();
 
-    CTensorMath<type_t>::Mul(cTensor_TmpdW,cTensor_Delta_Array[n],h);
-
-    h.RestoreSize();
-
-    CTensorMath<type_t>::Add(cTensor_dW,cTensor_dW,cTensor_TmpdW);
-    CTensorMath<type_t>::Add(cTensor_dB,cTensor_dB,cTensor_Delta_Array[n]);
-   }
-  }
+  CTensorMath<type_t>::AddSumW(cTensor_dW,cTensor_dW,cTensor_TmpdW);
+  CTensorMath<type_t>::AddSumW(cTensor_dB,cTensor_dB,cTensor_Delta);
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -472,9 +464,9 @@ void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerLinear<type_t>::GetDeltaTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerLinear<type_t>::GetDeltaTensor(void)
 {
- return(cTensor_Delta_Array[unit_index]);
+ return(cTensor_Delta);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать ошибку и расчитать дельту
@@ -482,9 +474,9 @@ CTensor<type_t>& CNetLayerLinear<type_t>::GetDeltaTensor(size_t unit_index)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::SetOutputError(size_t unit_index,CTensor<type_t>& error)
+void CNetLayerLinear<type_t>::SetOutputError(CTensor<type_t>& error)
 {
- cTensor_Delta_Array[unit_index]=error;
+ cTensor_Delta=error;
 }
 
 //----------------------------------------------------------------------------------------------------

@@ -1,3 +1,4 @@
+
 #ifndef C_NET_LAYER_BATCH_NORMALIZATION_H
 #define C_NET_LAYER_BATCH_NORMALIZATION_H
 
@@ -57,11 +58,11 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   CTensor<type_t> cTensor_NewMean;///<новое среднее
   CTensor<type_t> cTensor_NewVariable;///<новая дисперсия
 
-  std::vector<CTensor<type_t>> cTensor_H_Array;///<тензор выхода слоя
+  CTensor<type_t> cTensor_H;///<тензор выхода слоя
   CTensor<type_t> cTensor_TmpA;///<промежуточный тензор, размерности H
 
   //тензоры, используемые при обучении
-  std::vector<CTensor<type_t>> cTensor_Delta_Array;///<тензор ошибки предыдущего слоя
+  CTensor<type_t> cTensor_Delta;///<тензор ошибки предыдущего слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
   std::vector<CTensor<type_t>> cTensor_XHAT_Array;
   std::vector<CTensor<type_t>> cTensor_DXHAT_Array;
@@ -93,10 +94,10 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(type_t momentum,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию весов и сдвигов
-  void SetOutput(size_t unit_index,CTensor<type_t> &output);///<задать выход слоя
-  void GetOutput(size_t unit_index,CTensor<type_t> &output);///<получить выход слоя
+  void SetOutput(CTensor<type_t> &output);///<задать выход слоя
+  void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
-  CTensor<type_t>& GetOutputTensor(size_t unit_index);///<получить ссылку на выходной тензор
+  CTensor<type_t>& GetOutputTensor(void);///<получить ссылку на выходной тензор
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
   bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить параметры слоя
@@ -108,9 +109,9 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
-  CTensor<type_t>& GetDeltaTensor(size_t unit_index);///<получить ссылку на тензор дельты слоя
+  CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(size_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
+  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
@@ -227,9 +228,9 @@ void CNetLayerBatchNormalization<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerBatchNormalization<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerBatchNormalization<type_t>::SetOutput(CTensor<type_t> &output)
 {
- cTensor_H_Array[unit_index]=output;
+ cTensor_H=output;
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать выход слоя
@@ -238,9 +239,9 @@ void CNetLayerBatchNormalization<type_t>::SetOutput(size_t unit_index,CTensor<ty
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerBatchNormalization<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerBatchNormalization<type_t>::GetOutput(CTensor<type_t> &output)
 {
- output=cTensor_H_Array[unit_index];
+ output=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
@@ -360,9 +361,9 @@ bool
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerBatchNormalization<type_t>::GetOutputTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerBatchNormalization<type_t>::GetOutputTensor(void)
 {
- return(cTensor_H_Array[unit_index]);
+ return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать указатель на последующий слой
@@ -640,9 +641,9 @@ void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,doub
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerBatchNormalization<type_t>::GetDeltaTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerBatchNormalization<type_t>::GetDeltaTensor(void)
 {
- return(cTensor_Delta_Array[unit_index]);
+ return(cTensor_Delta);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать ошибку и расчитать дельту
@@ -650,9 +651,9 @@ CTensor<type_t>& CNetLayerBatchNormalization<type_t>::GetDeltaTensor(size_t unit
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerBatchNormalization<type_t>::SetOutputError(size_t unit_index,CTensor<type_t>& error)
+void CNetLayerBatchNormalization<type_t>::SetOutputError(CTensor<type_t>& error)
 {
- cTensor_Delta_Array[unit_index]=error;
+ cTensor_Delta=error;
 }
 
 //----------------------------------------------------------------------------------------------------

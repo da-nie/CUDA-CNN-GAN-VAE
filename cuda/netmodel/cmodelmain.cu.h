@@ -26,7 +26,7 @@
 #include "../../netlayer/cnetlayerfunction.cu.h"
 #include "../../netlayer/cnetlayerlinear.cu.h"
 #include "../../netlayer/cnetlayerdropout.cu.h"
-#include "../../netlayer/cnetlayerbatchnormalization.cu.h"
+//#include "../../netlayer/cnetlayerbatchnormalization.cu.h"
 #include "../../netlayer/cnetlayerconvolution.cu.h"
 #include "../../netlayer/cnetlayerconvolutioninput.cu.h"
 #include "../../netlayer/cnetlayerbackconvolution.cu.h"
@@ -80,7 +80,7 @@ class CModelMain
   void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration,bool backward=false);///<сохранить параметры обучения слоёв сети
   void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration,bool backward=false);///<загрузить параметры обучения слоёв сети
   void ExchangeImageIndex(std::vector<size_t> &index);///<перемешать индексы изображений
-  void SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t output_image_width,size_t output_image_height,size_t output_image_depth);///<сохранить изображение
+  void SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t w,size_t output_image_width,size_t output_image_height,size_t output_image_depth);///<сохранить изображение
   void SpeedTest(void);///<тест скорости
 };
 
@@ -490,10 +490,10 @@ void CModelMain<type_t>::ExchangeImageIndex(std::vector<size_t> &index)
 //сохранить изображение
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t output_image_width,size_t output_image_height,size_t output_image_depth)
+void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t w,size_t output_image_width,size_t output_image_height,size_t output_image_depth)
 {
  std::vector<uint32_t> image(output_image_width*output_image_height);
- type_t *ptr=cTensor.GetColumnPtr(0,0);
+ type_t *ptr=cTensor.GetColumnPtr(w,0,0);
  for(uint32_t y=0;y<output_image_height;y++)
  {
   for(uint32_t x=0;x<output_image_width;x++)
