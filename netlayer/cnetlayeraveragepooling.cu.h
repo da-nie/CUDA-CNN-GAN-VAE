@@ -44,34 +44,34 @@ class CNetLayerAveragePooling:public INetLayer<type_t>
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  size_t BatchSize;///<размер пакета для обучения
+  uint32_t BatchSize;///<размер пакета для обучения
 
   std::vector<CTensor<type_t>> cTensor_H_Array;///<тензоры значений нейронов после функции активации
 
-  size_t AveragePooling_X;///<коэффициент расширения по X
-  size_t AveragePooling_Y;///<коэффициент расширения по Y
+  uint32_t AveragePooling_X;///<коэффициент расширения по X
+  uint32_t AveragePooling_Y;///<коэффициент расширения по Y
 
-  size_t InputSize_X;///<размер входного тензора по X
-  size_t InputSize_Y;///<размер входного тензора по Y
-  size_t InputSize_Z;///<размер входного тензора по Z
+  uint32_t InputSize_X;///<размер входного тензора по X
+  uint32_t InputSize_Y;///<размер входного тензора по Y
+  uint32_t InputSize_Z;///<размер входного тензора по Z
 
   //тензоры, используемые при обучении
   std::vector<CTensor<type_t>> cTensor_Delta_Array;///<тензоры дельты слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerAveragePooling(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);
+  CNetLayerAveragePooling(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
   CNetLayerAveragePooling(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerAveragePooling();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);///<создать слой
+  void Create(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию слоя
-  void SetOutput(size_t unit_index,CTensor<type_t> &output);///<задать выход слоя
-  void GetOutput(size_t unit_index,CTensor<type_t> &output);///<получить выход слоя
+  void SetOutput(uint32_t unit_index,CTensor<type_t> &output);///<задать выход слоя
+  void GetOutput(uint32_t unit_index,CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
-  CTensor<type_t>& GetOutputTensor(size_t unit_index);///<получить ссылку на выходной тензор
+  CTensor<type_t>& GetOutputTensor(uint32_t unit_index);///<получить ссылку на выходной тензор
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
   bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить параметры слоя
@@ -83,9 +83,9 @@ class CNetLayerAveragePooling:public INetLayer<type_t>
   void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
-  CTensor<type_t>& GetDeltaTensor(size_t unit_index);///<получить ссылку на тензор дельты слоя
+  CTensor<type_t>& GetDeltaTensor(uint32_t unit_index);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(size_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
+  void SetOutputError(uint32_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
@@ -100,7 +100,7 @@ class CNetLayerAveragePooling:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerAveragePooling<type_t>::CNetLayerAveragePooling(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+CNetLayerAveragePooling<type_t>::CNetLayerAveragePooling(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  AveragePooling_X=0;///<коэффициент расширения по X
  AveragePooling_Y=0;///<коэффициент расширения по Y
@@ -139,7 +139,7 @@ CNetLayerAveragePooling<type_t>::~CNetLayerAveragePooling()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerAveragePooling<type_t>::Create(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+void CNetLayerAveragePooling<type_t>::Create(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
@@ -154,13 +154,13 @@ void CNetLayerAveragePooling<type_t>::Create(size_t pooling_y,size_t pooling_x,I
  if (prev_layer_ptr==NULL) throw("Слой обратной субдискретизации не может быть входным!");//слой без предшествующего считается входным
 
  //размер входного тензора
- size_t input_x=PrevLayerPtr->GetOutputTensor(0).GetSizeX();
- size_t input_y=PrevLayerPtr->GetOutputTensor(0).GetSizeY();
- size_t input_z=PrevLayerPtr->GetOutputTensor(0).GetSizeZ();
+ uint32_t input_x=PrevLayerPtr->GetOutputTensor(0).GetSizeX();
+ uint32_t input_y=PrevLayerPtr->GetOutputTensor(0).GetSizeY();
+ uint32_t input_z=PrevLayerPtr->GetOutputTensor(0).GetSizeZ();
  //размер выходного тензора
- size_t output_x=input_x/pooling_x;
- size_t output_y=input_y/pooling_y;
- size_t output_z=input_z;
+ uint32_t output_x=input_x/pooling_x;
+ uint32_t output_y=input_y/pooling_y;
+ uint32_t output_z=input_z;
 
  //запомним размеры входного тензора, чтобы потом всегда к ним приводить
  InputSize_X=input_x;
@@ -170,7 +170,7 @@ void CNetLayerAveragePooling<type_t>::Create(size_t pooling_y,size_t pooling_x,I
  if (output_x==0 || output_y==0) throw("Выходной тензор слоя обратной субдискретизации нулевого размера!");
  //создаём выходные тензоры
  cTensor_H_Array.resize(BatchSize);
- for(size_t n=0;n<BatchSize;n++) cTensor_H_Array[n]=CTensor<type_t>(output_z,output_y,output_x);
+ for(uint32_t n=0;n<BatchSize;n++) cTensor_H_Array[n]=CTensor<type_t>(output_z,output_y,output_x);
  //задаём предшествующему слою, что мы его последующий слой
  prev_layer_ptr->SetNextLayerPtr(this);
 }
@@ -189,11 +189,11 @@ void CNetLayerAveragePooling<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerAveragePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerAveragePooling<type_t>::SetOutput(uint32_t unit_index,CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerAveragePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerAveragePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerAveragePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerAveragePooling<type_t>::SetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerAveragePooling<type_t>::SetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerAveragePooling<type_t>::SetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
  cTensor_H_Array[unit_index]=output;
 }
 //----------------------------------------------------------------------------------------------------
@@ -203,11 +203,11 @@ void CNetLayerAveragePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerAveragePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerAveragePooling<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerAveragePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerAveragePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerAveragePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerAveragePooling<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerAveragePooling<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerAveragePooling<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
  output=cTensor_H_Array[unit_index];
 }
 //----------------------------------------------------------------------------------------------------
@@ -216,18 +216,18 @@ void CNetLayerAveragePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t
 template<class type_t>
 void CNetLayerAveragePooling<type_t>::Forward(void)
 {
- for(size_t n=0;n<BatchSize;n++)
+ for(uint32_t n=0;n<BatchSize;n++)
  {
   //размер выходного тензора
-  size_t output_x=cTensor_H_Array[n].GetSizeX();
-  size_t output_y=cTensor_H_Array[n].GetSizeY();
-  size_t output_z=cTensor_H_Array[n].GetSizeZ();
+  uint32_t output_x=cTensor_H_Array[n].GetSizeX();
+  uint32_t output_y=cTensor_H_Array[n].GetSizeY();
+  uint32_t output_z=cTensor_H_Array[n].GetSizeZ();
 
   //приведём входной тензор к нужному виду
 
-  size_t basic_input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
-  size_t basic_input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
-  size_t basic_input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
+  uint32_t basic_input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
+  uint32_t basic_input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
+  uint32_t basic_input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
 
   PrevLayerPtr->GetOutputTensor(n).ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
   CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor(n);
@@ -243,7 +243,7 @@ void CNetLayerAveragePooling<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerAveragePooling<type_t>::GetOutputTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerAveragePooling<type_t>::GetOutputTensor(uint32_t unit_index)
 {
  return(cTensor_H_Array[unit_index]);
 }
@@ -323,7 +323,7 @@ void CNetLayerAveragePooling<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
  cTensor_Delta_Array.resize(BatchSize);
- for(size_t n=0;n<BatchSize;n++) cTensor_Delta_Array[n]=cTensor_H_Array[n];
+ for(uint32_t n=0;n<BatchSize;n++) cTensor_Delta_Array[n]=cTensor_H_Array[n];
  cTensor_PrevLayerError=PrevLayerPtr->GetOutputTensor(0);
 }
 //----------------------------------------------------------------------------------------------------
@@ -343,11 +343,11 @@ void CNetLayerAveragePooling<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerAveragePooling<type_t>::TrainingBackward(bool create_delta_weight)
 {
- for(size_t n=0;n<BatchSize;n++)
+ for(uint32_t n=0;n<BatchSize;n++)
  {
-  size_t basic_input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
-  size_t basic_input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
-  size_t basic_input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
+  uint32_t basic_input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
+  uint32_t basic_input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
+  uint32_t basic_input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
   //приведём входной тензор к нужному виду
   PrevLayerPtr->GetOutputTensor(n).ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
   cTensor_PrevLayerError.ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
@@ -383,7 +383,7 @@ void CNetLayerAveragePooling<type_t>::TrainingUpdateWeight(double speed,double i
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerAveragePooling<type_t>::GetDeltaTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerAveragePooling<type_t>::GetDeltaTensor(uint32_t unit_index)
 {
  return(cTensor_Delta_Array[unit_index]);
 }
@@ -393,7 +393,7 @@ CTensor<type_t>& CNetLayerAveragePooling<type_t>::GetDeltaTensor(size_t unit_ind
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerAveragePooling<type_t>::SetOutputError(size_t unit_index,CTensor<type_t>& error)
+void CNetLayerAveragePooling<type_t>::SetOutputError(uint32_t unit_index,CTensor<type_t>& error)
 {
  cTensor_Delta_Array[unit_index]=error;
 }

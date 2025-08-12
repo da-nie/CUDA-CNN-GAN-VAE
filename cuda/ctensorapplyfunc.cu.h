@@ -278,11 +278,11 @@ static void BlockInitFunction(dim3 &thread,dim3 &blocks,const CTensor<type_t> &c
 
  thread=dim3(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
 
- size_t block_x=cTensor_Output.GetSizeX()/thread.x;
+ uint32_t block_x=cTensor_Output.GetSizeX()/thread.x;
  if (cTensor_Output.GetSizeX()%thread.x) block_x++;
- size_t block_y=cTensor_Output.GetSizeY()/thread.y;
+ uint32_t block_y=cTensor_Output.GetSizeY()/thread.y;
  if (cTensor_Output.GetSizeY()%thread.y) block_y++;
- size_t block_z=cTensor_Output.GetSizeZ();
+ uint32_t block_z=cTensor_Output.GetSizeZ();
 
  blocks=dim3(block_x,block_y,block_z);
 }
@@ -294,19 +294,19 @@ static void BlockInitFunction(dim3 &thread,dim3 &blocks,const CTensor<type_t> &c
 template<class type_t>
 __global__ void CUDATensorApplySigmoidFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -342,19 +342,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplySigmoid(CTensor<type_t> &cTensor_Ou
 template<class type_t>
 __global__ void CUDATensorApplyReLUFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -390,19 +390,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyReLU(CTensor<type_t> &cTensor_Outpu
 template<class type_t>
 __global__ void CUDATensorApplyGeLUFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -437,19 +437,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyGeLU(CTensor<type_t> &cTensor_Outpu
 template<class type_t>
 __global__ void CUDATensorApplyLeakyReLUFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -483,19 +483,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyLeakyReLU(CTensor<type_t> &cTensor_
 template<class type_t>
 __global__ void CUDATensorApplyLinearFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -529,19 +529,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyLinear(CTensor<type_t> &cTensor_Out
 template<class type_t>
 __global__ void CUDATensorApplyTangenceFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -575,19 +575,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyTangence(CTensor<type_t> &cTensor_O
 template<class type_t>
 __global__ void CUDATensorApplySoftMaxFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -623,19 +623,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplySoftMax(CTensor<type_t> &cTensor_Ou
 template<class type_t>
 __global__ void CUDATensorApplyDifferentialSigmoidFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -668,19 +668,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(CTensor<type_t>
 template<class type_t>
 __global__ void CUDATensorApplyDifferentialReLUFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -715,19 +715,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialReLU(CTensor<type_t> &c
 template<class type_t>
 __global__ void CUDATensorApplyDifferentialGeLUFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -762,19 +762,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialGeLU(CTensor<type_t> &c
 template<class type_t>
 __global__ void CUDATensorApplyDifferentialLeakyReLUFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -807,19 +807,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(CTensor<type_
 template<class type_t>
 __global__ void CUDATensorApplyDifferentialLinearFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -852,19 +852,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialLinear(CTensor<type_t> 
 template<class type_t>
 __global__ void CUDATensorApplyDifferentialTangenceFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 
@@ -898,19 +898,19 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialTangence(CTensor<type_t
 template<class type_t>
 __global__ void CUDATensorApplyDifferentialSoftMaxFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
  //координаты элементов блока в выходном тензоре
- size_t x=threadIdx.x;
- size_t y=threadIdx.y;
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
  //получаем подтензоры
- size_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
- size_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
- size_t offset=xp+yp*tensor_output.GetSizeX();
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
  type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
  type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
 

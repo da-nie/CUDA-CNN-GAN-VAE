@@ -44,34 +44,34 @@ class CNetLayerMaxDePooling:public INetLayer<type_t>
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  size_t BatchSize;///<размер пакета для обучения
+  uint32_t BatchSize;///<размер пакета для обучения
 
   std::vector<CTensor<type_t>> cTensor_H_Array;///<тензоры значений нейронов после функции активации
 
-  size_t DePooling_X;///<коэффициент расширения по X
-  size_t DePooling_Y;///<коэффициент расширения по Y
+  uint32_t DePooling_X;///<коэффициент расширения по X
+  uint32_t DePooling_Y;///<коэффициент расширения по Y
 
-  size_t InputSize_X;///<размер входного тензора по X
-  size_t InputSize_Y;///<размер входного тензора по Y
-  size_t InputSize_Z;///<размер входного тензора по Z
+  uint32_t InputSize_X;///<размер входного тензора по X
+  uint32_t InputSize_Y;///<размер входного тензора по Y
+  uint32_t InputSize_Z;///<размер входного тензора по Z
 
   //тензоры, используемые при обучении
   std::vector<CTensor<type_t>> cTensor_Delta_Array;///<тензоры дельты слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerMaxDePooling(size_t depooling_y,size_t depooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);
+  CNetLayerMaxDePooling(uint32_t depooling_y,uint32_t depooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
   CNetLayerMaxDePooling(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerMaxDePooling();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(size_t depooling_y,size_t depooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);///<создать слой
+  void Create(uint32_t depooling_y,uint32_t depooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию слоя
-  void SetOutput(size_t unit_index,CTensor<type_t> &output);///<задать выход слоя
-  void GetOutput(size_t unit_index,CTensor<type_t> &output);///<получить выход слоя
+  void SetOutput(uint32_t unit_index,CTensor<type_t> &output);///<задать выход слоя
+  void GetOutput(uint32_t unit_index,CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
-  CTensor<type_t>& GetOutputTensor(size_t unit_index);///<получить ссылку на выходной тензор
+  CTensor<type_t>& GetOutputTensor(uint32_t unit_index);///<получить ссылку на выходной тензор
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
   bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить параметры слоя
@@ -83,9 +83,9 @@ class CNetLayerMaxDePooling:public INetLayer<type_t>
   void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
-  CTensor<type_t>& GetDeltaTensor(size_t unit_index);///<получить ссылку на тензор дельты слоя
+  CTensor<type_t>& GetDeltaTensor(uint32_t unit_index);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(size_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
+  void SetOutputError(uint32_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
  protected:
@@ -100,7 +100,7 @@ class CNetLayerMaxDePooling:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerMaxDePooling<type_t>::CNetLayerMaxDePooling(size_t depooling_y,size_t depooling_x,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+CNetLayerMaxDePooling<type_t>::CNetLayerMaxDePooling(uint32_t depooling_y,uint32_t depooling_x,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  DePooling_X=1;///<коэффициент расширения по X
  DePooling_Y=1;///<коэффициент расширения по Y
@@ -139,7 +139,7 @@ CNetLayerMaxDePooling<type_t>::~CNetLayerMaxDePooling()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerMaxDePooling<type_t>::Create(size_t depooling_y,size_t depooling_x,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+void CNetLayerMaxDePooling<type_t>::Create(uint32_t depooling_y,uint32_t depooling_x,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
@@ -154,13 +154,13 @@ void CNetLayerMaxDePooling<type_t>::Create(size_t depooling_y,size_t depooling_x
  if (prev_layer_ptr==NULL) throw("Слой обратной субдискретизации не может быть входным!");//слой без предшествующего считается входным
 
  //размер входного тензора
- size_t input_x=PrevLayerPtr->GetOutputTensor(0).GetSizeX();
- size_t input_y=PrevLayerPtr->GetOutputTensor(0).GetSizeY();
- size_t input_z=PrevLayerPtr->GetOutputTensor(0).GetSizeZ();
+ uint32_t input_x=PrevLayerPtr->GetOutputTensor(0).GetSizeX();
+ uint32_t input_y=PrevLayerPtr->GetOutputTensor(0).GetSizeY();
+ uint32_t input_z=PrevLayerPtr->GetOutputTensor(0).GetSizeZ();
  //размер выходного тензора
- size_t output_x=input_x*depooling_x;
- size_t output_y=input_y*depooling_y;
- size_t output_z=input_z;
+ uint32_t output_x=input_x*depooling_x;
+ uint32_t output_y=input_y*depooling_y;
+ uint32_t output_z=input_z;
 
  //запомним размеры входного тензора, чтобы потом всегда к ним приводить
  InputSize_X=input_x;
@@ -170,7 +170,7 @@ void CNetLayerMaxDePooling<type_t>::Create(size_t depooling_y,size_t depooling_x
  if (output_x==0 || output_y==0) throw("Выходной тензор слоя обратной субдискретизации нулевого размера!");
  //создаём выходные тензоры
  cTensor_H_Array.resize(BatchSize);
- for(size_t n=0;n<BatchSize;n++) cTensor_H_Array[n]=CTensor<type_t>(output_z,output_y,output_x);
+ for(uint32_t n=0;n<BatchSize;n++) cTensor_H_Array[n]=CTensor<type_t>(output_z,output_y,output_x);
  //задаём предшествующему слою, что мы его последующий слой
  prev_layer_ptr->SetNextLayerPtr(this);
 }
@@ -189,11 +189,11 @@ void CNetLayerMaxDePooling<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerMaxDePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerMaxDePooling<type_t>::SetOutput(uint32_t unit_index,CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerMaxDePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerMaxDePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerMaxDePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerMaxDePooling<type_t>::SetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerMaxDePooling<type_t>::SetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerMaxDePooling<type_t>::SetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
  cTensor_H_Array[unit_index]=output;
 }
 //----------------------------------------------------------------------------------------------------
@@ -203,11 +203,11 @@ void CNetLayerMaxDePooling<type_t>::SetOutput(size_t unit_index,CTensor<type_t> 
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerMaxDePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerMaxDePooling<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerMaxDePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerMaxDePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerMaxDePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerMaxDePooling<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerMaxDePooling<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerMaxDePooling<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности тензора output!");
  output=cTensor_H_Array[unit_index];
 }
 //----------------------------------------------------------------------------------------------------
@@ -216,41 +216,41 @@ void CNetLayerMaxDePooling<type_t>::GetOutput(size_t unit_index,CTensor<type_t> 
 template<class type_t>
 void CNetLayerMaxDePooling<type_t>::Forward(void)
 {
- for(size_t n=0;n<BatchSize;n++)
+ for(uint32_t n=0;n<BatchSize;n++)
  {
   //размер выходного тензора
-  size_t output_x=cTensor_H_Array[n].GetSizeX();
-  size_t output_y=cTensor_H_Array[n].GetSizeY();
-  size_t output_z=cTensor_H_Array[n].GetSizeZ();
+  uint32_t output_x=cTensor_H_Array[n].GetSizeX();
+  uint32_t output_y=cTensor_H_Array[n].GetSizeY();
+  uint32_t output_z=cTensor_H_Array[n].GetSizeZ();
 
   //приведём входной тензор к нужному виду
-  size_t basic_input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
-  size_t basic_input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
-  size_t basic_input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
+  uint32_t basic_input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
+  uint32_t basic_input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
+  uint32_t basic_input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
 
   PrevLayerPtr->GetOutputTensor(n).ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
 
   CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor(n);
-  size_t input_x=input.GetSizeX();
-  size_t input_y=input.GetSizeY();
-  size_t input_z=input.GetSizeZ();
+  uint32_t input_x=input.GetSizeX();
+  uint32_t input_y=input.GetSizeY();
+  uint32_t input_z=input.GetSizeZ();
 
   type_t divider=static_cast<type_t>(DePooling_X*DePooling_Y);
 
-  for(size_t z=0;z<input_z;z++)
+  for(uint32_t z=0;z<input_z;z++)
   {
-   for(size_t y=0;y<input_y;y++)
+   for(uint32_t y=0;y<input_y;y++)
    {
-    for(size_t x=0;x<input_x;x++)
+    for(uint32_t x=0;x<input_x;x++)
     {
      type_t input_v=input.GetElement(z,y,x);
      //выставляем всем точкам блока обратной субдискретизации значение входа, делённое на размерность (?)
      type_t value=input_v;///divider;
-     size_t hx=x*DePooling_X;
-     size_t hy=y*DePooling_Y;
-     for(size_t py=0;py<DePooling_Y;py++)
+     uint32_t hx=x*DePooling_X;
+     uint32_t hy=y*DePooling_Y;
+     for(uint32_t py=0;py<DePooling_Y;py++)
      {
-      for(size_t px=0;px<DePooling_X;px++)
+      for(uint32_t px=0;px<DePooling_X;px++)
       {
        cTensor_H_Array[n].SetElement(z,hy+py,hx+px,value);
       }
@@ -267,7 +267,7 @@ void CNetLayerMaxDePooling<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerMaxDePooling<type_t>::GetOutputTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerMaxDePooling<type_t>::GetOutputTensor(uint32_t unit_index)
 {
  return(cTensor_H_Array[unit_index]);
 }
@@ -347,7 +347,7 @@ void CNetLayerMaxDePooling<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
  cTensor_Delta_Array.resize(BatchSize);
- for(size_t n=0;n<BatchSize;n++) cTensor_Delta_Array[n]=cTensor_H_Array[n];
+ for(uint32_t n=0;n<BatchSize;n++) cTensor_Delta_Array[n]=cTensor_H_Array[n];
  cTensor_PrevLayerError=PrevLayerPtr->GetOutputTensor(0);
 }
 //----------------------------------------------------------------------------------------------------
@@ -368,38 +368,38 @@ void CNetLayerMaxDePooling<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerMaxDePooling<type_t>::TrainingBackward(bool create_delta_weight)
 {
- for(size_t n=0;n<BatchSize;n++)
+ for(uint32_t n=0;n<BatchSize;n++)
  {
-  size_t basic_input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
-  size_t basic_input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
-  size_t basic_input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
+  uint32_t basic_input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
+  uint32_t basic_input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
+  uint32_t basic_input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
   //приведём входной тензор к нужному виду
   PrevLayerPtr->GetOutputTensor(n).ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
   cTensor_PrevLayerError.ReinterpretSize(InputSize_Z,InputSize_Y,InputSize_X);
 
-  size_t input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
-  size_t input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
-  size_t input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
+  uint32_t input_x=PrevLayerPtr->GetOutputTensor(n).GetSizeX();
+  uint32_t input_y=PrevLayerPtr->GetOutputTensor(n).GetSizeY();
+  uint32_t input_z=PrevLayerPtr->GetOutputTensor(n).GetSizeZ();
 
   //размер выходного тензора
-  size_t output_x=cTensor_Delta_Array[n].GetSizeX();
-  size_t output_y=cTensor_Delta_Array[n].GetSizeY();
-  size_t output_z=cTensor_Delta_Array[n].GetSizeZ();
+  uint32_t output_x=cTensor_Delta_Array[n].GetSizeX();
+  uint32_t output_y=cTensor_Delta_Array[n].GetSizeY();
+  uint32_t output_z=cTensor_Delta_Array[n].GetSizeZ();
 
   type_t divider=static_cast<type_t>(DePooling_X*DePooling_Y);
 
-  for(size_t z=0;z<input_z;z++)
+  for(uint32_t z=0;z<input_z;z++)
   {
-   for(size_t y=0;y<input_y;y++)
+   for(uint32_t y=0;y<input_y;y++)
    {
-    for(size_t x=0;x<input_x;x++)
+    for(uint32_t x=0;x<input_x;x++)
     {
-     size_t ix=x*DePooling_X;
-     size_t iy=y*DePooling_Y;
+     uint32_t ix=x*DePooling_X;
+     uint32_t iy=y*DePooling_Y;
      type_t res=0;
-     for(size_t py=0;py<DePooling_Y;py++)
+     for(uint32_t py=0;py<DePooling_Y;py++)
      {
-      for(size_t px=0;px<DePooling_X;px++)
+      for(uint32_t px=0;px<DePooling_X;px++)
       {
        type_t e=cTensor_Delta_Array[n].GetElement(z,iy+py,ix+px);
        res+=e;
@@ -440,7 +440,7 @@ void CNetLayerMaxDePooling<type_t>::TrainingUpdateWeight(double speed,double ite
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerMaxDePooling<type_t>::GetDeltaTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerMaxDePooling<type_t>::GetDeltaTensor(uint32_t unit_index)
 {
  return(cTensor_Delta_Array[unit_index]);
 }
@@ -450,7 +450,7 @@ CTensor<type_t>& CNetLayerMaxDePooling<type_t>::GetDeltaTensor(size_t unit_index
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerMaxDePooling<type_t>::SetOutputError(size_t unit_index,CTensor<type_t>& error)
+void CNetLayerMaxDePooling<type_t>::SetOutputError(uint32_t unit_index,CTensor<type_t>& error)
 {
  cTensor_Delta_Array[unit_index]=error;
 }

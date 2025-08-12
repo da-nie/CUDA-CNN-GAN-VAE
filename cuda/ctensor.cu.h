@@ -91,13 +91,13 @@ class CTensor
   //-константы------------------------------------------------------------------------------------------
  private:
   //-переменные-----------------------------------------------------------------------------------------
-  mutable size_t Size_X;///<размер по X
-  mutable size_t Size_Y;///<размер по Y
-  mutable size_t Size_Z;///<размер по Z
+  mutable uint32_t Size_X;///<размер по X
+  mutable uint32_t Size_Y;///<размер по Y
+  mutable uint32_t Size_Z;///<размер по Z
 
-  mutable size_t BasedSize_X;///<исходный размер по X
-  mutable size_t BasedSize_Y;///<исходный размер по Y
-  mutable size_t BasedSize_Z;///<исходный размер по Z
+  mutable uint32_t BasedSize_X;///<исходный размер по X
+  mutable uint32_t BasedSize_Y;///<исходный размер по Y
+  mutable uint32_t BasedSize_Z;///<исходный размер по Z
 
   mutable std::vector<type_t> Item;///<массив компонентов тензора
   mutable CCUDADeviceVector<type_t> DeviceItem;///<данные на устройстве
@@ -106,28 +106,28 @@ class CTensor
 
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CTensor<type_t>(size_t size_z=1,size_t size_y=1,size_t size_x=1);
+  CTensor<type_t>(uint32_t size_z=1,uint32_t size_y=1,uint32_t size_x=1);
   //-конструктор копирования----------------------------------------------------------------------------
   CTensor<type_t>(const CTensor<type_t> &cTensor);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CTensor<type_t>();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  __host__ __device__ size_t GetSizeX(void) const;///<получить размер по x
-  __host__ __device__ size_t GetSizeY(void) const;///<получить размер по y
-  __host__ __device__ size_t GetSizeZ(void) const;///<получить размер по z
-  type_t GetElement(size_t z,size_t y,size_t x) const;///<получить элемент тензора
-  void SetElement(size_t z,size_t y,size_t x,type_t value);///<задать элемент тензора
-  type_t* GetColumnPtr(size_t z,size_t y);///<получить указатель на строку тензора
-  const type_t* GetColumnPtr(size_t z,size_t y) const;///<получить указатель на строку тензора
+  __host__ __device__ uint32_t GetSizeX(void) const;///<получить размер по x
+  __host__ __device__ uint32_t GetSizeY(void) const;///<получить размер по y
+  __host__ __device__ uint32_t GetSizeZ(void) const;///<получить размер по z
+  type_t GetElement(uint32_t z,uint32_t y,uint32_t x) const;///<получить элемент тензора
+  void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value);///<задать элемент тензора
+  type_t* GetColumnPtr(uint32_t z,uint32_t y);///<получить указатель на строку тензора
+  const type_t* GetColumnPtr(uint32_t z,uint32_t y) const;///<получить указатель на строку тензора
   CCUDADeviceVector<type_t>& GetDeviceVector(void) const;///<получить класс хранения данных на устройстве
   void Unitary(void);///<привести к единичному виду
   void Zero(void);///<обнулить тензор
   void Fill(type_t value);///<задать тензор числом
   void Move(CTensor<type_t> &cTensor);///<переместить тензор
   void CopyItem(CTensor<type_t> &cTensor);///<скопировать только элементы
-  void CopyItemToHost(type_t *item_array,size_t size);///<скопировать элементы из массива в хост
-  void CopyItemToDevice(type_t *item_array,size_t size);///<скопировать элементы из массива в устройство
+  void CopyItemToHost(type_t *item_array,uint32_t size);///<скопировать элементы из массива в хост
+  void CopyItemToDevice(type_t *item_array,uint32_t size);///<скопировать элементы из массива в устройство
 
   CTensor<type_t>& operator=(const CTensor<type_t> &cTensor);///<оператор "="
 
@@ -143,11 +143,11 @@ class CTensor
   bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить тензор
 
   void ExchangeSizeXY(void) const;///<обменять размеры по X и по Y местами
-  void ReinterpretSize(size_t size_z,size_t size_y,size_t size_x) const;///<интерпретировать размер по-новому
+  void ReinterpretSize(uint32_t size_z,uint32_t size_y,uint32_t size_x) const;///<интерпретировать размер по-новому
   void RestoreSize(void) const;///<восстановить первоначальную интерпретацию размеров
 
   void Normalize(void);///<нормировка тензора
-  type_t GetNorma(size_t z) const;///<получить норму тензора
+  type_t GetNorma(uint32_t z) const;///<получить норму тензора
 
   void CopyToDevice(bool force=false) const;///<скопировать тензор на устройство
   void CopyFromDevice(bool force=false) const;///<скопировать тензор с устройства
@@ -175,7 +175,7 @@ static const double CTENSOR_EPS=0.0000000001;
 //конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>::CTensor(size_t size_z,size_t size_y,size_t size_x)
+CTensor<type_t>::CTensor(uint32_t size_z,uint32_t size_y,uint32_t size_x)
 {
  Size_X=size_x;
  Size_Y=size_y;
@@ -242,7 +242,7 @@ CTensor<type_t>::~CTensor()
 //получить размер по x
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__host__ __device__ size_t CTensor<type_t>::GetSizeX(void) const
+__host__ __device__ uint32_t CTensor<type_t>::GetSizeX(void) const
 {
  return(Size_X);
 }
@@ -250,7 +250,7 @@ __host__ __device__ size_t CTensor<type_t>::GetSizeX(void) const
 //получить размер по y
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__host__ __device__ size_t CTensor<type_t>::GetSizeY(void) const
+__host__ __device__ uint32_t CTensor<type_t>::GetSizeY(void) const
 {
  return(Size_Y);
 }
@@ -258,7 +258,7 @@ __host__ __device__ size_t CTensor<type_t>::GetSizeY(void) const
 //получить размер по z
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__host__ __device__ size_t CTensor<type_t>::GetSizeZ(void) const
+__host__ __device__ uint32_t CTensor<type_t>::GetSizeZ(void) const
 {
  return(Size_Z);
 }
@@ -266,7 +266,7 @@ __host__ __device__ size_t CTensor<type_t>::GetSizeZ(void) const
 //получить элемент тензора
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-type_t CTensor<type_t>::GetElement(size_t z,size_t y,size_t x) const
+type_t CTensor<type_t>::GetElement(uint32_t z,uint32_t y,uint32_t x) const
 {
  if (x>=Size_X || y>=Size_Y || z>=Size_Z) throw("Ошибка доступа к элементу тензора для чтения!");
  CopyFromDevice();
@@ -276,7 +276,7 @@ type_t CTensor<type_t>::GetElement(size_t z,size_t y,size_t x) const
 //задать элемент тензора
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensor<type_t>::SetElement(size_t z,size_t y,size_t x,type_t value)
+void CTensor<type_t>::SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
 {
  if (x>=Size_X || y>=Size_Y || z>=Size_Z) throw("Ошибка доступа к элементу тензора для записи!");
  CopyFromDevice();
@@ -288,7 +288,7 @@ void CTensor<type_t>::SetElement(size_t z,size_t y,size_t x,type_t value)
 //получить указатель на строку тензора
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-type_t* CTensor<type_t>::GetColumnPtr(size_t z,size_t y)
+type_t* CTensor<type_t>::GetColumnPtr(uint32_t z,uint32_t y)
 {
  if (y>=Size_Y || z>=Size_Z) throw("Ошибка получения указателя на строку тензора!");
  CopyFromDevice();
@@ -299,7 +299,7 @@ type_t* CTensor<type_t>::GetColumnPtr(size_t z,size_t y)
 //получить указатель на строку тензора
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-const type_t* CTensor<type_t>::GetColumnPtr(size_t z,size_t y) const
+const type_t* CTensor<type_t>::GetColumnPtr(uint32_t z,uint32_t y) const
 {
  if (y>=Size_Y || z>=Size_Z) throw("Ошибка получения указателя на строку тензора!");
  CopyFromDevice();
@@ -322,11 +322,11 @@ template<class type_t>
 void CTensor<type_t>::Unitary(void)
 {
  type_t *o_ptr=&Item[0];
- for(size_t z=0;z<Size_Z;z++)
+ for(uint32_t z=0;z<Size_Z;z++)
  {
-  for(size_t y=0;y<Size_Y;y++)
+  for(uint32_t y=0;y<Size_Y;y++)
   {
-   for(size_t x=0;x<Size_X;x++,o_ptr++)
+   for(uint32_t x=0;x<Size_X;x++,o_ptr++)
    {
     if (x==y) *o_ptr=1;
          else *o_ptr=0;
@@ -342,11 +342,11 @@ template<class type_t>
 void CTensor<type_t>::Zero(void)
 {
  type_t *o_ptr=&Item[0];
- for(size_t z=0;z<Size_Z;z++)
+ for(uint32_t z=0;z<Size_Z;z++)
  {
-  for(size_t y=0;y<Size_Y;y++)
+  for(uint32_t y=0;y<Size_Y;y++)
   {
-   for(size_t x=0;x<Size_X;x++,o_ptr++)
+   for(uint32_t x=0;x<Size_X;x++,o_ptr++)
    {
     *o_ptr=0;
    }
@@ -362,11 +362,11 @@ template<class type_t>
 void CTensor<type_t>::Fill(type_t value)
 {
  type_t *o_ptr=&Item[0];
- for(size_t z=0;z<Size_Z;z++)
+ for(uint32_t z=0;z<Size_Z;z++)
  {
-  for(size_t y=0;y<Size_Y;y++)
+  for(uint32_t y=0;y<Size_Y;y++)
   {
-   for(size_t x=0;x<Size_X;x++,o_ptr++)
+   for(uint32_t x=0;x<Size_X;x++,o_ptr++)
    {
     *o_ptr=value;
    }
@@ -421,7 +421,7 @@ void CTensor<type_t>::CopyItem(CTensor<type_t> &cTensor)
 //скопировать элементы из массива в хост
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensor<type_t>::CopyItemToHost(type_t *item_array,size_t size)
+void CTensor<type_t>::CopyItemToHost(type_t *item_array,uint32_t size)
 {
  if (Item.size()<size) throw("Слишком большой массив для копирования на хост.");
  memcpy(&Item[0],item_array,size*sizeof(type_t));
@@ -431,7 +431,7 @@ void CTensor<type_t>::CopyItemToHost(type_t *item_array,size_t size)
 //скопировать элементы из массива в устройство
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensor<type_t>::CopyItemToDevice(type_t *item_array,size_t size)
+void CTensor<type_t>::CopyItemToDevice(type_t *item_array,uint32_t size)
 {
  if (Item.size()<size) throw("Слишком большой массив для копирования на устройство.");
  DeviceItem.copy_host_to_device(item_array,size);
@@ -474,7 +474,7 @@ bool CTensor<type_t>::Save(IDataStream *iDataStream_Ptr)
  iDataStream_Ptr->SaveUInt32(Size_Y);
  iDataStream_Ptr->SaveUInt32(Size_X);
  //сохраняем данные тензора
- for(size_t n=0;n<Size_X*Size_Y*Size_Z;n++) iDataStream_Ptr->SaveDouble(Item[n]);
+ for(uint32_t n=0;n<Size_X*Size_Y*Size_Z;n++) iDataStream_Ptr->SaveDouble(Item[n]);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -504,7 +504,7 @@ bool CTensor<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
  DeviceItem.resize(Item.size());
 
  //загружаем данные тензора
- for(size_t n=0;n<Size_X*Size_Y*Size_Z;n++) Item[n]=static_cast<type_t>(iDataStream_Ptr->LoadDouble());
+ for(uint32_t n=0;n<Size_X*Size_Y*Size_Z;n++) Item[n]=static_cast<type_t>(iDataStream_Ptr->LoadDouble());
 
  SetHostOnChange();
  return(true);
@@ -516,7 +516,7 @@ bool CTensor<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 template<class type_t>
 void CTensor<type_t>::ExchangeSizeXY(void) const
 {
- size_t tmp=Size_X;
+ uint32_t tmp=Size_X;
  Size_X=Size_Y;
  Size_Y=tmp;
 }
@@ -524,9 +524,9 @@ void CTensor<type_t>::ExchangeSizeXY(void) const
 //интерпретировать размер по-новому
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensor<type_t>::ReinterpretSize(size_t size_z,size_t size_y,size_t size_x) const
+void CTensor<type_t>::ReinterpretSize(uint32_t size_z,uint32_t size_y,uint32_t size_x) const
 {
- static const size_t STRING_BUFFER_SIZE=1024;
+ static const uint32_t STRING_BUFFER_SIZE=1024;
 
  if (Size_X*Size_Y*Size_Z!=size_x*size_y*size_z)
  {
@@ -559,13 +559,13 @@ void CTensor<type_t>::Normalize(void)
 {
  CopyFromDevice();
 
- for(size_t z=0;z<Size_Z;z++)
+ for(uint32_t z=0;z<Size_Z;z++)
  {
   type_t norma=GetNorma(z);
   if (norma<CTENSOR_EPS) continue;
-  for(size_t y=0;y<Size_Y;y++)
+  for(uint32_t y=0;y<Size_Y;y++)
   {
-   for(size_t x=0;x<Size_X;x++)
+   for(uint32_t x=0;x<Size_X;x++)
    {
     Item[Size_X*y+x+z*Size_X*Size_Y]/=norma;
    }
@@ -577,13 +577,13 @@ void CTensor<type_t>::Normalize(void)
 //получить норму тензора
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-type_t CTensor<type_t>::GetNorma(size_t z) const
+type_t CTensor<type_t>::GetNorma(uint32_t z) const
 {
  CopyFromDevice();
  type_t norma=0;
- for(size_t y=0;y<Size_Y;y++)
+ for(uint32_t y=0;y<Size_Y;y++)
  {
-  for(size_t x=0;x<Size_X;x++)
+  for(uint32_t x=0;x<Size_X;x++)
   {
    norma+=Item[Size_X*y+x+z*Size_X*Size_Y]*Item[Size_X*y+x+z*Size_X*Size_Y];
   }
@@ -653,14 +653,14 @@ void CTensor<type_t>::Print(const std::string &name,bool print_value) const
  sprintf(str,"Z:%i Y:%i X:%i",static_cast<int>(Size_Z),static_cast<int>(Size_Y),static_cast<int>(Size_X));
  SYSTEM::PutMessageToConsole(str);
  if (print_value==false) return;
- for(size_t z=0;z<GetSizeZ();z++)
+ for(uint32_t z=0;z<GetSizeZ();z++)
  {
   sprintf(str,"-----%i-----",static_cast<int>(z));
   SYSTEM::PutMessageToConsole(str);
-  for(size_t y=0;y<GetSizeY();y++)
+  for(uint32_t y=0;y<GetSizeY();y++)
   {
    std::string line;
-   for(size_t x=0;x<GetSizeX();x++)
+   for(uint32_t x=0;x<GetSizeX();x++)
    {
     type_t e1=GetElement(z,y,x);
     sprintf(str,"%f ",e1);
@@ -684,12 +684,12 @@ void CTensor<type_t>::PrintToFile(const std::string &file_name,const std::string
  fprintf(file,"***** %s *****\r\n",name.c_str());
  fprintf(file,"Z:%i Y:%i X:%i\r\n",static_cast<int>(Size_Z),static_cast<int>(Size_Y),static_cast<int>(Size_X));
  if (print_value==false) return;
- for(size_t z=0;z<GetSizeZ();z++)
+ for(uint32_t z=0;z<GetSizeZ();z++)
  {
   fprintf(file,"-----%i-----\r\n",static_cast<int>(z));
-  for(size_t y=0;y<GetSizeY();y++)
+  for(uint32_t y=0;y<GetSizeY();y++)
   {
-   for(size_t x=0;x<GetSizeX();x++)
+   for(uint32_t x=0;x<GetSizeX();x++)
    {
     type_t e1=GetElement(z,y,x);
     fprintf(file,"%f ",e1);
@@ -718,14 +718,14 @@ bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::
  if (print_value==true) SYSTEM::PutMessageToConsole(str);
  sprintf(str,"Z:%i Y:%i X:%i",static_cast<int>(Size_Z),static_cast<int>(Size_Y),static_cast<int>(Size_X));
  if (print_value==true) SYSTEM::PutMessageToConsole(str);
- for(size_t z=0;z<GetSizeZ();z++)
+ for(uint32_t z=0;z<GetSizeZ();z++)
  {
   sprintf(str,"-----%i-----",static_cast<int>(z));
   if (print_value==true) SYSTEM::PutMessageToConsole(str);
-  for(size_t y=0;y<GetSizeY();y++)
+  for(uint32_t y=0;y<GetSizeY();y++)
   {
    std::string line;
-   for(size_t x=0;x<GetSizeX();x++)
+   for(uint32_t x=0;x<GetSizeX();x++)
    {
     type_t e1=GetElement(z,y,x);
     type_t e2=cTensor_Control.GetElement(z,y,x);

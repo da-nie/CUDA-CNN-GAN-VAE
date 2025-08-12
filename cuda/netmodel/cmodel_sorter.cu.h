@@ -49,7 +49,7 @@ class CModelSorter
   //-перечисления---------------------------------------------------------------------------------------
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
-  static const size_t STRING_BUFFER_SIZE=1024;///<размер буфера строки
+  static const uint32_t STRING_BUFFER_SIZE=1024;///<размер буфера строки
  private:
   //-структуры------------------------------------------------------------------------------------------
   struct SProtectedVariables
@@ -59,16 +59,16 @@ class CModelSorter
   //-переменные-----------------------------------------------------------------------------------------
   SProtectedVariables sProtectedVariables;
 
-  size_t IMAGE_WIDTH; ///<ширина входных изображений
-  size_t IMAGE_HEIGHT; ///<высота входных изображений
-  size_t IMAGE_DEPTH; ///<глубина входных изображений
+  uint32_t IMAGE_WIDTH; ///<ширина входных изображений
+  uint32_t IMAGE_HEIGHT; ///<высота входных изображений
+  uint32_t IMAGE_DEPTH; ///<глубина входных изображений
 
-  size_t BATCH_AMOUNT;///<количество пакетов
-  size_t BATCH_SIZE;///<размер пакета
+  uint32_t BATCH_AMOUNT;///<количество пакетов
+  uint32_t BATCH_SIZE;///<размер пакета
 
-  size_t GROUP_SIZE;///<количество групп сортировки
+  uint32_t GROUP_SIZE;///<количество групп сортировки
 
-  size_t ITERATION_OF_SAVE_NET;///<какую итерацию сохранять сеть
+  uint32_t ITERATION_OF_SAVE_NET;///<какую итерацию сохранять сеть
 
   double SPEED;///<скорость обучения
 
@@ -80,7 +80,7 @@ class CModelSorter
 
   struct SImageSettings
   {
-   size_t StorageImageIndex;///<индекс изображения из хранилища изображений
+   uint32_t StorageImageIndex;///<индекс изображения из хранилища изображений
 
    bool FlipHorizontal;///<требуется ли отражение по горизонтали (имеет высший приоритет)
    int32_t OffsetX;///<смещение по X
@@ -98,7 +98,7 @@ class CModelSorter
   struct SStorageImage
   {
    std::vector<type_t> Image;///<данные изображения
-   size_t Group;///<группа классификации
+   uint32_t Group;///<группа классификации
   };
 
 
@@ -110,7 +110,7 @@ class CModelSorter
   std::vector<SStorageImage> CheckImageStorage;///<данные изображений для тестирования точности
   std::vector<SImageSettings> CheckImageSettings;///<образы изображений для тестирования точности
 
-  size_t Iteration;//итерация
+  uint32_t Iteration;//итерация
 
  public:
   //-конструктор----------------------------------------------------------------------------------------
@@ -125,23 +125,23 @@ class CModelSorter
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
   void CreateSorter(void);///<создать сеть сортировщика
-  bool LoadStorageImageInPath(const std::string &path,std::vector<SStorageImage> &storage_image_list,size_t group);///<загрузить образы изображений из каталога
+  bool LoadStorageImageInPath(const std::string &path,std::vector<SStorageImage> &storage_image_list,uint32_t group);///<загрузить образы изображений из каталога
   bool LoadTrainingImage(void);///<загрузить образы изображений
   bool LoadCheckImage(void);///<загрузить образы изображений для тестирования
-  bool LoadJPG(const std::string &file_name,std::vector<uint8_t> &image,size_t &width,size_t &height);///<загрузка jpg-файла
+  bool LoadJPG(const std::string &file_name,std::vector<uint8_t> &image,uint32_t &width,uint32_t &height);///<загрузка jpg-файла
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net);///<загрузить слои сети
-  void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration);///<сохранить параметры обучения слоёв сети
-  void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration);///<загрузить параметры обучения слоёв сети
+  void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t iteration);///<сохранить параметры обучения слоёв сети
+  void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t &iteration);///<загрузить параметры обучения слоёв сети
   void LoadNet(const std::string &file_name);///<загрузить сети
   void SaveNet(const std::string &file_name);///<сохранить сети
   void LoadTrainingParam(const std::string &file_name);///<загрузить параметры обучения
   void SaveTrainingParam(const std::string &file_name);///<сохранить параметры обучения
   void GetImage(const SImageSettings &sImageSettings,const std::vector<SStorageImage> &storage_image,std::vector<type_t> &image);///<получение изображения с учётом его параметров
-  void TrainingSorter(size_t mini_batch_index,double &cost);///<обучение сортировщика
+  void TrainingSorter(uint32_t mini_batch_index,double &cost);///<обучение сортировщика
   void ExchangeTrainingImageSettingsIndex(void);///<перемешать индексы изображений
   void SaveImage(CTensor<type_t> &cTensor_Image,const std::string &name);///<сохранить изображение
-  void SaveImage(type_t *image_ptr,const std::string &name,size_t output_image_width,size_t output_image_height,size_t output_image_depth);///<сохранить изображение
+  void SaveImage(type_t *image_ptr,const std::string &name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth);///<сохранить изображение
   void Training(void);///<обучение нейросети
   void TrainingNet(void);///<обучение нейросети
 
@@ -311,7 +311,7 @@ void CModelSorter<type_t>::CreateSorter(void)
 //загрузить образы изображений из каталога
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CModelSorter<type_t>::LoadStorageImageInPath(const std::string &path,std::vector<SStorageImage> &storage_image_list,size_t group)
+bool CModelSorter<type_t>::LoadStorageImageInPath(const std::string &path,std::vector<SStorageImage> &storage_image_list,uint32_t group)
 {
  char str[STRING_BUFFER_SIZE];
  SYSTEM::PutMessageToConsole("Загружается:"+path);
@@ -324,12 +324,12 @@ bool CModelSorter<type_t>::LoadStorageImageInPath(const std::string &path,std::v
  sStorageImage.Image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
 
  //обрабатываем файлы
- size_t size=file_list.size();
- for(size_t n=0;n<size;n++)
+ uint32_t size=file_list.size();
+ for(uint32_t n=0;n<size;n++)
  {
   std::string &file_name=file_list[n];
   //проверяем расширение
-  size_t length=file_name.length();
+  uint32_t length=file_name.length();
   if (length<4) continue;
   if (file_name[length-4]!='.') continue;
   if (file_name[length-3]!='t' && file_name[length-3]!='T')  continue;
@@ -357,8 +357,8 @@ bool CModelSorter<type_t>::LoadStorageImageInPath(const std::string &path,std::v
   {
    for(uint32_t x=0;x<IMAGE_WIDTH;x++)
    {
-    size_t xp=x*dx;
-    size_t yp=y*dy;
+    uint32_t xp=x*dx;
+    uint32_t yp=y*dy;
 
     uint32_t offset=(xp+yp*width);
     uint32_t color=img_ptr[offset];
@@ -435,7 +435,7 @@ bool CModelSorter<type_t>::LoadTrainingImage(void)
  TrainingImageStorage.reserve(2500);
  std::string path="TrainingImage";
  //загружаем изображения
- for(size_t n=0;n<GROUP_SIZE;n++)
+ for(uint32_t n=0;n<GROUP_SIZE;n++)
  {
   sprintf(str,"/%i",static_cast<int>(n));
   LoadStorageImageInPath(path+str,TrainingImageStorage,n);
@@ -444,7 +444,7 @@ bool CModelSorter<type_t>::LoadTrainingImage(void)
  SYSTEM::PutMessageToConsole(str);
  TrainingImageSettings.clear();
  TrainingImageSettings.reserve(TrainingImageStorage.size()*8);
- for(size_t n=0;n<TrainingImageStorage.size();n++)
+ for(uint32_t n=0;n<TrainingImageStorage.size();n++)
  {
   SImageSettings sImageSettings;
   sImageSettings.StorageImageIndex=n;
@@ -452,11 +452,11 @@ bool CModelSorter<type_t>::LoadTrainingImage(void)
  }
 
  //создаём смещённые и отражённые варианты
- size_t size=TrainingImageSettings.size();
- for(size_t n=0;n<size;n++)
+ uint32_t size=TrainingImageSettings.size();
+ for(uint32_t n=0;n<size;n++)
  {
   SImageSettings sImageSettings_New=TrainingImageSettings[n];
-  for(size_t fh=0;fh<1;fh++)//отражение по горизонтали
+  for(uint32_t fh=0;fh<1;fh++)//отражение по горизонтали
   {
    for(int32_t dx=-32;dx<32;dx+=16)//смещения по горизонтали
    {
@@ -476,7 +476,7 @@ bool CModelSorter<type_t>::LoadTrainingImage(void)
  }
 
  TrainingImageSettingsIndex=std::vector<size_t>(TrainingImageSettings.size());
- for(size_t n=0;n<TrainingImageSettings.size();n++) TrainingImageSettingsIndex[n]=n;
+ for(uint32_t n=0;n<TrainingImageSettings.size();n++) TrainingImageSettingsIndex[n]=n;
  sprintf(str,"Всего изображений:%i",static_cast<int>(TrainingImageSettings.size()));
  SYSTEM::PutMessageToConsole(str);
  return(true);
@@ -493,7 +493,7 @@ bool CModelSorter<type_t>::LoadCheckImage(void)
  CheckImageStorage.reserve(2500);
  std::string path="CheckImage";
  //загружаем изображения
- for(size_t n=0;n<GROUP_SIZE;n++)
+ for(uint32_t n=0;n<GROUP_SIZE;n++)
  {
   sprintf(str,"/%i",static_cast<int>(n));
   LoadStorageImageInPath(path+str,CheckImageStorage,n);
@@ -502,7 +502,7 @@ bool CModelSorter<type_t>::LoadCheckImage(void)
  SYSTEM::PutMessageToConsole(str);
  CheckImageSettings.clear();
  CheckImageSettings.reserve(CheckImageStorage.size()*8);
- for(size_t n=0;n<CheckImageStorage.size();n++)
+ for(uint32_t n=0;n<CheckImageStorage.size();n++)
  {
   SImageSettings sImageSettings;
   sImageSettings.StorageImageIndex=n;
@@ -510,11 +510,11 @@ bool CModelSorter<type_t>::LoadCheckImage(void)
  }
 
  //создаём смещённые и отражённые варианты
- size_t size=CheckImageSettings.size();
- for(size_t n=0;n<size;n++)
+ uint32_t size=CheckImageSettings.size();
+ for(uint32_t n=0;n<size;n++)
  {
   SImageSettings sImageSettings_New=CheckImageSettings[n];
-  for(size_t fh=0;fh<1;fh++)//отражение по горизонтали
+  for(uint32_t fh=0;fh<1;fh++)//отражение по горизонтали
   {
    for(int32_t dx=-32;dx<32;dx+=16)//смещения по горизонтали
    {
@@ -544,7 +544,7 @@ bool CModelSorter<type_t>::LoadCheckImage(void)
 //!загрузка jpg-файла
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CModelSorter<type_t>::LoadJPG(const std::string &file_name,std::vector<uint8_t> &image,size_t &width,size_t &height)
+bool CModelSorter<type_t>::LoadJPG(const std::string &file_name,std::vector<uint8_t> &image,uint32_t &width,uint32_t &height)
 {
  image.clear();
  FILE *file=fopen(file_name.c_str(),"rb");
@@ -596,7 +596,7 @@ bool CModelSorter<type_t>::LoadJPG(const std::string &file_name,std::vector<uint
 template<class type_t>
 void CModelSorter<type_t>::SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net)
 {
- for(size_t n=0;n<net.size();n++) net[n]->Save(iDataStream_Ptr);
+ for(uint32_t n=0;n<net.size();n++) net[n]->Save(iDataStream_Ptr);
 }
 //----------------------------------------------------------------------------------------------------
 /*!загрузить слои сети
@@ -605,16 +605,16 @@ void CModelSorter<type_t>::SaveNetLayers(IDataStream *iDataStream_Ptr,std::vecto
 template<class type_t>
 void CModelSorter<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net)
 {
- for(size_t n=0;n<net.size();n++) net[n]->Load(iDataStream_Ptr);
+ for(uint32_t n=0;n<net.size();n++) net[n]->Load(iDataStream_Ptr);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сохранить параметры обучения слоёв сети
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelSorter<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration)
+void CModelSorter<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t iteration)
 {
- for(size_t n=0;n<net.size();n++) net[n]->SaveTrainingParam(iDataStream_Ptr);
+ for(uint32_t n=0;n<net.size();n++) net[n]->SaveTrainingParam(iDataStream_Ptr);
  iDataStream_Ptr->SaveUInt32(iteration);
 
 }
@@ -623,9 +623,9 @@ void CModelSorter<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_P
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelSorter<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration)
+void CModelSorter<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t &iteration)
 {
- for(size_t n=0;n<net.size();n++) net[n]->LoadTrainingParam(iDataStream_Ptr);
+ for(uint32_t n=0;n<net.size();n++) net[n]->LoadTrainingParam(iDataStream_Ptr);
  iteration=iDataStream_Ptr->LoadUInt32();
 }
 //----------------------------------------------------------------------------------------------------
@@ -719,20 +719,20 @@ void CModelSorter<type_t>::GetImage(const SImageSettings &sImageSettings,const s
 //обучение сортировщика
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelSorter<type_t>::TrainingSorter(size_t mini_batch_index,double &cost)
+void CModelSorter<type_t>::TrainingSorter(uint32_t mini_batch_index,double &cost)
 {
  static std::vector<type_t> image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
 
  char str[STRING_BUFFER_SIZE];
 
  double local_cost=0;
- for(size_t b=0;b<BATCH_SIZE;b++)
+ for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
   if (IsExit()==true) throw("Стоп");
-  size_t index=b+mini_batch_index*BATCH_SIZE;
-  size_t image_index=TrainingImageSettingsIndex[index];
+  uint32_t index=b+mini_batch_index*BATCH_SIZE;
+  uint32_t image_index=TrainingImageSettingsIndex[index];
   SImageSettings &sImageSettings=TrainingImageSettings[image_index];
-  size_t group=TrainingImageStorage[sImageSettings.StorageImageIndex].Group;
+  uint32_t group=TrainingImageStorage[sImageSettings.StorageImageIndex].Group;
   //подаём на вход сортировщика изображение
   {
    CTimeStamp cTimeStamp("Задание изображения:");
@@ -744,14 +744,14 @@ void CModelSorter<type_t>::TrainingSorter(size_t mini_batch_index,double &cost)
  //вычисляем сеть
  {
   CTimeStamp cTimeStamp("Вычисление сортировщика:");
-  for(size_t layer=0;layer<SorterNet.size();layer++) SorterNet[layer]->Forward();
+  for(uint32_t layer=0;layer<SorterNet.size();layer++) SorterNet[layer]->Forward();
  }
- for(size_t b=0;b<BATCH_SIZE;b++)
+ for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
-  size_t index=b+mini_batch_index*BATCH_SIZE;
-  size_t image_index=TrainingImageSettingsIndex[index];
+  uint32_t index=b+mini_batch_index*BATCH_SIZE;
+  uint32_t image_index=TrainingImageSettingsIndex[index];
   SImageSettings &sImageSettings=TrainingImageSettings[image_index];
-  size_t group=TrainingImageStorage[sImageSettings.StorageImageIndex].Group;
+  uint32_t group=TrainingImageStorage[sImageSettings.StorageImageIndex].Group;
 
   //вычисляем ошибку последнего слоя
   {
@@ -761,7 +761,7 @@ void CModelSorter<type_t>::TrainingSorter(size_t mini_batch_index,double &cost)
   {
    CTimeStamp cTimeStamp("Вычисление ошибки:");
    //std::string answer_str;
-   for(size_t n=0;n<cTensor_Sorter_Output.GetSizeY();n++)
+   for(uint32_t n=0;n<cTensor_Sorter_Output.GetSizeY();n++)
    {
     type_t necessities=0;
     if (n==group) necessities=1;
@@ -784,7 +784,7 @@ void CModelSorter<type_t>::TrainingSorter(size_t mini_batch_index,double &cost)
  //выполняем вычисление весов
  {
   CTimeStamp cTimeStamp("Обучение сортировщика:");
-  for(size_t m=0,n=SorterNet.size()-1;m<SorterNet.size();m++,n--) SorterNet[n]->TrainingBackward();
+  for(uint32_t m=0,n=SorterNet.size()-1;m<SorterNet.size();m++,n--) SorterNet[n]->TrainingBackward();
  }
  if (local_cost>cost) cost=local_cost;
 }
@@ -796,14 +796,14 @@ template<class type_t>
 void CModelSorter<type_t>::ExchangeTrainingImageSettingsIndex(void)
 {
  //делаем перемешивание
- size_t image_amount=TrainingImageSettings.size();
- for(size_t n=0;n<image_amount;n++)
+ uint32_t image_amount=TrainingImageSettings.size();
+ for(uint32_t n=0;n<image_amount;n++)
  {
-  size_t index_1=n;
-  size_t index_2=static_cast<size_t>((rand()*static_cast<double>(image_amount*10))/static_cast<double>(RAND_MAX));
+  uint32_t index_1=n;
+  uint32_t index_2=static_cast<size_t>((rand()*static_cast<double>(image_amount*10))/static_cast<double>(RAND_MAX));
   index_2%=image_amount;
 
-  size_t tmp=TrainingImageSettingsIndex[index_1];
+  uint32_t tmp=TrainingImageSettingsIndex[index_1];
   TrainingImageSettingsIndex[index_1]=TrainingImageSettingsIndex[index_2];
   TrainingImageSettingsIndex[index_2]=tmp;
  }
@@ -918,7 +918,7 @@ void CModelSorter<type_t>::SaveImage(CTensor<type_t> &cTensor_Image,const std::s
 //сохранить изображение
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelSorter<type_t>::SaveImage(type_t *image_ptr,const std::string &name,size_t output_image_width,size_t output_image_height,size_t output_image_depth)
+void CModelSorter<type_t>::SaveImage(type_t *image_ptr,const std::string &name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth)
 {
  std::vector<uint32_t> image(output_image_width*output_image_height);
  type_t *ptr=image_ptr;
@@ -1025,9 +1025,9 @@ void CModelSorter<type_t>::Training(void)
  char str_b[STRING_BUFFER_SIZE];
 
  double speed=SPEED;
- size_t max_iteration=1000000000;//максимальное количество итераций обучения
+ uint32_t max_iteration=1000000000;//максимальное количество итераций обучения
 
- size_t image_amount=TrainingImageSettings.size();
+ uint32_t image_amount=TrainingImageSettings.size();
 
  std::string str;
 
@@ -1083,12 +1083,12 @@ void CModelSorter<type_t>::Training(void)
 
    //обучаем сортировщик
    double cost=0;
-   for(size_t n=0;n<SorterNet.size();n++) SorterNet[n]->TrainingResetDeltaWeight();
+   for(uint32_t n=0;n<SorterNet.size();n++) SorterNet[n]->TrainingResetDeltaWeight();
    TrainingSorter(batch,cost);
    //корректируем веса сортировщика
    {
     CTimeStamp cTimeStamp("Обновление весов сортировщика:");
-    for(size_t n=0;n<SorterNet.size();n++)
+    for(uint32_t n=0;n<SorterNet.size();n++)
     {
      SorterNet[n]->TrainingUpdateWeight(speed,Iteration+1);
     }
@@ -1135,9 +1135,9 @@ void CModelSorter<type_t>::TrainingNet(void)
 
  cTensor_Sorter_Output=CTensor<type_t>(1,GROUP_SIZE,1);
  CreateSorter();
- for(size_t n=0;n<SorterNet.size();n++) SorterNet[n]->Reset();
+ for(uint32_t n=0;n<SorterNet.size();n++) SorterNet[n]->Reset();
  //включаем обучение
- for(size_t n=0;n<SorterNet.size();n++)
+ for(uint32_t n=0;n<SorterNet.size();n++)
  {
   SorterNet[n]->TrainingModeAdam(0.5,0.9);
   SorterNet[n]->TrainingStart();
@@ -1160,13 +1160,13 @@ void CModelSorter<type_t>::TrainingNet(void)
  }
  SYSTEM::PutMessage("Образы изображений загружены.");
  //дополняем набор до кратного размеру пакета
- size_t image_amount=TrainingImageSettings.size();
+ uint32_t image_amount=TrainingImageSettings.size();
  BATCH_AMOUNT=image_amount/BATCH_SIZE;
  if (BATCH_AMOUNT==0) BATCH_AMOUNT=1;
  if (image_amount%BATCH_SIZE!=0)
  {
-  size_t index=0;
-  for(size_t n=image_amount%BATCH_SIZE;n<BATCH_SIZE;n++,index++)
+  uint32_t index=0;
+  for(uint32_t n=image_amount%BATCH_SIZE;n<BATCH_SIZE;n++,index++)
   {
    TrainingImageSettingsIndex.push_back(TrainingImageSettingsIndex[index%image_amount]);
   }
@@ -1187,7 +1187,7 @@ void CModelSorter<type_t>::TrainingNet(void)
  //начинаем обучение
  Training();
  //отключаем обучение
- for(size_t n=0;n<SorterNet.size();n++) SorterNet[n]->TrainingStop();
+ for(uint32_t n=0;n<SorterNet.size();n++) SorterNet[n]->TrainingStop();
 
  SaveNet(NET_FILE_NAME);
  SaveTrainingParam(TRAINING_PARAM_FILE_NAME);
@@ -1203,14 +1203,14 @@ void CModelSorter<type_t>::Sorting(void)
 
  cTensor_Sorter_Output=CTensor<type_t>(1,GROUP_SIZE,1);
  CreateSorter();
- for(size_t n=0;n<SorterNet.size();n++)
+ for(uint32_t n=0;n<SorterNet.size();n++)
  {
   SorterNet[n]->Reset();
  }
  LoadNet(NET_FILE_NAME);
 
  SYSTEM::MakeDirectory("./Output");
- for(size_t n=0;n<GROUP_SIZE;n++)
+ for(uint32_t n=0;n<GROUP_SIZE;n++)
  {
   char path[STRING_BUFFER_SIZE];
   sprintf(path,"./Output/%i",static_cast<int>(n));
@@ -1222,20 +1222,20 @@ void CModelSorter<type_t>::Sorting(void)
  std::vector<std::string> file_list;
  SYSTEM::CreateFileList(path,file_list);
  //обрабатываем файлы
- size_t size=file_list.size();
- for(size_t n=0;n<size;n++)
+ uint32_t size=file_list.size();
+ for(uint32_t n=0;n<size;n++)
  {
   std::string &file_name=file_list[n];
   //проверяем расширение
-  size_t length=file_name.length();
+  uint32_t length=file_name.length();
   if (length<4) continue;
   if (file_name[length-4]!='.') continue;
   if (file_name[length-3]!='j' && file_name[length-3]!='J')  continue;
   if (file_name[length-2]!='p' && file_name[length-2]!='P') continue;
   if ((file_name[length-1]!='g' && file_name[length-1]!='G')) continue;
   //отправляем файл на обработку
-  size_t height;
-  size_t width;
+  uint32_t height;
+  uint32_t width;
   std::string name=path+"/"+file_name;
   std::vector<uint8_t> image;
   if (LoadJPG(name.c_str(),image,width,height)==false) continue;
@@ -1252,8 +1252,8 @@ void CModelSorter<type_t>::Sorting(void)
   {
    for(uint32_t x=0;x<IMAGE_WIDTH;x++)
    {
-    size_t xp=x*dx;
-    size_t yp=y*dy;
+    uint32_t xp=x*dx;
+    uint32_t yp=y*dy;
 
     uint32_t offset=(xp+yp*width);
     float r=img_ptr[offset*3+0];
@@ -1319,12 +1319,12 @@ void CModelSorter<type_t>::Sorting(void)
   //подаём изображение на вход сети
   SorterNet[0]->SetOutput(0,Image);
   //вычисляем сеть
-  for(size_t layer=0;layer<SorterNet.size();layer++) SorterNet[layer]->Forward();
+  for(uint32_t layer=0;layer<SorterNet.size();layer++) SorterNet[layer]->Forward();
   //вычисляем ошибку последнего слоя
   SorterNet[SorterNet.size()-1]->GetOutput(0,cTensor_Sorter_Output);
-  size_t min_output=0;
+  uint32_t min_output=0;
   type_t min_answer=fabs(1-cTensor_Sorter_Output.GetElement(0,0,0));
-  for(size_t n=0;n<cTensor_Sorter_Output.GetSizeY();n++)
+  for(uint32_t n=0;n<cTensor_Sorter_Output.GetSizeY();n++)
   {
    type_t answer=fabs(1-cTensor_Sorter_Output.GetElement(0,n,0));
    if (answer<min_answer)
@@ -1351,38 +1351,38 @@ double CModelSorter<type_t>::Check(void)
 {
  static const double TO_PERCENT=100;//перевод в проценты
  static std::vector<type_t> image=std::vector<type_t>(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
- size_t ok=0;//количество верных ответов сети
- size_t image_amount=CheckImageSettings.size();
- size_t batch=image_amount/BATCH_SIZE;
+ uint32_t ok=0;//количество верных ответов сети
+ uint32_t image_amount=CheckImageSettings.size();
+ uint32_t batch=image_amount/BATCH_SIZE;
  if (batch*BATCH_SIZE<CheckImageSettings.size()) batch++;
 
- size_t index=0;
- for(size_t n=0;n<batch;n++)
+ uint32_t index=0;
+ for(uint32_t n=0;n<batch;n++)
  {
   if (IsExit()==true) throw("Стоп");
   //подаём на вход сортировщика изображение
-  size_t check_index=index;
-  for(size_t b=0;b<BATCH_SIZE;b++,index++)
+  uint32_t check_index=index;
+  for(uint32_t b=0;b<BATCH_SIZE;b++,index++)
   {
    SImageSettings &sImageSettings=CheckImageSettings[index%image_amount];
-   size_t group=CheckImageStorage[sImageSettings.StorageImageIndex].Group;
+   uint32_t group=CheckImageStorage[sImageSettings.StorageImageIndex].Group;
    GetImage(sImageSettings,CheckImageStorage,image);
    SorterNet[0]->GetOutputTensor(b).CopyItemToDevice(&image[0],image.size());
   }
   //вычисляем сеть
-  for(size_t layer=0;layer<SorterNet.size();layer++) SorterNet[layer]->Forward();
+  for(uint32_t layer=0;layer<SorterNet.size();layer++) SorterNet[layer]->Forward();
   //получаем результат
-  for(size_t b=0;b<BATCH_SIZE;b++,check_index++)
+  for(uint32_t b=0;b<BATCH_SIZE;b++,check_index++)
   {
    if (check_index>=image_amount) break;
    SImageSettings &sImageSettings=CheckImageSettings[check_index%image_amount];
-   size_t group=CheckImageStorage[sImageSettings.StorageImageIndex].Group;
+   uint32_t group=CheckImageStorage[sImageSettings.StorageImageIndex].Group;
 
    SorterNet[SorterNet.size()-1]->GetOutput(b,cTensor_Sorter_Output);
    //определяем, куда сеть классифицирует этот результат
-   size_t answer_group=0;
+   uint32_t answer_group=0;
    type_t max_answer=cTensor_Sorter_Output.GetElement(0,0,0);
-   for(size_t m=0;m<cTensor_Sorter_Output.GetSizeY();m++)
+   for(uint32_t m=0;m<cTensor_Sorter_Output.GetSizeY();m++)
    {
     type_t answer=cTensor_Sorter_Output.GetElement(0,m,0);
     if (answer>max_answer)

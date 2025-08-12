@@ -182,7 +182,7 @@ void CModelVAE<type_t>::CreateDecoder_Kernel11(void)
 {
  DecoderNet.clear();
 
- size_t convert=CoderNet.size()-1;
+ uint32_t convert=CoderNet.size()-1;
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(4096,CoderNet[convert].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet[DecoderNet.size()-1]->GetOutputTensor(0).Print("Decoder output tensor",false);
@@ -273,7 +273,7 @@ void CModelVAE<type_t>::CreateDecoder_Kernel5(void)
 {
  DecoderNet.clear();
 
- size_t convert=CoderNet.size()-1;
+ uint32_t convert=CoderNet.size()-1;
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(4096,CoderNet[convert].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet[DecoderNet.size()-1]->GetOutputTensor(0).Print("Decoder output tensor",false);
@@ -366,7 +366,7 @@ void CModelVAE<type_t>::CreateDecoder_Kernel7(void)
 {
  DecoderNet.clear();
 
- size_t convert=CoderNet.size()-1;
+ uint32_t convert=CoderNet.size()-1;
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(4096,CoderNet[convert].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet[DecoderNet.size()-1]->GetOutputTensor(0).Print("Decoder output tensor",false);
@@ -457,7 +457,7 @@ void CModelVAE<type_t>::CreateDecoder_Kernel3(void)
 {
  DecoderNet.clear();
 
- size_t convert=CoderNet.size()-1;
+ uint32_t convert=CoderNet.size()-1;
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(4096,CoderNet[convert].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet[DecoderNet.size()-1]->GetOutputTensor(0).Print("Decoder output tensor",false);

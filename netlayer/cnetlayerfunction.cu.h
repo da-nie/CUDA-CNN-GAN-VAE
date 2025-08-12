@@ -43,7 +43,7 @@ class CNetLayerFunction:public INetLayer<type_t>
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  size_t BatchSize;///<размер пакета для обучения
+  uint32_t BatchSize;///<размер пакета для обучения
 
   NNeuron::NEURON_FUNCTION NeuronFunction;///<функция активации нейронов слоя
 
@@ -52,18 +52,18 @@ class CNetLayerFunction:public INetLayer<type_t>
   std::vector<CTensor<type_t>> cTensor_Delta_Array;///<тензоры дельты слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerFunction(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);
+  CNetLayerFunction(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
   CNetLayerFunction(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerFunction();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);///<создать слой
+  void Create(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию весов и сдвигов
-  void SetOutput(size_t unit_index,CTensor<type_t> &output);///<задать выход слоя
-  void GetOutput(size_t unit_index,CTensor<type_t> &output);///<получить выход слоя
+  void SetOutput(uint32_t unit_index,CTensor<type_t> &output);///<задать выход слоя
+  void GetOutput(uint32_t unit_index,CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
-  CTensor<type_t>& GetOutputTensor(size_t unit_index);///<получить ссылку на выходной тензор
+  CTensor<type_t>& GetOutputTensor(uint32_t unit_index);///<получить ссылку на выходной тензор
   void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
   bool Load(IDataStream *iDataStream_Ptr,bool check_size);///<загрузить параметры слоя
@@ -75,9 +75,9 @@ class CNetLayerFunction:public INetLayer<type_t>
   void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
-  CTensor<type_t>& GetDeltaTensor(size_t unit_index);///<получить ссылку на тензор дельты слоя
+  CTensor<type_t>& GetDeltaTensor(uint32_t unit_index);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(size_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
+  void SetOutputError(uint32_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
 
@@ -93,7 +93,7 @@ class CNetLayerFunction:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerFunction<type_t>::CNetLayerFunction(NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+CNetLayerFunction<type_t>::CNetLayerFunction(NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  Create(neuron_function,prev_layer_ptr,batch_size);
 }
@@ -129,7 +129,7 @@ CNetLayerFunction<type_t>::~CNetLayerFunction()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerFunction<type_t>::Create(NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+void CNetLayerFunction<type_t>::Create(NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
@@ -144,7 +144,7 @@ void CNetLayerFunction<type_t>::Create(NNeuron::NEURON_FUNCTION neuron_function,
  else
  {
   cTensor_H_Array.resize(BatchSize);
-  for(size_t n=0;n<BatchSize;n++) cTensor_H_Array[n]=PrevLayerPtr->GetOutputTensor(n);
+  for(uint32_t n=0;n<BatchSize;n++) cTensor_H_Array[n]=PrevLayerPtr->GetOutputTensor(n);
   //задаём предшествующему слою, что мы его последующий слой
   prev_layer_ptr->SetNextLayerPtr(this);
  }
@@ -164,7 +164,7 @@ void CNetLayerFunction<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerFunction<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerFunction<type_t>::SetOutput(uint32_t unit_index,CTensor<type_t> &output)
 {
  cTensor_H_Array[unit_index].CopyItem(output);
 }
@@ -175,11 +175,11 @@ void CNetLayerFunction<type_t>::SetOutput(size_t unit_index,CTensor<type_t> &out
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerFunction<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output)
+void CNetLayerFunction<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerFunction<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
- if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerFunction<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
- if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerFunction<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ if (output.GetSizeX()!=cTensor_H_Array[unit_index].GetSizeX()) throw("void CNetLayerFunction<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ if (output.GetSizeY()!=cTensor_H_Array[unit_index].GetSizeY()) throw("void CNetLayerFunction<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ if (output.GetSizeZ()!=cTensor_H_Array[unit_index].GetSizeZ()) throw("void CNetLayerFunction<type_t>::GetOutput(uint32_t unit_index,CTensor<type_t> &output) - ошибка размерности матрицы output!");
  output=cTensor_H_Array[unit_index];
 }
 //----------------------------------------------------------------------------------------------------
@@ -188,7 +188,7 @@ void CNetLayerFunction<type_t>::GetOutput(size_t unit_index,CTensor<type_t> &out
 template<class type_t>
 void CNetLayerFunction<type_t>::Forward(void)
 {
- for(size_t n=0;n<BatchSize;n++)
+ for(uint32_t n=0;n<BatchSize;n++)
  {
   //применим функцию активации
   if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplySigmoid(cTensor_H_Array[n],PrevLayerPtr->GetOutputTensor(n));
@@ -206,7 +206,7 @@ void CNetLayerFunction<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerFunction<type_t>::GetOutputTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerFunction<type_t>::GetOutputTensor(uint32_t unit_index)
 {
  return(cTensor_H_Array[unit_index]);
 }
@@ -276,7 +276,7 @@ template<class type_t>
 void CNetLayerFunction<type_t>::TrainingStart(void)
 {
  cTensor_Delta_Array.resize(BatchSize);
- for(size_t n=0;n<BatchSize;n++) cTensor_Delta_Array[n]=cTensor_H_Array[n];
+ for(uint32_t n=0;n<BatchSize;n++) cTensor_Delta_Array[n]=cTensor_H_Array[n];
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -299,7 +299,7 @@ void CNetLayerFunction<type_t>::TrainingBackward(bool create_delta_weight)
  if (PrevLayerPtr!=NULL)//это не входной слой
  {
   //задаём ошибку предыдущего слоя
-  for(size_t n=0;n<BatchSize;n++) PrevLayerPtr->SetOutputError(n,cTensor_Delta_Array[n]);
+  for(uint32_t n=0;n<BatchSize;n++) PrevLayerPtr->SetOutputError(n,cTensor_Delta_Array[n]);
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -325,7 +325,7 @@ void CNetLayerFunction<type_t>::TrainingUpdateWeight(double speed,double iterati
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerFunction<type_t>::GetDeltaTensor(size_t unit_index)
+CTensor<type_t>& CNetLayerFunction<type_t>::GetDeltaTensor(uint32_t unit_index)
 {
  return(cTensor_Delta_Array[unit_index]);
 }
@@ -335,7 +335,7 @@ CTensor<type_t>& CNetLayerFunction<type_t>::GetDeltaTensor(size_t unit_index)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerFunction<type_t>::SetOutputError(size_t unit_index,CTensor<type_t>& error)
+void CNetLayerFunction<type_t>::SetOutputError(uint32_t unit_index,CTensor<type_t>& error)
 {
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(cTensor_Delta_Array[unit_index],PrevLayerPtr->GetOutputTensor(unit_index));
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyDifferentialReLU(cTensor_Delta_Array[unit_index],PrevLayerPtr->GetOutputTensor(unit_index));

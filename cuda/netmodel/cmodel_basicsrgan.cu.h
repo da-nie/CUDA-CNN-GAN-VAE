@@ -38,19 +38,19 @@ class CModelBasicSR_GAN:public CModelMain<type_t>
  protected:
   //-структуры------------------------------------------------------------------------------------------
   //-переменные-----------------------------------------------------------------------------------------
-  size_t INPUT_IMAGE_WIDTH;///<ширина входных изображений (сниженное разрешение)
-  size_t INPUT_IMAGE_HEIGHT;///<высота входных изображений (сниженное разрешение)
-  size_t INPUT_IMAGE_DEPTH;///<глубина входных изображений (сниженное разрешение)
+  uint32_t INPUT_IMAGE_WIDTH;///<ширина входных изображений (сниженное разрешение)
+  uint32_t INPUT_IMAGE_HEIGHT;///<высота входных изображений (сниженное разрешение)
+  uint32_t INPUT_IMAGE_DEPTH;///<глубина входных изображений (сниженное разрешение)
 
-  size_t OUTPUT_IMAGE_WIDTH;///<ширина выходных изображений (высокое разрешение)
-  size_t OUTPUT_IMAGE_HEIGHT;///<высота выходных изображений (высокое разрешение)
-  size_t OUTPUT_IMAGE_DEPTH;///<глубина выходных изображений (высокое разрешение)
+  uint32_t OUTPUT_IMAGE_WIDTH;///<ширина выходных изображений (высокое разрешение)
+  uint32_t OUTPUT_IMAGE_HEIGHT;///<высота выходных изображений (высокое разрешение)
+  uint32_t OUTPUT_IMAGE_DEPTH;///<глубина выходных изображений (высокое разрешение)
 
-  size_t BATCH_AMOUNT;///<количество пакетов
-  size_t BATCH_SIZE;///<размер пакета
+  uint32_t BATCH_AMOUNT;///<количество пакетов
+  uint32_t BATCH_SIZE;///<размер пакета
 
-  size_t ITERATION_OF_SAVE_IMAGE;///<какую итерацию сохранять изображения
-  size_t ITERATION_OF_SAVE_NET;///<какую итерацию сохранять сеть
+  uint32_t ITERATION_OF_SAVE_IMAGE;///<какую итерацию сохранять изображения
+  uint32_t ITERATION_OF_SAVE_NET;///<какую итерацию сохранять сеть
 
   double SPEED;///<скорость обучения
 
@@ -83,7 +83,7 @@ class CModelBasicSR_GAN:public CModelMain<type_t>
   using CModelMain<type_t>::SaveImage;
   using CModelMain<type_t>::SpeedTest;
 
-  size_t Iteration;///<итерация
+  uint32_t Iteration;///<итерация
 
  public:
   //-конструктор----------------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ class CModelBasicSR_GAN:public CModelMain<type_t>
   void LoadTrainingParam(void);///<загрузить параметры обучения
   void SaveTrainingParam(void);///<сохранить параметры обучения
   void CreateHiResImage(CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_Image);///<создать изображение высокого разрешения
-  void TrainingSRGAN(size_t mini_batch_index,double &cost);///<обучение
+  void TrainingSRGAN(uint32_t mini_batch_index,double &cost);///<обучение
   void SaveRandomImage(void);///<сохранить случайное изображение
   void SaveKitImage(void);///<сохранить изображение из набора
   void Training(void);///<обучение нейросети
@@ -203,7 +203,7 @@ void CModelBasicSR_GAN<type_t>::CreateHiResImage(CTensor<type_t> &cTensor_Input,
  if (IsExit()==true) throw("Стоп");
  Net[0]->SetOutput(cTensor_Input);//входной вектор
  //выполняем прямой проход по сети
- for(size_t layer=0;layer<Net.size();layer++) Net[layer]->Forward();
+ for(uint32_t layer=0;layer<Net.size();layer++) Net[layer]->Forward();
  //получаем ответ сети
  cTensor_Image=Net[Net.size()-1]->GetOutputTensor();
 }
@@ -212,19 +212,19 @@ void CModelBasicSR_GAN<type_t>::CreateHiResImage(CTensor<type_t> &cTensor_Input,
 //обучение
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelBasicSR_GAN<type_t>::TrainingSRGAN(size_t mini_batch_index,double &cost)
+void CModelBasicSR_GAN<type_t>::TrainingSRGAN(uint32_t mini_batch_index,double &cost)
 {
  char str[STRING_BUFFER_SIZE];
 
- for(size_t b=0;b<BATCH_SIZE;b++)
+ for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
   if (IsExit()==true) throw("Стоп");
   //задаём выходное изображение
   {
-   size_t index=RealImageIndex[b+mini_batch_index*BATCH_SIZE];
+   uint32_t index=RealImageIndex[b+mini_batch_index*BATCH_SIZE];
 
    CTimeStamp cTimeStamp("Задание изображения:");
-   size_t size=RealLoResImage[index].size();
+   uint32_t size=RealLoResImage[index].size();
    type_t *ptr=&RealLoResImage[index][0];
    Net[0]->GetOutputTensor().CopyItemToDevice(ptr,size);
    ptr=&RealHiResImage[index][0];
@@ -235,18 +235,18 @@ void CModelBasicSR_GAN<type_t>::TrainingSRGAN(size_t mini_batch_index,double &co
   //вычисляем сеть
   {
    CTimeStamp cTimeStamp("Вычисление сети:");
-   for(size_t layer=0;layer<Net.size();layer++) Net[layer]->Forward();
+   for(uint32_t layer=0;layer<Net.size();layer++) Net[layer]->Forward();
   }
 
   {
    CTimeStamp cTimeStamp("Вычисление ошибки:");
    CTensorMath<type_t>::Sub(cTensor_Error,Net[Net.size()-1]->GetOutputTensor(),cTensor_Image);
    cTensor_Error.CopyFromDevice();
-   for(size_t x=0;x<cTensor_Error.GetSizeX();x++)
+   for(uint32_t x=0;x<cTensor_Error.GetSizeX();x++)
    {
-    for(size_t y=0;y<cTensor_Error.GetSizeY();y++)
+    for(uint32_t y=0;y<cTensor_Error.GetSizeY();y++)
     {
-     for(size_t z=0;z<cTensor_Error.GetSizeZ();z++)
+     for(uint32_t z=0;z<cTensor_Error.GetSizeZ();z++)
      {
       type_t c=cTensor_Error.GetElement(z,y,x);
       cost+=c*c;
@@ -264,7 +264,7 @@ void CModelBasicSR_GAN<type_t>::TrainingSRGAN(size_t mini_batch_index,double &co
   //выполняем вычисление весов
   {
    CTimeStamp cTimeStamp("Обучение:");
-   for(size_t m=0,n=Net.size()-1;m<Net.size();m++,n--) Net[n]->TrainingBackward();
+   for(uint32_t m=0,n=Net.size()-1;m<Net.size();m++,n--) Net[n]->TrainingBackward();
   }
 
  }
@@ -275,13 +275,13 @@ void CModelBasicSR_GAN<type_t>::TrainingSRGAN(size_t mini_batch_index,double &co
 template<class type_t>
 void CModelBasicSR_GAN<type_t>::SaveRandomImage(void)
 {
- static size_t counter=0;
+ static uint32_t counter=0;
 
  CTensor<type_t> cTensor;
  CTensor<type_t> cTensor_Input=CTensor<type_t>(INPUT_IMAGE_DEPTH,INPUT_IMAGE_HEIGHT,INPUT_IMAGE_WIDTH);
 
  char str[STRING_BUFFER_SIZE];
- for(size_t n=0;n<BATCH_SIZE*0+1;n++)
+ for(uint32_t n=0;n<BATCH_SIZE*0+1;n++)
  {
   type_t *ptr=&RealLoResImage[n][0];
   cTensor_Input.CopyItemToDevice(ptr,RealLoResImage[n].size());
@@ -303,11 +303,11 @@ void CModelBasicSR_GAN<type_t>::SaveKitImage(void)
  CTensor<type_t> cTensor_Input=CTensor<type_t>(INPUT_IMAGE_DEPTH,INPUT_IMAGE_HEIGHT,INPUT_IMAGE_WIDTH);
 
  char str[STRING_BUFFER_SIZE];
- for(size_t n=0;n<BATCH_SIZE;n++)
+ for(uint32_t n=0;n<BATCH_SIZE;n++)
  {
   sprintf(str,"Test/real%03i.tga",static_cast<int>(n));
   type_t *ptr=&RealLoResImage[RealImageIndex[n]][0];
-  size_t size=RealLoResImage[RealImageIndex[n]].size();
+  uint32_t size=RealLoResImage[RealImageIndex[n]].size();
   cTensor_Input.CopyItemToHost(ptr,size);
   SaveImage(cTensor_Input,str,INPUT_IMAGE_WIDTH,INPUT_IMAGE_HEIGHT,INPUT_IMAGE_DEPTH);
  }
@@ -322,9 +322,9 @@ void CModelBasicSR_GAN<type_t>::Training(void)
  char str_b[STRING_BUFFER_SIZE];
 
  const double speed=SPEED;
- size_t max_iteration=1000000000;//максимальное количество итераций обучения
+ uint32_t max_iteration=1000000000;//максимальное количество итераций обучения
 
- size_t image_amount=RealLoResImage.size();
+ uint32_t image_amount=RealLoResImage.size();
 
  std::string str;
 
@@ -368,13 +368,13 @@ void CModelBasicSR_GAN<type_t>::Training(void)
     cCUDATimeSpent.Start();
 	//обучаем
     double cost=0;
-    for(size_t n=0;n<Net.size();n++) Net[n]->TrainingResetDeltaWeight();
+    for(uint32_t n=0;n<Net.size();n++) Net[n]->TrainingResetDeltaWeight();
 
     TrainingSRGAN(batch,cost);
     //корректируем веса
     {
      CTimeStamp cTimeStamp("Обновление весов:");
-     for(size_t n=0;n<Net.size();n++)
+     for(uint32_t n=0;n<Net.size();n++)
      {
       Net[n]->TrainingUpdateWeight(speed,Iteration+1);
      }
@@ -409,12 +409,12 @@ void CModelBasicSR_GAN<type_t>::TrainingNet(bool mnist)
  cTensor_Image=CTensor<type_t>(OUTPUT_IMAGE_DEPTH,OUTPUT_IMAGE_HEIGHT,OUTPUT_IMAGE_WIDTH);
  cTensor_Error=CTensor<type_t>(OUTPUT_IMAGE_DEPTH,OUTPUT_IMAGE_HEIGHT,OUTPUT_IMAGE_WIDTH);
 
- for(size_t n=0;n<Net.size();n++) Net[n]->Reset();
+ for(uint32_t n=0;n<Net.size();n++) Net[n]->Reset();
 
  LoadNet();
 
  //включаем обучение
- for(size_t n=0;n<Net.size();n++)
+ for(uint32_t n=0;n<Net.size();n++)
  {
   Net[n]->TrainingModeAdam();
   //Net[n]->TrainingModeGradient();
@@ -430,13 +430,13 @@ void CModelBasicSR_GAN<type_t>::TrainingNet(bool mnist)
  }
  SYSTEM::PutMessage("Образы изображений загружены.");
  //дополняем набор до кратного размеру пакета
- size_t image_amount=RealHiResImage.size();
+ uint32_t image_amount=RealHiResImage.size();
  BATCH_AMOUNT=image_amount/BATCH_SIZE;
  if (BATCH_AMOUNT==0) BATCH_AMOUNT=1;
  if (image_amount%BATCH_SIZE!=0)
  {
-  size_t index=0;
-  for(size_t n=image_amount%BATCH_SIZE;n<BATCH_SIZE;n++,index++)
+  uint32_t index=0;
+  for(uint32_t n=image_amount%BATCH_SIZE;n<BATCH_SIZE;n++,index++)
   {
    RealImageIndex.push_back(RealImageIndex[index%image_amount]);
   }
@@ -454,7 +454,7 @@ void CModelBasicSR_GAN<type_t>::TrainingNet(bool mnist)
  //запускаем обучение
  Training();
  //отключаем обучение
- for(size_t n=0;n<Net.size();n++) Net[n]->TrainingStop();
+ for(uint32_t n=0;n<Net.size();n++) Net[n]->TrainingStop();
 
  SaveNet();
 }

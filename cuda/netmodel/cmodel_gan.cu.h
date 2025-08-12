@@ -140,7 +140,7 @@ void CModelGAN<type_t>::CreateGenerator(void)
  GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0).Print("Output tensor",false);
 
- size_t convert=GeneratorNet.size()-1;
+ uint32_t convert=GeneratorNet.size()-1;
  GeneratorNet[convert]->GetOutputTensor(0).ReinterpretSize(64,7,7);
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0).Print("Output tensor",false);
 
@@ -193,7 +193,7 @@ void CModelGAN<type_t>::CreateGenerator(void)
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0).Print("Output tensor",false);
 */
  /*
- size_t convert=GeneratorNet.size()-1;
+ uint32_t convert=GeneratorNet.size()-1;
  GeneratorNet[convert]->GetOutputTensor(0).ReinterpretSize(NOISE_LAYER_SIDE_Z,240,240);
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0).Print("Output tensor",false);
 
@@ -209,7 +209,7 @@ void CModelGAN<type_t>::CreateGenerator(void)
  GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0).Print("Output tensor",false);
 
- size_t convert=GeneratorNet.size()-1;
+ uint32_t convert=GeneratorNet.size()-1;
  GeneratorNet[convert]->GetOutputTensor(0).ReinterpretSize(NOISE_LAYER_SIDE_Z,NOISE_LAYER_SIDE_Y*8,NOISE_LAYER_SIDE_X*8);
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0).Print("Output tensor",false);
  //свёрточные слои
@@ -261,7 +261,7 @@ s
  GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0).Print("Output tensor",false);
  //4
- size_t convert=GeneratorNet.size()-1;
+ uint32_t convert=GeneratorNet.size()-1;
  GeneratorNet[convert]->GetOutputTensor(0).ReinterpretSize(512,3,4);
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0).Print("Output tensor",false);
  //5
@@ -519,8 +519,8 @@ void CModelGAN<type_t>::CreateFrameForMovie(void)
 
  SYSTEM::MakeDirectory("Frame");
 
- size_t index=0;
- size_t frame=0;
+ uint32_t index=0;
+ uint32_t frame=0;
  char str[255];
 
  memset(last_image_ptr,fone_width*fone_height*sizeof(uint32_t),0);
@@ -534,14 +534,14 @@ void CModelGAN<type_t>::CreateFrameForMovie(void)
   uint32_t *image_ptr=reinterpret_cast<uint32_t*>(LoadTGAFromFile(str,image_width,image_height));
   if (image_ptr==NULL) break;
 
-  size_t left_x=(fone_width-image_width)/2;
-  size_t top_y=(fone_height-image_height)/2;
+  uint32_t left_x=(fone_width-image_width)/2;
+  uint32_t top_y=(fone_height-image_height)/2;
   //копируем изображение
-  for(size_t f=0;f<9;f++,frame++)
+  for(uint32_t f=0;f<9;f++,frame++)
   {
-   for(size_t y=0;y<image_height;y++)
+   for(uint32_t y=0;y<image_height;y++)
    {
-    for(size_t x=0;x<image_width;x++)
+    for(uint32_t x=0;x<image_width;x++)
     {
      uint32_t offset_image=x+y*image_width;
      uint32_t offset_fone=(x+left_x)+(y+top_y)*fone_width;
@@ -596,7 +596,7 @@ void CModelGAN<type_t>::CreateFrameForMovie(void)
   index++;
  }
 
-  for(size_t f=0;f<500;f++,frame++)
+  for(uint32_t f=0;f<500;f++,frame++)
   {
    sprintf(str,"Frame/frame%06i.tga",static_cast<int>(frame));
    SaveTGA(str,fone_width,fone_height,reinterpret_cast<uint8_t*>(fone_ptr));
