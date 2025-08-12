@@ -100,7 +100,6 @@ class CModelBasicGAN:public CModelMain<type_t>
   void SaveNet(void);///<сохранить сети
   void LoadTrainingParam(void);///<загрузить параметры обучения
   void SaveTrainingParam(void);///<сохранить параметры обучения
-  void CreateFakeImage(CTensor<type_t> &cTensor_Generator_Image);///<создать мнимое изображение с помощью генератора
   void TrainingDiscriminatorFakeAndGenerator(double &disc_cost,double &gen_cost);///<обучение дискриминатора и генератора на фальшивом изображения
   void TrainingDiscriminatorFake(double &disc_cost);///<обучение дискриминатора на фальшивом изображения
   void TrainingDiscriminatorReal(size_t mini_batch_index,double &cost);///<обучение дискриминатора на настоящих изображениях
@@ -221,26 +220,6 @@ void CModelBasicGAN<type_t>::SaveTrainingParam(void)
  std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("gen_training_param.net",true));
  SaveNetLayersTrainingParam(iDataStream_Gen_Ptr.get(),GeneratorNet,Iteration,false);
 }
-
-//----------------------------------------------------------------------------------------------------
-//создать мнимое изображение с помощью генератора
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CModelBasicGAN<type_t>::CreateFakeImage(CTensor<type_t> &cTensor_Generator_Image)
-{
- static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
- if (IsExit()==true) throw("Стоп");
- for(size_t n=0;n<BATCH_SIZE;n++)
- {
-  CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,-1,1);
-  GeneratorNet[0]->SetOutput(n,cTensor_Generator_Input);//входной вектор
- }
- //выполняем прямой проход по сети
- for(size_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
- //получаем ответ сети
- cTensor_Generator_Image=GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0);
-}
-
 //----------------------------------------------------------------------------------------------------
 //обучение дискриминатора и генератора на фальшивом наборе
 //----------------------------------------------------------------------------------------------------
@@ -550,20 +529,26 @@ void CModelBasicGAN<type_t>::TrainingGenerator(double &cost,double &middle_answe
 template<class type_t>
 void CModelBasicGAN<type_t>::SaveRandomImage(void)
 {
- static size_t counter=0;
-
- char str[STRING_BUFFER_SIZE];
+ static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
  for(size_t n=0;n<BATCH_SIZE;n++)
  {
-  counter=0;
-  CreateFakeImage(cTensor_Generator_Output);
-  sprintf(str,"Test/test%05i-%03i.tga",static_cast<int>(counter),static_cast<int>(n));
+  CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,-1,1);
+  GeneratorNet[0]->SetOutput(n,cTensor_Generator_Input);//входной вектор
+ }
+ //выполняем прямой проход по сети
+ for(size_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
+ char str[STRING_BUFFER_SIZE];
+
+ for(size_t n=0;n<BATCH_SIZE;n++)
+ {
+  static CTensor<type_t> &cTensor_Generator_Output=GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(n);
+
+  sprintf(str,"Test/test-%03i.tga",static_cast<int>(n));
   SaveImage(cTensor_Generator_Output,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   if (n==0) SaveImage(cTensor_Generator_Output,"Test/test-current.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
-  sprintf(str,"Test/test%03i.txt",n);
-  cTensor_Generator_Output.PrintToFile(str,"Изображение",true);
+  //sprintf(str,"Test/test%03i.txt",n);
+  //cTensor_Generator_Output.PrintToFile(str,"Изображение",true);
  }
- counter++;
 }
 //----------------------------------------------------------------------------------------------------
 //сохранить изображение из набора

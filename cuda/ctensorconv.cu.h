@@ -177,7 +177,8 @@ struct STensorKernel_ForwardConvolution_Image
 
   return(sTensorKernel_Image.GetElement(sz,sy,sx));
  }
- __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
+
+ __forceinline__ __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
