@@ -127,32 +127,8 @@ struct STensorKernel_ForwardConvolution_Image
   return(NULL);
  }
 
- __forceinline__ __host__ __device__ STensorKernel_ForwardConvolution_Image<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __forceinline__ __host__ __device__ void SelectZ(size_t z)///<выбрать слой Z
  {
-  if (z>=Size_Z) z=0;
-  STensorKernel_ForwardConvolution_Image<type_t> sub_tensor;
-  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Z=1;
-  sub_tensor.Dst_X=Dst_X;
-  sub_tensor.Dst_Y=Dst_Y;
-  sub_tensor.Basic_Size_X=Basic_Size_X;
-  sub_tensor.Basic_Size_Y=Basic_Size_Y;
-  sub_tensor.Conv_Kernel_X=Conv_Kernel_X;
-  sub_tensor.Conv_Kernel_Y=Conv_Kernel_Y;
-  sub_tensor.Conv_Stride_X=Conv_Stride_X;
-  sub_tensor.Conv_Stride_Y=Conv_Stride_Y;
-  sub_tensor.Conv_Padding_X=Conv_Padding_X;
-  sub_tensor.Conv_Padding_Y=Conv_Padding_Y;
-  sub_tensor.sTensorKernel_Image=sTensorKernel_Image;
-  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  return(sub_tensor);
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
@@ -200,6 +176,16 @@ struct STensorKernel_ForwardConvolution_Image
 
   sTensorKernel_Image.SetElement(sz,sy,sx,value);
  }
+
+ __forceinline__ __host__ __device__ type_t GetElement(size_t y,size_t x)
+ {
+  return(GetElement(0,y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(size_t y,size_t x,type_t value)
+ {
+  SetElement(0,y,x,value);
+ }
+
 
  __forceinline__ __host__ __device__ size_t GetSizeX(void) const
  {
@@ -354,27 +340,8 @@ struct STensorKernel_BackwardConvolution_Kernel
   return(NULL);
  }
 
- __forceinline__ __host__ __device__ STensorKernel_BackwardConvolution_Kernel<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1
+ __forceinline__ __host__ __device__ void SelectZ(size_t z)///<выбрать слой Z
  {
-  STensorKernel_BackwardConvolution_Kernel<type_t> sub_tensor;
-
-  sub_tensor.sTensorKernel_Kernel=sTensorKernel_Kernel;
-
-  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Z=1;
-  sub_tensor.Kernel_X=Kernel_X;
-  sub_tensor.Kernel_Y=Kernel_Y;
-  sub_tensor.Kernel_Z=Kernel_Z;
-  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Kernel_Amount=Kernel_Amount;
-
-  //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  return(sub_tensor);
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
@@ -394,8 +361,9 @@ struct STensorKernel_BackwardConvolution_Kernel
   ky=Kernel_Y-1-ky;
   kx=Kernel_X-1-kx;
 
-  return(sTensorKernel_Kernel.GetElement(0,ki,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y));
+  return(sTensorKernel_Kernel.GetElement(ki,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y));
  }
+
  __forceinline__ __host__ __device__ void SetElement(size_t z,size_t y,size_t x,type_t value)
  {
   int32_t sx=x+Offset_X;
@@ -412,7 +380,16 @@ struct STensorKernel_BackwardConvolution_Kernel
   ky=Kernel_Y-1-ky;
   kx=Kernel_X-1-kx;
 
-  sTensorKernel_Kernel.SetElement(0,sy,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y,value);
+  sTensorKernel_Kernel.SetElement(sy,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y,value);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(size_t y,size_t x)
+ {
+  return(GetElement(0,y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(size_t y,size_t x,type_t value)
+ {
+  SetElement(0,y,x,value);
  }
 
  __forceinline__ __host__ __device__ size_t GetSizeX(void) const
@@ -446,12 +423,13 @@ struct STensorKernel_BackwardConvolution_Kernel
  __host__ __device__ void Set(const CTensor<type_t> &cTensor_Kernel,size_t kernel_x,size_t kernel_y,size_t kernel_z,size_t kernel_amount)
  {
   sTensorKernel_Kernel.Set(cTensor_Kernel);
+  sTensorKernel_Kernel.SelectZ(0);
 
   Kernel_X=kernel_x;
   Kernel_Y=kernel_y;
   Kernel_Z=kernel_z;
 
-  Size_Z=1;;
+  Size_Z=1;
   Size_Y=kernel_z;
   Size_X=kernel_x*kernel_y*kernel_amount;
 
@@ -503,32 +481,8 @@ struct STensorKernel_BackwardConvolution_Delta
   return(NULL);
  }
 
- __forceinline__ __host__ __device__ STensorKernel_BackwardConvolution_Delta<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __forceinline__ __host__ __device__ void SelectZ(size_t z)///<выбрать слой Z
  {
-  if (z>=Size_Z) z=0;
-  STensorKernel_BackwardConvolution_Delta<type_t> sub_tensor;
-  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Z=1;
-  sub_tensor.Dst_X=Dst_X;
-  sub_tensor.Dst_Y=Dst_Y;
-  sub_tensor.Basic_Size_X=Basic_Size_X;
-  sub_tensor.Basic_Size_Y=Basic_Size_Y;
-  sub_tensor.Conv_Kernel_X=Conv_Kernel_X;
-  sub_tensor.Conv_Kernel_Y=Conv_Kernel_Y;
-  sub_tensor.Conv_Stride_X=Conv_Stride_X;
-  sub_tensor.Conv_Stride_Y=Conv_Stride_Y;
-  sub_tensor.Conv_Padding_X=Conv_Padding_X;
-  sub_tensor.Conv_Padding_Y=Conv_Padding_Y;
-  sub_tensor.sTensorKernel_Delta=sTensorKernel_Delta;
-  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  return(sub_tensor);
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
@@ -589,6 +543,15 @@ struct STensorKernel_BackwardConvolution_Delta
   if ((sy!=sy_s*Conv_Stride_Y) || (sx!=sx_s*Conv_Stride_X)) value=0;
 
   sTensorKernel_Delta.SetElement(sz,sy_s,sx_s,value);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(size_t y,size_t x)
+ {
+  return(GetElement(0,y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(size_t y,size_t x,type_t value)
+ {
+  SetElement(0,y,x,value);
  }
 
  __forceinline__ __host__ __device__ size_t GetSizeX(void) const
@@ -739,33 +702,8 @@ struct STensorKernel_DeltaWeightAndBias_Image
   return(NULL);
  }
 
- __forceinline__ __host__ __device__ STensorKernel_DeltaWeightAndBias_Image<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __forceinline__ __host__ __device__ void SelectZ(size_t z)///<выбрать слой Z
  {
-  if (z>=Size_Z) z=0;
-  STensorKernel_DeltaWeightAndBias_Image<type_t> sub_tensor;
-  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Z=1;
-  sub_tensor.Dst_X=Dst_X;
-  sub_tensor.Dst_Y=Dst_Y;
-  sub_tensor.Input_Z=Input_Z;
-  sub_tensor.Basic_Size_X=Basic_Size_X;
-  sub_tensor.Basic_Size_Y=Basic_Size_Y;
-  sub_tensor.Conv_Kernel_X=Conv_Kernel_X;
-  sub_tensor.Conv_Kernel_Y=Conv_Kernel_Y;
-  sub_tensor.Conv_Stride_X=Conv_Stride_X;
-  sub_tensor.Conv_Stride_Y=Conv_Stride_Y;
-  sub_tensor.Conv_Padding_X=Conv_Padding_X;
-  sub_tensor.Conv_Padding_Y=Conv_Padding_Y;
-  sub_tensor.sTensorKernel_Image=sTensorKernel_Image;
-  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  return(sub_tensor);
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
@@ -811,6 +749,15 @@ struct STensorKernel_DeltaWeightAndBias_Image
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
 
   sTensorKernel_Image.SetElement(sz,sy,sx,value);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(size_t y,size_t x)
+ {
+  return(GetElement(0,y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(size_t y,size_t x,type_t value)
+ {
+  return(SetElement(0,y,x,value));
  }
 
  __forceinline__ __host__ __device__ size_t GetSizeX(void) const
@@ -903,27 +850,8 @@ struct STensorKernel_DeltaWeightAndBias_Delta
   return(NULL);
  }
 
- __forceinline__ __host__ __device__ STensorKernel_DeltaWeightAndBias_Delta<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1 (x,y - координаты блока)
+ __forceinline__ __host__ __device__ void SelectZ(size_t z)///<выбрать слой Z
  {
-  if (z>=Size_Z) z=0;
-  STensorKernel_DeltaWeightAndBias_Delta<type_t> sub_tensor;
-  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Z=1;
-  sub_tensor.sTensorKernel_Delta=sTensorKernel_Delta;
-  sub_tensor.Offset_X=Offset_X+x*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Offset_Y=Offset_Y+y*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  sub_tensor.Stride_X=Stride_X;
-  sub_tensor.Stride_Y=Stride_Y;
-  sub_tensor.NewDelta_X=NewDelta_X;
-  sub_tensor.NewDelta_Y=NewDelta_Y;
-
-  //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  return(sub_tensor);
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
@@ -952,6 +880,15 @@ struct STensorKernel_DeltaWeightAndBias_Delta
   int32_t dx_s=dx/Stride_X;
   int32_t dy_s=dy/Stride_Y;
   if (dx==dx_s*Stride_X && dy==dy_s*Stride_Y) sTensorKernel_Delta.SetElement(sy,dy_s,dx_s,value);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(size_t y,size_t x)
+ {
+  return(GetElement(0,y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(size_t y,size_t x,type_t value)
+ {
+  return(SetElement(0,y,x,value));
  }
 
  __forceinline__ __host__ __device__ size_t GetSizeX(void) const

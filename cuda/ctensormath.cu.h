@@ -119,6 +119,7 @@ struct STensorKernel
  size_t StrideX;///<строка по X
  size_t StrideZ;///<размер блока по Z
  type_t *TensorData_Ptr;///<указатель на данные тензора на стороне GPU
+ type_t *TensorData_Z_Ptr;///<указатель на данные тензора на стороне GPU выбранного слоя Z
 
  __host__ __device__ STensorKernel(void)///<конструктор
  {
@@ -133,23 +134,20 @@ struct STensorKernel
   return(&TensorData_Ptr[z*StrideZ]);
  }
 
- __forceinline__ __host__ __device__ STensorKernel<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1
+ __forceinline__ __host__ __device__ void SelectZ(size_t z)///<выбрать слой Z
  {
-  STensorKernel<type_t> sub_tensor;
+  TensorData_Z_Ptr=TensorData_Ptr+z*StrideZ;
+ }
 
-  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Z=1;
-  sub_tensor.StrideX=StrideX;
-  sub_tensor.StrideZ=0;
-
-  sub_tensor.TensorData_Ptr=&TensorData_Ptr[z*StrideZ+StrideX*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)*y+(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)*x];
-
-  //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  return(sub_tensor);
+ __forceinline__ __host__ __device__ type_t GetElement(size_t y,size_t x)
+ {
+  if (x>=Size_X || y>=Size_Y) return(0);
+  return(TensorData_Z_Ptr[y*StrideX+x]);
+ }
+ __forceinline__ __host__ __device__ void SetElement(size_t y,size_t x,type_t value)
+ {
+  if (x>=Size_X || y>=Size_Y) return;
+  TensorData_Z_Ptr[y*StrideX+x]=value;
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
@@ -186,6 +184,7 @@ struct STensorKernel
   StrideX=0;
   StrideZ=0;
   TensorData_Ptr=NULL;
+  TensorData_Z_Ptr=NULL;
  }
 
  __host__ __device__ void Set(const CTensor<type_t> &cTensor)
@@ -196,6 +195,7 @@ struct STensorKernel
   StrideX=cTensor.Size_X;
   StrideZ=cTensor.Size_X*cTensor.Size_Y;
   TensorData_Ptr=cTensor.DeviceItem.get();
+  TensorData_Z_Ptr=TensorData_Ptr;
  }
 };
 
@@ -211,6 +211,7 @@ struct STensorTransponseKernel
  size_t StrideX;///<строка по X
  size_t StrideZ;///<размер блока по Z
  type_t *TensorData_Ptr;///<указатель на данные тензора на стороне GPU
+ type_t *TensorData_Z_Ptr;///<указатель на данные тензора на стороне GPU выбранного слоя Z
 
  __host__ __device__ STensorTransponseKernel(void)///<конструктор
  {
@@ -225,24 +226,22 @@ struct STensorTransponseKernel
   return(&TensorData_Ptr[z*StrideZ]);
  }
 
- __host__ __device__ STensorTransponseKernel<type_t> GetSubTensor(size_t z,size_t y,size_t x)///<получить подтензор с глубиной 1
+ __forceinline__ __host__ __device__ type_t* SelectZ(size_t z)///<выбрать слой Z
  {
-  STensorTransponseKernel<type_t> sub_tensor;
-
-  sub_tensor.Size_X=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Y=(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  sub_tensor.Size_Z=1;
-  sub_tensor.StrideX=StrideX;
-  sub_tensor.StrideZ=0;
-
-  sub_tensor.TensorData_Ptr=&TensorData_Ptr[z*StrideZ+StrideX*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)*x+(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)*y];
-
-  //условие не строгое, так как последний блок для матриц не кратных блоку гарантировано будет превышать размер матрицы.
-  if ((x+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_X) sub_tensor.Size_X=Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-  if ((y+1)*(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)>Size_Y) sub_tensor.Size_Y=Size_Y%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
-
-  return(sub_tensor);
+  TensorData_Z_Ptr=TensorData_Ptr+z*StrideZ;
  }
+
+ __forceinline__ __host__ __device__ type_t GetElement(size_t y,size_t x)
+ {
+  if (x>=Size_X || y>=Size_Y) return(0);
+  return(TensorData_Z_Ptr[x*StrideX+y]);
+ }
+ __forceinline__ __host__ __device__ void SetElement(size_t y,size_t x,type_t value)
+ {
+  if (x>=Size_X || y>=Size_Y) return;
+  TensorData_Z_Ptr[x*StrideX+y]=value;
+ }
+
 
  __host__ __device__ type_t GetElement(size_t z,size_t y,size_t x)
  {
@@ -255,7 +254,7 @@ struct STensorTransponseKernel
   TensorData_Ptr[z*StrideZ+x*StrideX+y]=value;
  }
 
- __host__ __device__ size_t GeTransponsetSizeX(void)
+ __host__ __device__ size_t GetSizeX(void)
  {
   return(Size_X);
  }
@@ -278,6 +277,7 @@ struct STensorTransponseKernel
   StrideX=0;
   StrideZ=0;
   TensorData_Ptr=NULL;
+  TensorData_Z_Ptr=NULL;
  }
 
  __host__ __device__ void Set(const CTensor<type_t> &cTensor)
@@ -288,6 +288,7 @@ struct STensorTransponseKernel
   StrideX=cTensor.Size_X;
   StrideZ=cTensor.Size_X*cTensor.Size_Y;
   TensorData_Ptr=cTensor.DeviceItem.get();
+  TensorData_Z_Ptr=TensorData_Ptr;
  }
 };
 //****************************************************************************************************
@@ -492,14 +493,18 @@ __global__ void CUDATensorAddTensorFunction(STensorKernel<type_t> tensor_output,
  size_t ox=threadIdx.x*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE+blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;
  size_t oy=threadIdx.y*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE+blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;
 
+ tensor_output.SelectZ(z);
+ tensor_left.SelectZ(z);
+ tensor_right.SelectZ(z);
+
  for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++)
  {
   size_t x=kx+ox;
   for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++)
   {
    size_t y=ky+oy;
-   type_t left=tensor_left.GetElement(z,y,x);
-   type_t right=tensor_right.GetElement(z,y,x);
+   type_t left=tensor_left.GetElement(y,x);
+   type_t right=tensor_right.GetElement(y,x);
    type_t v=left*left_scale+right*right_scale;
    tensor_output.SetElement(z,y,x,v);
   }
@@ -1060,17 +1065,21 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
 template<class type_t,class kernel_output_t,class kernel_left_t,class kernel_right_t>
 __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel_left_t tensor_left,kernel_right_t tensor_right)
 {
- //блок TENSOR_OPERATION_BLOCK_SIZE x TENSOR_OPERATION_BLOCK_SIZE в выходном тензоре
- size_t blockCol=blockIdx.x;
- size_t blockRow=blockIdx.y;
- size_t z=blockIdx.z;
+ //блок CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE x CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE в выходном тензоре
+ size_t block_x=blockIdx.x;
+ size_t block_y=blockIdx.y;
  //координаты элементов блока в выходном тензоре
- size_t ox=threadIdx.x*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;
- size_t oy=threadIdx.y*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;
+ size_t out_in_block_x=threadIdx.x*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;
+ size_t out_in_block_y=threadIdx.y*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;
+ //координаты блока в выходном тензоре
+ size_t out_block_x=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE*block_x;
+ size_t out_block_y=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE*block_y;
+ //глобальные координаты в выходном тензоре
+ size_t out_x=out_in_block_x+out_block_x;
+ size_t out_y=out_in_block_y+out_block_y;
+ size_t out_z=blockIdx.z;
 
  //получаем подматрицу выходной матрицы
- kernel_output_t Csub=tensor_output.GetSubTensor(z,blockRow,blockCol);
-
  type_t Cvalue[CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE][CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE];
  for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++)
  {
@@ -1080,6 +1089,11 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
   }
  }
 
+ tensor_output.SelectZ(out_z);
+ tensor_left.SelectZ(out_z);
+ tensor_right.SelectZ(out_z);
+
+ //считаем, сколькно нужно проходов блоком по X
  size_t m_max=tensor_left.Size_X/(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE);
  if (tensor_left.Size_X%(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE)) m_max++;
 
@@ -1088,63 +1102,48 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
 
  for(size_t m=0;m<m_max;m++)
  {
-  // Get sub-tensor Asub of A
-  kernel_left_t Asub=tensor_left.GetSubTensor(z,blockRow,m);
-  // Get sub-tensor Bsub of B
-  kernel_right_t Bsub=tensor_right.GetSubTensor(z,m,blockCol);
-  // Shared memory used to store Asub and Bsub respectively
-  // Load Asub and Bsub from device memory to shared memory
-  // Each thread loads one element of each sub-tensor
-
-  size_t py=oy;
-  for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,py++)
+  size_t offset=m*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;
+  size_t py_left=out_in_block_y+out_block_y;
+  size_t py_right=out_in_block_y+offset;
+  size_t py=out_in_block_y;
+  for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,py_left++,py_right++,py++)
   {
-   size_t px=ox;
-   for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++,px++)
+   size_t px_left=out_in_block_x+offset;
+   size_t px_right=out_in_block_x+out_block_x;
+   size_t px=out_in_block_x;
+   for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++,px_left++,px_right++,px++)
    {
-    As[py][px]=Asub.GetElement(0,py,px);
-    Bs[py][px]=Bsub.GetElement(0,py,px);
+    As[py][px]=tensor_left.GetElement(py_left,px_left);
+    Bs[py][px]=tensor_right.GetElement(py_right,px_right);
    }
   }
-
-  // Synchronize to make sure the sub-matrices are loaded
-  // before starting the computation
   __syncthreads();
 
   //выполняем умножение только для тех элементов, которые не выходят за размер выходного тензора
-  if ((blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE+oy<tensor_output.Size_Y) &&
-      (blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE+ox<tensor_output.Size_X))
+  if ((out_y<tensor_output.Size_Y) &&
+      (out_x<tensor_output.Size_X))
   {
-   type_t *a_ptr_init=&As[oy][0];
-   for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,a_ptr_init+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE)
-   {
-    type_t *b_ptr_init=&Bs[0][ox];
-    for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++,b_ptr_init++)
-    {
-     type_t *a_ptr=a_ptr_init;
-     type_t *b_ptr=b_ptr_init;
 
+   for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++)
+   {
+    for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++)
+    {
      type_t &cv=Cvalue[ky][kx];
-     // Multiply Asub and Bsub together
-     for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;e++,a_ptr++,b_ptr+=CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE) cv+=(*a_ptr)*(*b_ptr);
-     // Synchronize to make sure that the preceding
-     // computation is done before loading two new
-     // sub-matrices of A and B in the next iteration
+     size_t ay=out_in_block_y+ky;
+     size_t bx=out_in_block_x+kx;
+     for(size_t e=0;e<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;e++) cv+=As[ay][e]*Bs[e][bx];
     }
    }
   }
   __syncthreads();
  }
- // Write Csub to device memory
- // Each thread writes one element
-
- size_t py=oy;
+ size_t py=out_y;
  for(size_t ky=0;ky<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;ky++,py++)
  {
-  size_t px=ox;
+  size_t px=out_x;
   for(size_t kx=0;kx<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE_SCALE;kx++,px++)
   {
-   Csub.SetElement(0,py,px,Cvalue[ky][kx]);
+   tensor_output.SetElement(py,px,Cvalue[ky][kx]);
   }
  }
  __syncthreads();
