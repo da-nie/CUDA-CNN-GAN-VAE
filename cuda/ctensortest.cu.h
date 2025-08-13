@@ -320,7 +320,8 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBiasWithStepAndPadding(void)
  //создаём тензор поправок смещений
  CTensor<type_t> cTensor_dBias=CTensor<type_t>(kernel_amount,1,1);
  cTensor_dBias.Zero();
- CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_dBias,cTensor_Image,cTensor_Delta,2,2,2,2);
+ CTensor<type_t> cTensor_Tmp;
+ CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_dBias,cTensor_Image,cTensor_Delta,2,2,2,2,cTensor_Tmp);
 
  //проверочный тензор
  CTensor<type_t> cTensor_Control(1,5,5);
@@ -448,8 +449,8 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBias(void)
  cTensor_dKernel.Zero();
  //создаём вектор поправок смещений
  cTensor_dBias.Zero();
-
- CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_dBias,cTensor_Image,cTensor_dOut,1,1,0,0);
+ CTensor<type_t> cTensor_Tmp;
+ CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_dBias,cTensor_Image,cTensor_dOut,1,1,0,0,cTensor_Tmp);
 
  //проверяем
  CTensor<type_t> cTensor_Control(1,3,3);

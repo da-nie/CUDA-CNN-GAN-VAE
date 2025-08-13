@@ -69,12 +69,14 @@ class CNetLayerConvolution:public INetLayer<type_t>
   CTensor<type_t> cTensor_dBias;///<поправки для сдвигов [количество,1,1]
   std::vector<CTensor<type_t>> cTensor_Delta_Array;///<тензоры дельты слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
+  CTensor<type_t> cTensor_DWBTmp;///<вспомогательный тензор для вычисления поправок (нужен функции вычисления поправок)
 
   //для оптимизации Adam
   CTensor<type_t> cTensor_MK;///<тензор фильтра 1
   CTensor<type_t> cTensor_VK;///<тензор фильтра 2
   CTensor<type_t> cTensor_MB;///<коэффициент фильтра 1 сдвигов
   CTensor<type_t> cTensor_VB;///<коэффициент фильтра 2 сдвигов
+
 
   using INetLayer<type_t>::Beta1;///<параметры алгоритма Adam
   using INetLayer<type_t>::Beta2;
@@ -450,6 +452,7 @@ void CNetLayerConvolution<type_t>::TrainingStop(void)
  cTensor_VK=CTensor<type_t>(1,1,1);
  cTensor_MB=CTensor<type_t>(1,1,1);
  cTensor_VB=CTensor<type_t>(1,1,1);
+ cTensor_DWBTmp=CTensor<type_t>(1,1,1);
 
  cTensor_Delta_Array.clear();
 }
@@ -473,7 +476,7 @@ void CNetLayerConvolution<type_t>::TrainingBackward(bool create_delta_weight)
   CTensor<type_t> cTensor_BiasZero=cTensor_Bias;
   CTensorMath<type_t>::Fill(cTensor_BiasZero,0);
   CTensorConv<type_t>::BackwardConvolution(cTensor_PrevLayerError,cTensor_Delta_Array[n],cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_BiasZero,Stride_X,Stride_Y,Padding_X,Padding_Y);
-  if (create_delta_weight==true) CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_dBias,PrevLayerPtr->GetOutputTensor(n),cTensor_Delta_Array[n],Stride_X,Stride_Y,Padding_X,Padding_Y);
+  if (create_delta_weight==true) CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_dBias,PrevLayerPtr->GetOutputTensor(n),cTensor_Delta_Array[n],Stride_X,Stride_Y,Padding_X,Padding_Y,cTensor_DWBTmp);
   //задаём ошибку предыдущего слоя
   PrevLayerPtr->GetOutputTensor(n).ReinterpretSize(input_z,input_y,input_x);
   cTensor_PrevLayerError.ReinterpretSize(input_z,input_y,input_x);

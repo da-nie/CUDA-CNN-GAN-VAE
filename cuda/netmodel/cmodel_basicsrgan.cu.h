@@ -472,7 +472,6 @@ void CModelBasicSR_GAN<type_t>::Execute(void)
 {
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
- if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
  //TestTrainingCoderNet(true);
  TrainingNet(true);
 }

@@ -81,6 +81,8 @@ struct cudaDeviceProp
  HANDLE_ERROR(cudaDeviceReset());
  HANDLE_ERROR(cudaGetLastError());
 
+ if (CTensorTest<float>::Test()==false) throw("Класс тензоров провалил тестирование!");
+
  //CModelSorter<float> cModelSorter;
  //cModelSorter.Execute();
 
