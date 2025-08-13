@@ -214,11 +214,11 @@ void CNetLayerBatchNormalization<type_t>::Create(type_t momentum,INetLayer<type_
 template<class type_t>
 void CNetLayerBatchNormalization<type_t>::Reset(void)
 {
- cTensor_Gamma.Fill(1);
- cTensor_Beta.Zero();
+ CTensorMath<type_t>::Fill(cTensor_Gamma,1);
+ CTensorMath<type_t>::Fill(cTensor_Beta,0);
 
- cTensor_Mean.Zero();
- cTensor_Variable.Fill(1);
+ CTensorMath<type_t>::Fill(cTensor_Mean,0);
+ CTensorMath<type_t>::Fill(cTensor_Variable,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать выход слоя
@@ -286,7 +286,7 @@ bool
  {
   //считаем среднее для каждого элемента пакета по всем пакетам
   //mu = 1./N * np.sum(x, axis = 0)
-  cTensor_TmpA.Zero();
+  CTensorMath<type_t>::Fill(cTensor_TmpA,0);
   for(uint32_t n=0;n<BatchSize;n++)
   {
    CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor(n);
@@ -304,7 +304,7 @@ bool
   //возводим в квадрат xmu и вычисляем дисперсию
   //sq = xmu ** 2
   //var = 1./N * np.sum(sq, axis = 0)
-  cTensor_VAR.Zero();
+  CTensorMath<type_t>::Fill(cTensor_VAR,0);
   for(uint32_t n=0;n<BatchSize;n++)
   {
    CTensorMath<type_t>::Pow2(cTensor_TmpA,cTensor_XHAT_Array[n],1);
@@ -461,13 +461,13 @@ void CNetLayerBatchNormalization<type_t>::TrainingStart(void)
  //для оптимизации Adam
  cTensor_MK=cTensor_dGamma;
  cTensor_VK=cTensor_dGamma;
- cTensor_MK.Zero();
- cTensor_VK.Zero();
+ CTensorMath<type_t>::Fill(cTensor_MK,0);
+ CTensorMath<type_t>::Fill(cTensor_VK,0);
 
  cTensor_MB=cTensor_dBeta;
  cTensor_VB=cTensor_dBeta;
- cTensor_MB.Zero();
- cTensor_VB.Zero();
+ CTensorMath<type_t>::Fill(cTensor_MB,0);
+ CTensorMath<type_t>::Fill(cTensor_VB,0);
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -555,8 +555,8 @@ void CNetLayerBatchNormalization<type_t>::TrainingBackward(bool create_delta_wei
  //В варианте 2 есть недостающая часть. По экспериментам она нулевая и потому убрана из программы (осталась в git).
 
  type_t N=static_cast<type_t>(BatchSize);
- cTensor_TmpB.Zero();//будет np.sum(dxhat, axis=0)
- cTensor_TmpC.Zero();//будет np.sum(dxhat*x_hat, axis=0)
+ CTensorMath<type_t>::Fill(cTensor_TmpB,0);//будет np.sum(dxhat, axis=0)
+ CTensorMath<type_t>::Fill(cTensor_TmpC,0);//будет np.sum(dxhat*x_hat, axis=0)
  for(uint32_t n=0;n<BatchSize;n++)
  {
   CTensor<type_t> &dout=cTensor_Delta_Array[n];
@@ -596,8 +596,8 @@ void CNetLayerBatchNormalization<type_t>::TrainingBackward(bool create_delta_wei
 template<class type_t>
 void CNetLayerBatchNormalization<type_t>::TrainingResetDeltaWeight(void)
 {
- cTensor_dGamma.Zero();
- cTensor_dBeta.Zero();
+ CTensorMath<type_t>::Fill(cTensor_dGamma,0);
+ CTensorMath<type_t>::Fill(cTensor_dBeta,0);
 
  cTensor_NewMean=cTensor_Mean;
  cTensor_NewVariable=cTensor_Variable;

@@ -453,9 +453,9 @@ bool CTensorTest<type_t>::Test(void)
 
    //создаём вектор тензоров поправок к ядрам
    std::vector<CTensor<type_t>> cTensor_dKernel;
-   cTensor_KernelA.Zero();
+   CTensorMath<type_t>::Fill(cTensor_KernelA,0);
    cTensor_dKernel.push_back(cTensor_KernelA);
-   for(size_t n=0;n<cTensor_dKernel.size();n++) cTensor_dKernel[n].Zero();
+   for(size_t n=0;n<cTensor_dKernel.size();n++) CTensorMath<type_t>::Fill(cTensor_dKernel[n]);
    cTensor_dKernel[0].Print("Тензор поправок ядра A после обнуления");
    //создаём вектор попрвок смещений
    std::vector<type_t> dbias;

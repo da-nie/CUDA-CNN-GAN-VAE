@@ -70,6 +70,7 @@ class CTensorMath
   //-деструктор-----------------------------------------------------------------------------------------
  public:
   //-открытые функции-----------------------------------------------------------------------------------
+  static void Fill(CTensor<type_t> &cTensor_Output,type_t value=0);///<записать в тензор число
   static void Inv(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<вычислить обратный тензор
   static void Div(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<поделить тензоры
   static void Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры
@@ -350,6 +351,63 @@ CTensor<type_t> operator*(const type_t &value_left,const CTensor<type_t> &cTenso
 //открытые функции
 //****************************************************************************************************
 
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для записи числа в тензор
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorFillFunction(STensorKernel<type_t> tensor_output,type_t value)
+{
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=blockIdx.z;
+ //координаты элементов блока в выходном тензоре
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
+ //получаем подтензоры
+ uint32_t xp=blockCol*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE+y;
+
+ if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
+
+ uint32_t offset=xp+yp*tensor_output.GetSizeX();
+ type_t *out_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ *out_ptr=value;
+}
+
+//----------------------------------------------------------------------------------------------------
+//записать в тензор число
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Fill(CTensor<type_t> &cTensor_Output,type_t value)
+{
+ if (cTensor_Output.GetSizeX()*cTensor_Output.GetSizeY()*cTensor_Output.GetSizeZ()<CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE)
+ {
+  cTensor_Output.Fill(value);
+  return;
+ }
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE,CTensorMath<type_t>::TENSOR_OPERATION_BLOCK_SIZE);
+
+ uint32_t block_x=cTensor_Output.Size_X/thread.x;
+ if (cTensor_Output.Size_X%thread.x) block_x++;
+ uint32_t block_y=cTensor_Output.Size_Y/thread.y;
+ if (cTensor_Output.Size_Y%thread.y) block_y++;
+ uint32_t block_z=cTensor_Output.Size_Z;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorFillFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,value);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
 
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для вычисления обратного тензора

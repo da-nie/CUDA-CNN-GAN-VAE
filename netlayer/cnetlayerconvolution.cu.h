@@ -427,13 +427,13 @@ void CNetLayerConvolution<type_t>::TrainingStart(void)
  //для оптимизации Adam
  cTensor_MK=cTensor_Kernel;
  cTensor_VK=cTensor_Kernel;
- cTensor_MK.Zero();
- cTensor_VK.Zero();
+ CTensorMath<type_t>::Fill(cTensor_MK,0);
+ CTensorMath<type_t>::Fill(cTensor_VK,0);
 
  cTensor_MB=cTensor_Bias;
  cTensor_VB=cTensor_Bias;
- cTensor_MB.Zero();
- cTensor_VB.Zero();
+ CTensorMath<type_t>::Fill(cTensor_MB,0);
+ CTensorMath<type_t>::Fill(cTensor_VB,0);
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -471,7 +471,7 @@ void CNetLayerConvolution<type_t>::TrainingBackward(bool create_delta_weight)
 
   //вычисляем ошибку предшествующего слоя
   CTensor<type_t> cTensor_BiasZero=cTensor_Bias;
-  cTensor_BiasZero.Zero();
+  CTensorMath<type_t>::Fill(cTensor_BiasZero,0);
   CTensorConv<type_t>::BackwardConvolution(cTensor_PrevLayerError,cTensor_Delta_Array[n],cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_BiasZero,Stride_X,Stride_Y,Padding_X,Padding_Y);
   if (create_delta_weight==true) CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_dBias,PrevLayerPtr->GetOutputTensor(n),cTensor_Delta_Array[n],Stride_X,Stride_Y,Padding_X,Padding_Y);
   //задаём ошибку предыдущего слоя
@@ -488,8 +488,8 @@ void CNetLayerConvolution<type_t>::TrainingBackward(bool create_delta_weight)
 template<class type_t>
 void CNetLayerConvolution<type_t>::TrainingResetDeltaWeight(void)
 {
- cTensor_dKernel.Zero();
- cTensor_dBias.Zero();
+ CTensorMath<type_t>::Fill(cTensor_dKernel,0);
+ CTensorMath<type_t>::Fill(cTensor_dBias,0);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обновления весов

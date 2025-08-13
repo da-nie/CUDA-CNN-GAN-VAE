@@ -363,10 +363,10 @@ void CNetLayerLinear<type_t>::TrainingStart(void)
  cTensor_MB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
  cTensor_VB=CTensor<type_t>(1,cTensor_B.GetSizeY(),cTensor_B.GetSizeX());
 
- cTensor_MW.Zero();
- cTensor_VW.Zero();
- cTensor_MB.Zero();
- cTensor_VB.Zero();
+ CTensorMath<type_t>::Fill(cTensor_MW,0);
+ CTensorMath<type_t>::Fill(cTensor_VW,0);
+ CTensorMath<type_t>::Fill(cTensor_MB,0);
+ CTensorMath<type_t>::Fill(cTensor_VB,0);
 
  if (PrevLayerPtr!=NULL)
  {
@@ -442,8 +442,8 @@ void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
 template<class type_t>
 void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 {
- cTensor_dW.Zero();
- cTensor_dB.Zero();
+ CTensorMath<type_t>::Fill(cTensor_dW,0);
+ CTensorMath<type_t>::Fill(cTensor_dB,0);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обновления весов

@@ -679,7 +679,7 @@ void CTensorMath<type_t>::MaxPoolingBackward(CTensor<type_t> &cTensor_Output,con
  size_t input_y=cTensor_Input.GetSizeY();
  size_t input_z=cTensor_Input.GetSizeZ();
 
- cTensor_Output.Zero();
+ CTensorMath<type_t>::Fill(cTensor_Output,0);
 
  for(size_t z=0;z<input_z;z++)
  {

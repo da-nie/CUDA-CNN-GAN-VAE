@@ -195,7 +195,7 @@ void CNetLayerDropOut<type_t>::Forward(void)
   uint32_t size_x=cTensor_H_DropOut_Array[n].GetSizeX();
   uint32_t size_y=cTensor_H_DropOut_Array[n].GetSizeY();
   uint32_t size_z=cTensor_H_DropOut_Array[n].GetSizeZ();
-  cTensor_H_DropOut_Array[n].Zero();
+  CTensorMath<type_t>::Fill(cTensor_H_DropOut_Array[n],0);
   for(uint32_t z=0;z<size_z;z++)
   {
    for(uint32_t y=0;y<size_y;y++)
