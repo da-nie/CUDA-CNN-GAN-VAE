@@ -740,7 +740,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
    str+=std::to_string(static_cast<long double>(BATCH_AMOUNT));
    SYSTEM::PutMessageToConsole(str);
 
-   if (batch%10==0)
+   if (batch%10==0 && batch!=0)
    {
     SaveRandomImage();
     SYSTEM::PutMessageToConsole("Save image.");
@@ -764,7 +764,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
      CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
      for(uint32_t n=0;n<DiscriminatorNet.size();n++)
      {
-      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1);
+      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1,2);//масштаб размеров минипакета 2, так как было два прохода по минипакетам
       //DiscriminatorNet[n]->ClipWeight(-clip,clip);
      }
     }

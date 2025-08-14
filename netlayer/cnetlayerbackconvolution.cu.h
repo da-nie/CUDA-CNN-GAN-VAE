@@ -69,7 +69,6 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
   CTensor<type_t> cTensor_dBias;///<поправки для сдвигов [количество,1,1]
   std::vector<CTensor<type_t>> cTensor_Delta_Array;///<тензоры дельты слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
-  CTensor<type_t> cTensor_DWBTmp;///<вспомогательный тензор для вычисления поправок (нужен функции вычисления поправок)
 
   //для оптимизации Adam
   CTensor<type_t> cTensor_MK;///<тензор фильтра 1
@@ -104,7 +103,7 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
   void TrainingStop(void);///<завершить процесс обучения
   void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
-  void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
+  void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(uint32_t unit_index);///<получить ссылку на тензор дельты слоя
 
   void SetOutputError(uint32_t unit_index,CTensor<type_t>& error);///<задать ошибку и расчитать дельту
@@ -463,7 +462,7 @@ void CNetLayerBackConvolution<type_t>::TrainingBackward(bool create_delta_weight
   CTensor<type_t> cTensor_BiasZero=cTensor_Bias;
   CTensorMath<type_t>::Fill(cTensor_BiasZero,0);
   CTensorConv<type_t>::ForwardConvolution(cTensor_PrevLayerError,cTensor_Delta_Array[n],cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_BiasZero,Stride_X,Stride_Y,Padding_X,Padding_Y);
-  if (create_delta_weight==true) CTensorConv<type_t>::CreateBackDeltaWeightAndBias(cTensor_dKernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_dBias,PrevLayerPtr->GetOutputTensor(n),cTensor_Delta_Array[n],Stride_X,Stride_Y,Padding_X,Padding_Y,cTensor_DWBTmp);
+  if (create_delta_weight==true) CTensorConv<type_t>::CreateBackDeltaWeightAndBias(cTensor_dKernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_dBias,PrevLayerPtr->GetOutputTensor(n),cTensor_Delta_Array[n],Stride_X,Stride_Y,Padding_X,Padding_Y);
   //задаём ошибку предыдущего слоя
   PrevLayerPtr->GetOutputTensor(n).ReinterpretSize(input_z,input_y,input_x);
   cTensor_PrevLayerError.ReinterpretSize(input_z,input_y,input_x);
@@ -487,19 +486,19 @@ void CNetLayerBackConvolution<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerBackConvolution<type_t>::TrainingUpdateWeight(double speed,double iteration)
+void CNetLayerBackConvolution<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_Kernel,cTensor_dKernel,cTensor_MK,cTensor_VK,BatchSize,speed,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_Bias,cTensor_dBias,cTensor_MB,cTensor_VB,BatchSize,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorMath<type_t>::Adam(cTensor_Kernel,cTensor_dKernel,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorMath<type_t>::Adam(cTensor_Bias,cTensor_dBias,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
   speed/=static_cast<double>(BatchSize);
-  CTensorMath<type_t>::Sub(cTensor_Kernel,cTensor_Kernel,cTensor_dKernel,1,speed);
-  CTensorMath<type_t>::Sub(cTensor_Bias,cTensor_Bias,cTensor_dBias,1,speed);
+  CTensorMath<type_t>::Sub(cTensor_Kernel,cTensor_Kernel,cTensor_dKernel,1,speed/batch_scale);
+  CTensorMath<type_t>::Sub(cTensor_Bias,cTensor_Bias,cTensor_dBias,1,speed/batch_scale);
  }
 }
 //----------------------------------------------------------------------------------------------------
