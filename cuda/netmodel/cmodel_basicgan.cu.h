@@ -746,7 +746,6 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
     SYSTEM::PutMessageToConsole("Save image.");
    }
 
-
    {
     cCUDATimeSpent.Start();
 

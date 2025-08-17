@@ -53,6 +53,7 @@ class CTensorMath
   //-деструктор-----------------------------------------------------------------------------------------
  public:
   //-открытые функции-----------------------------------------------------------------------------------
+  static void Fill(CTensor<type_t> &cTensor_Output,type_t value=0);///<записать в тензор число
   static void Inv(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<вычислить обратный тензор
   static void Div(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<поделить тензоры
   static void Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры
@@ -143,6 +144,15 @@ CTensor<type_t> operator*(const type_t &value_left,const CTensor<type_t> &cTenso
 //****************************************************************************************************
 //открытые функции
 //****************************************************************************************************
+
+//----------------------------------------------------------------------------------------------------
+//записать в тензор число
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Fill(CTensor<type_t> &cTensor_Output,type_t value)
+{
+ cTensor_Output.Fill(value);
+}
 
 //----------------------------------------------------------------------------------------------------
 //вычисление обратного тензора

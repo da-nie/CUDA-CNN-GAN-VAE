@@ -903,7 +903,7 @@ struct STensorKernel_DeltaWeightAndBias_dKernel
   uint32_t pos=z*Size_X*Size_Y+y*Size_X+x;
   uint32_t kernel_index=pos/(sTensorKernel_dKernel.Size_X);
   uint32_t offset=pos-kernel_index*sTensorKernel_dKernel.Size_X;
-  return(sTensorKernel_dKernel.GetElement(0,kernel_index,offset));
+  return(sTensorKernel_dKernel.GetElement(kernel_index,offset));
  }
  __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
@@ -911,8 +911,8 @@ struct STensorKernel_DeltaWeightAndBias_dKernel
   uint32_t pos=z*Size_X*Size_Y+y*Size_X+x;
   uint32_t kernel_index=pos/(sTensorKernel_dKernel.Size_X);
   uint32_t offset=pos-kernel_index*sTensorKernel_dKernel.Size_X;
-  value+=sTensorKernel_dKernel.GetElement(0,kernel_index,offset);
-  sTensorKernel_dKernel.SetElement(0,kernel_index,offset,value);
+  value+=sTensorKernel_dKernel.GetElement(kernel_index,offset);
+  sTensorKernel_dKernel.SetElement(kernel_index,offset,value);
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
@@ -953,6 +953,8 @@ struct STensorKernel_DeltaWeightAndBias_dKernel
   Size_Z=z;
   Size_Y=y;
   Size_X=x;
+
+  sTensorKernel_dKernel.SelectZ(0);
  }
 };
 
