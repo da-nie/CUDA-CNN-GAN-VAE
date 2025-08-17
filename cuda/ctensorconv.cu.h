@@ -62,8 +62,8 @@ class CTensorConv
   //-открытые функции-----------------------------------------------------------------------------------
   static void ForwardConvolution(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,uint32_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<прямая свёртка
   static void BackwardConvolution(CTensor<type_t> &cTensor_OutputDelta,const CTensor<type_t> &cTensor_Delta,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,uint32_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<обратная свёртка
-  static void CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,const CTensor<type_t> &cTensor_Image,CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,CTensor<type_t> &cTensor_Tmp);///<вычисление поправок весов и смещений
-  static void CreateBackDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,CTensor<type_t> &cTensor_Tmp);///<создание поправок весов и смещений для обратной свёртки
+  static void CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,const CTensor<type_t> &cTensor_Image,CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<вычисление поправок весов и смещений
+  static void CreateBackDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<создание поправок весов и смещений для обратной свёртки
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -130,47 +130,13 @@ struct STensorKernel_ForwardConvolution_Image
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x)
  {
-  int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t tmp=pos;
-  tmp/=Dst_X;
-  int32_t dx=pos-tmp*Dst_X;
-  pos=tmp;
-  tmp/=Dst_Y;
-  int32_t dy=pos-tmp*Dst_Y;
-  pos=tmp;
-  tmp/=Conv_Kernel_X;
-  int32_t kx=pos-tmp*Conv_Kernel_X;
-  pos=tmp;
-  tmp/=Conv_Kernel_Y;
-  int32_t ky=pos-tmp*Conv_Kernel_Y;
-  int32_t sz=tmp;
-
-  int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
-  int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
-
-  return(sTensorKernel_Image.GetElement(w,sz,sy,sx));
+  SelectW(w);
+  return(GetElement(y,x));
  }
  __host__ __device__ void SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
-  int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t tmp=pos;
-  tmp/=Dst_X;
-  int32_t dx=pos-tmp*Dst_X;
-  pos=tmp;
-  tmp/=Dst_Y;
-  int32_t dy=pos-tmp*Dst_Y;
-  pos=tmp;
-  tmp/=Conv_Kernel_X;
-  int32_t kx=pos-tmp*Conv_Kernel_X;
-  pos=tmp;
-  tmp/=Conv_Kernel_Y;
-  int32_t ky=pos-tmp*Conv_Kernel_Y;
-  int32_t sz=tmp;
-
-  int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
-  int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
-
-  sTensorKernel_Image.SetElement(w,sz,sy,sx,value);
+  SelectW(w);
+  SetElement(y,x,value);
  }
 
  __forceinline__ __host__ __device__ uint32_t GetSizeX(void) const
@@ -205,15 +171,6 @@ struct STensorKernel_ForwardConvolution_Image
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
  {
-  return(GetElement(0,y,x));
- }
- __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
- {
-  SetElement(0,y,x,value);
- }
-
- __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
- {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
   tmp/=Dst_X;
@@ -234,7 +191,7 @@ struct STensorKernel_ForwardConvolution_Image
 
   return(sTensorKernel_Image.GetElement(sz,sy,sx));
  }
- __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
  {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
@@ -255,6 +212,15 @@ struct STensorKernel_ForwardConvolution_Image
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
 
   sTensorKernel_Image.SetElement(sz,sy,sx,value);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
+ {
+  return(GetElement(y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ {
+  SetElement(y,x,value);
  }
 
 
@@ -334,27 +300,6 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  int32_t new_input_y=kernel_y*kernel_x*kernel_z;
  int32_t new_input_x=dst_x*dst_y;
 
- /*
- //перестроим тензоры ядер в строку
- CTensor<type_t> cTensor_NewKernel(1,output_z,kernel_x*kernel_y*kernel_z);
-
- for(uint32_t k=0;k<cTensor_Kernel.size();k++)
- {
-  cTensor_Kernel[k].CopyFromDevice();
-  const type_t *s_ptr=cTensor_Kernel[k].GetColumnPtr(0,0);
-  type_t *d_ptr=cTensor_NewKernel.GetColumnPtr(0,k);
-  for(uint32_t n=0;n<kernel_x*kernel_y*kernel_z;n++,s_ptr++,d_ptr++) *d_ptr=*s_ptr;
- }
- cTensor_NewKernel.SetHostOnChange();
-
- //перестроим смещения
- CTensor<type_t> cTensor_Bias(bias.size(),1,1);
- for(uint32_t b=0;b<bias.size();b++)
- {
-  cTensor_Bias.SetElement(b,0,0,bias[b]);
- }
- */
-
  //умножаем матрицы
  cTensor_Output.ReinterpretSize(output_w,1,output_z,new_input_x);
  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
@@ -402,40 +347,13 @@ struct STensorKernel_BackwardConvolution_Kernel
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x)
  {
-  int32_t sx=x+Offset_X;
-  int32_t sy=y+Offset_Y;
-
-  if (sy<0 || sy>=Kernel_Z) return(0);
-  if (sx<0 || sx>=Kernel_X*Kernel_Y*Kernel_Amount) return(0);
-  int32_t ki=sx/(Kernel_X*Kernel_Y);
-  sx-=ki*(Kernel_X*Kernel_Y);
-  int32_t ky=sx/Kernel_X;
-  sx-=ky*Kernel_X;
-  int32_t kx=sx;
-  int32_t kz=sy;
-
-  ky=Kernel_Y-1-ky;
-  kx=Kernel_X-1-kx;
-
-  return(sTensorKernel_Kernel.GetElement(w,0,ki,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y));
+  SelectW(w);
+  return(GetElement(y,x));
  }
  __forceinline__ __host__ __device__ void SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
-  int32_t sx=x+Offset_X;
-  int32_t sy=y+Offset_Y;
-
-  if (sy<0 || sy>=Kernel_Amount) return;
-  if (sx<0 || sx>=Kernel_X*Kernel_Y*Kernel_Z) return;
-  int32_t kz=sx/(Kernel_X*Kernel_Y);
-  sx-=kz*(Kernel_X*Kernel_Y);
-  int32_t ky=sx/Kernel_X;
-  sx-=ky*Kernel_X;
-  int32_t kx=sx;
-
-  ky=Kernel_Y-1-ky;
-  kx=Kernel_X-1-kx;
-
-  sTensorKernel_Kernel.SetElement(w,0,sy,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y,value);
+  SelectW(w);
+  SetElement(y,x,value);
  }
 
  __forceinline__ __host__ __device__ uint32_t GetSizeX(void) const
@@ -472,15 +390,6 @@ struct STensorKernel_BackwardConvolution_Kernel
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
  {
-  return(GetElement(0,y,x));
- }
- __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
- {
-  SetElement(0,y,x,value);
- }
-
- __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
- {
   int32_t sx=x+Offset_X;
   int32_t sy=y+Offset_Y;
 
@@ -497,8 +406,9 @@ struct STensorKernel_BackwardConvolution_Kernel
   kx=Kernel_X-1-kx;
 
   return(sTensorKernel_Kernel.GetElement(ki,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y));
+
  }
- __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
  {
   int32_t sx=x+Offset_X;
   int32_t sy=y+Offset_Y;
@@ -515,6 +425,16 @@ struct STensorKernel_BackwardConvolution_Kernel
   kx=Kernel_X-1-kx;
 
   sTensorKernel_Kernel.SetElement(sy,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y,value);
+
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
+ {
+  return(GetElement(y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ {
+  SetElement(y,x,value);
  }
 
 
@@ -536,6 +456,8 @@ struct STensorKernel_BackwardConvolution_Kernel
  __host__ __device__ void Set(const CTensor<type_t> &cTensor_Kernel,uint32_t kernel_x,uint32_t kernel_y,uint32_t kernel_z,uint32_t kernel_amount)
  {
   sTensorKernel_Kernel.Set(cTensor_Kernel);
+
+  sTensorKernel_Kernel.SelectZ(0);
 
   Kernel_X=kernel_x;
   Kernel_Y=kernel_y;
@@ -597,62 +519,13 @@ struct STensorKernel_BackwardConvolution_Delta
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x)
  {
-  int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t tmp=pos;
-  tmp/=Dst_X;
-  int32_t dx=pos-tmp*Dst_X;
-  pos=tmp;
-  tmp/=Dst_Y;
-  int32_t dy=pos-tmp*Dst_Y;
-  pos=tmp;
-  tmp/=Conv_Kernel_X;
-  int32_t kx=pos-tmp*Conv_Kernel_X;
-  pos=tmp;
-  tmp/=Conv_Kernel_Y;
-  int32_t ky=pos-tmp*Conv_Kernel_Y;
-  int32_t sz=tmp;
-
-  int32_t sy=dy+ky-Conv_Padding_Y;
-  int32_t sx=dx+kx-Conv_Padding_X;
-
-  if (sx<0 || sy<0 || sz<0) return(0);
-
-  int32_t sy_s=sy/Conv_Stride_Y;
-  if (sy!=sy_s*Conv_Stride_Y) return(0);
-
-  int32_t sx_s=sx/Conv_Stride_X;
-  if (sx!=sx_s*Conv_Stride_X) return(0);
-
-  return(sTensorKernel_Delta.GetElement(w,sz,sy_s,sx_s));
+  SelectW(w);
+  return(GetElement(y,x));
  }
  __forceinline__ __host__ __device__ void SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
-  int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t tmp=pos;
-  tmp/=Dst_X;
-  int32_t dx=pos-tmp*Dst_X;
-  pos=tmp;
-  tmp/=Dst_Y;
-  int32_t dy=pos-tmp*Dst_Y;
-  pos=tmp;
-  tmp/=Conv_Kernel_X;
-  int32_t kx=pos-tmp*Conv_Kernel_X;
-  pos=tmp;
-  tmp/=Conv_Kernel_Y;
-  int32_t ky=pos-tmp*Conv_Kernel_Y;
-  int32_t sz=tmp;
-
-  int32_t sy=dy+ky-Conv_Padding_Y;
-  int32_t sx=dx+kx-Conv_Padding_X;
-
-  if (sx<0 || sy<0 || sz<0) return;
-
-  int32_t sy_s=sy/Conv_Stride_Y;
-  int32_t sx_s=sx/Conv_Stride_X;
-
-  if ((sy!=sy_s*Conv_Stride_Y) || (sx!=sx_s*Conv_Stride_X)) value=0;
-
-  sTensorKernel_Delta.SetElement(w,sz,sy_s,sx_s,value);
+  SelectW(w);
+  SetElement(y,x,value);
  }
 
  __forceinline__ __host__ __device__ uint32_t GetSizeX(void) const
@@ -688,15 +561,6 @@ struct STensorKernel_BackwardConvolution_Delta
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
  {
-  return(GetElement(0,y,x));
- }
- __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
- {
-  SetElement(0,y,x,value);
- }
-
- __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
- {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
   tmp/=Dst_X;
@@ -725,9 +589,9 @@ struct STensorKernel_BackwardConvolution_Delta
 
   return(sTensorKernel_Delta.GetElement(sz,sy_s,sx_s));
  }
- __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
  {
- int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
+  int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
   tmp/=Dst_X;
   int32_t dx=pos-tmp*Dst_X;
@@ -755,6 +619,15 @@ struct STensorKernel_BackwardConvolution_Delta
   sTensorKernel_Delta.SetElement(sz,sy_s,sx_s,value);
  }
 
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
+ {
+  return(GetElement(y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ {
+  SetElement(y,x,value);
+ }
+
  __host__ __device__ void Reset(void)
  {
   sTensorKernel_Delta.Reset();
@@ -779,6 +652,7 @@ struct STensorKernel_BackwardConvolution_Delta
  __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)
  {
   sTensorKernel_Delta.Set(cTensor);
+  sTensorKernel_Delta.SelectZ(0);
 
   Conv_Kernel_X=kernel_x;
   Conv_Kernel_Y=kernel_y;
@@ -894,47 +768,13 @@ struct STensorKernel_DeltaWeightAndBias_Image
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x)
  {
-  int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t tmp=pos;
-  tmp/=Dst_X;
-  int32_t dx=pos-tmp*Dst_X;
-  pos=tmp;
-  tmp/=Dst_Y;
-  int32_t dy=pos-tmp*Dst_Y;
-  pos=tmp;
-  tmp/=Input_Z;
-  int32_t sz=pos-tmp*Input_Z;
-  pos=tmp;
-  tmp/=Conv_Kernel_X;
-  int32_t kx=pos-tmp*Conv_Kernel_X;
-  int32_t ky=tmp;
-
-  int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
-  int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
-
-  return(sTensorKernel_Image.GetElement(w,sz,sy,sx));
+  SelectW(w);
+  return(GetElement(y,x));
  }
  __forceinline__ __host__ __device__ void SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
-  int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
-  int32_t tmp=pos;
-  tmp/=Dst_X;
-  int32_t dx=pos-tmp*Dst_X;
-  pos=tmp;
-  tmp/=Dst_Y;
-  int32_t dy=pos-tmp*Dst_Y;
-  pos=tmp;
-  tmp/=Input_Z;
-  int32_t sz=pos-tmp*Input_Z;
-  pos=tmp;
-  tmp/=Conv_Kernel_X;
-  int32_t kx=pos-tmp*Conv_Kernel_X;
-  int32_t ky=tmp;
-
-  int32_t sy=dy*Conv_Stride_Y+ky-Conv_Padding_Y;
-  int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
-
-  sTensorKernel_Image.SetElement(w,sz,sy,sx,value);
+  SelectW(w);
+  SetElement(y,x,value);
  }
 
  __forceinline__ __host__ __device__ uint32_t GetSizeX(void) const
@@ -969,15 +809,6 @@ struct STensorKernel_DeltaWeightAndBias_Image
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
  {
-  return(GetElement(0,y,x));
- }
- __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
- {
-  SetElement(0,y,x,value);
- }
-
- __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
- {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
   tmp/=Dst_X;
@@ -998,7 +829,7 @@ struct STensorKernel_DeltaWeightAndBias_Image
 
   return(sTensorKernel_Image.GetElement(sz,sy,sx));
  }
- __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
  {
   int32_t pos=(x+Offset_X)+(y+Offset_Y)*Basic_Size_X;//линейная координата
   int32_t tmp=pos;
@@ -1019,6 +850,15 @@ struct STensorKernel_DeltaWeightAndBias_Image
   int32_t sx=dx*Conv_Stride_X+kx-Conv_Padding_X;
 
   sTensorKernel_Image.SetElement(sz,sy,sx,value);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
+ {
+  return(GetElement(y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ {
+  SetElement(y,x,value);
  }
 
 
@@ -1047,6 +887,7 @@ struct STensorKernel_DeltaWeightAndBias_Image
  __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t input_y,int32_t input_x,int32_t kernel_y,int32_t kernel_x,int32_t stride_y,int32_t stride_x,int32_t padding_y,int32_t padding_x,int32_t dst_y,int32_t dst_x)
  {
   sTensorKernel_Image.Set(cTensor);
+  sTensorKernel_Image.SelectZ(0);
 
   Input_Z=cTensor.GetSizeZ();
   Conv_Kernel_X=kernel_x;
@@ -1102,30 +943,13 @@ struct STensorKernel_DeltaWeightAndBias_Delta
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x)
  {
-  int32_t sx=x+Offset_X;
-  int32_t sy=y+Offset_Y;
-
-  int32_t dy=sx/NewDelta_X;
-  int32_t dx=sx-dy*NewDelta_X;
-
-  //пересчитываем в новые размеры матрицы поправок
-  int32_t dx_s=dx/Stride_X;
-  int32_t dy_s=dy/Stride_Y;
-  if (dx==dx_s*Stride_X && dy==dy_s*Stride_Y) return(sTensorKernel_Delta.GetElement(w,sy,dy_s,dx_s));
-  return(0);
+  SelectW(w);
+  return(GetElement(y,x));
  }
  __forceinline__ __host__ __device__ void SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
-  int32_t sx=x+Offset_X;
-  int32_t sy=y+Offset_Y;
-
-  int32_t dy=sx/NewDelta_X;
-  int32_t dx=sx-dy*NewDelta_X;
-
-  //пересчитываем в новые размеры матрицы поправок
-  int32_t dx_s=dx/Stride_X;
-  int32_t dy_s=dy/Stride_Y;
-  if (dx==dx_s*Stride_X && dy==dy_s*Stride_Y) sTensorKernel_Delta.SetElement(w,sy,dy_s,dx_s,value);
+  SelectW(w);
+  SetElement(y,x,value);
  }
 
  __forceinline__ __host__ __device__ uint32_t GetSizeX(void) const
@@ -1160,15 +984,6 @@ __forceinline__ __host__ __device__ void SelectW(uint32_t w)///<выбрать �
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
  {
-  return(GetElement(0,y,x));
- }
- __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
- {
-  SetElement(0,y,x,value);
- }
-
- __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
- {
   int32_t sx=x+Offset_X;
   int32_t sy=y+Offset_Y;
 
@@ -1181,7 +996,7 @@ __forceinline__ __host__ __device__ void SelectW(uint32_t w)///<выбрать �
   if (dx==dx_s*Stride_X && dy==dy_s*Stride_Y) return(sTensorKernel_Delta.GetElement(sy,dy_s,dx_s));
   return(0);
  }
- __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
  {
   int32_t sx=x+Offset_X;
   int32_t sy=y+Offset_Y;
@@ -1195,6 +1010,14 @@ __forceinline__ __host__ __device__ void SelectW(uint32_t w)///<выбрать �
   if (dx==dx_s*Stride_X && dy==dy_s*Stride_Y) sTensorKernel_Delta.SetElement(sy,dy_s,dx_s,value);
  }
 
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
+ {
+  return(GetElement(y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ {
+  SetElement(y,x,value);
+ }
 
  __host__ __device__ void Reset(void)
  {
@@ -1214,6 +1037,7 @@ __forceinline__ __host__ __device__ void SelectW(uint32_t w)///<выбрать �
  __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t new_delta_y,int32_t new_delta_x,int32_t stride_y,int32_t stride_x)
  {
   sTensorKernel_Delta.Set(cTensor);
+  sTensorKernel_Delta.SelectZ(0);
 
   Size_W=cTensor.GetSizeW();
   Size_Z=1;
@@ -1228,12 +1052,119 @@ __forceinline__ __host__ __device__ void SelectW(uint32_t w)///<выбрать �
  }
 };
 
+
+
+//****************************************************************************************************
+///!структура ядра тензора поправок к ядрам для вычисления поправок
+//****************************************************************************************************
+template<class type_t>
+struct STensorKernel_DeltaWeightAndBias_dKernel
+{
+ STensorKernel<type_t> sTensorKernel_dKernel;///<исходный тензор
+
+ int32_t Size_X;
+ int32_t Size_Y;
+ int32_t Size_Z;
+ int32_t Size_W;
+
+ __host__ __device__ STensorKernel_DeltaWeightAndBias_dKernel()///<конструктор
+ {
+ }
+ __host__ __device__ STensorKernel_DeltaWeightAndBias_dKernel(const CTensor<type_t> &cTensor,int32_t w,int32_t z,int32_t y,int32_t x)///<конструктор
+ {
+  Set(cTensor,w,z,y,x);
+ }
+
+ __forceinline__ __host__ __device__ type_t* GetTensorDataPtr(uint32_t w,uint32_t z)///<получить указатель на элементы с глубиной z
+ {
+  return(NULL);
+ }
+
+ __forceinline__ __host__ __device__ void SelectZ(uint32_t z)///<выбрать слой Z
+ {
+ }
+
+ __forceinline__ __host__ __device__ void SelectW(uint32_t w)///<выбрать слой W
+ {
+  sTensorKernel_dKernel.SelectW(w);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
+ {
+  if (z>=Size_Z || y>=Size_Y || x>=Size_X) return(0);
+  uint32_t pos=z*Size_X*Size_Y+y*Size_X+x;
+  uint32_t kernel_index=pos/(sTensorKernel_dKernel.Size_X);
+  uint32_t offset=pos-kernel_index*sTensorKernel_dKernel.Size_X;
+  return(sTensorKernel_dKernel.GetElement(kernel_index,offset));
+ }
+ __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ {
+  if (z>=Size_Z || y>=Size_Y || x>=Size_X) return;
+  uint32_t pos=z*Size_X*Size_Y+y*Size_X+x;
+  uint32_t kernel_index=pos/(sTensorKernel_dKernel.Size_X);
+  uint32_t offset=pos-kernel_index*sTensorKernel_dKernel.Size_X;
+  value+=sTensorKernel_dKernel.GetElement(kernel_index,offset);
+  sTensorKernel_dKernel.SetElement(kernel_index,offset,value);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
+ {
+  return(GetElement(0,y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
+ {
+  return(SetElement(0,y,x,value));
+ }
+
+ __forceinline__ __host__ __device__ uint32_t GetSizeX(void) const
+ {
+  return(Size_X);
+ }
+
+ __forceinline__ __host__ __device__ uint32_t GetSizeY(void) const
+ {
+  return(Size_Y);
+ }
+
+ __forceinline__ __host__ __device__ uint32_t GetSizeZ(void) const
+ {
+  return(Size_Z);
+ }
+
+ __forceinline__ __host__ __device__ uint32_t GetSizeW(void) const
+ {
+  return(Size_W);
+ }
+
+ __host__ __device__ void Reset(void)
+ {
+  sTensorKernel_dKernel.Reset();
+  Size_X=0;
+  Size_Y=0;
+  Size_Z=0;
+  Size_W=0;
+ }
+
+ __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t w,int32_t z,int32_t y,int32_t x)
+ {
+  sTensorKernel_dKernel.Set(cTensor);
+  Size_Z=z;
+  Size_Y=y;
+  Size_X=x;
+  Size_W=w;
+
+  sTensorKernel_dKernel.SelectZ(0);
+  sTensorKernel_dKernel.SelectW(0);
+ }
+};
+
+
 //----------------------------------------------------------------------------------------------------
 /*!создание поправок весов и смещений для прямой свёртки через умножение матриц
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,const CTensor<type_t> &cTensor_Image,CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,CTensor<type_t> &cTensor_Tmp)
+void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,const CTensor<type_t> &cTensor_Image,CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
  if (dkernel_amount==0) throw("Для создания поправок весов и смещений требуется не пустой вектор поправок к ядрам");
  if (cTensor_dBias.GetSizeZ()!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы количество поправок фильтров и поправок сдвигов совпадало");
@@ -1253,6 +1184,7 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
  int32_t new_delta_x=stride_x*(delta_x-1)+1;
  int32_t new_delta_y=stride_y*(delta_y-1)+1;
 
+
  //перестроим входной тензор для выполнения умножения
  int32_t dst_y=dkernel_y;
  int32_t dst_x=dkernel_x;
@@ -1263,37 +1195,17 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
 
  //умножаем матрицы
 
- //используем вспомогательный тензор (его накладно каждый раз создавать и уничтожать, он весьма большой)
- CTensor<type_t> &cTensor_Output=cTensor_Tmp;
- if (cTensor_Output.GetSizeW()*cTensor_Output.GetSizeX()*cTensor_Output.GetSizeY()*cTensor_Output.GetSizeZ()!=cTensor_dKernel.Size_W*new_input_x*delta_z*1) cTensor_Output=CTensor<type_t>(cTensor_dKernel.Size_W,1,delta_z,new_input_x);
- cTensor_Output.ReinterpretSize(cTensor_dKernel.Size_W,1,delta_z,new_input_x);
+ cTensor_dKernel.CopyToDevice();//так как мы прибавляем поправки к уже имеющимся, обязательно нужно перенести данные на устройство
 
-  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel_DeltaWeightAndBias_dKernel<type_t> sTensorKernel_dKernel(cTensor_dKernel,cTensor_dKernel.GetSizeW(),1,delta_z,new_input_x);
  STensorKernel_DeltaWeightAndBias_Delta<type_t> sTensorKernel_Delta(cTensor_Delta,new_delta_y,new_delta_x,stride_y,stride_x);
  STensorKernel_DeltaWeightAndBias_Image<type_t> sTensorKernel_Image(cTensor_Image,new_input_y,new_input_x,new_delta_y,new_delta_x,1,1,padding_y,padding_x,dst_y,dst_x);
 
- CTensorMath<type_t>::MulAbstract(cTensor_Output,sTensorKernel_Output,cTensor_Delta,sTensorKernel_Delta,cTensor_Image,sTensorKernel_Image);
-
- cTensor_Output.CopyFromDevice();
- cTensor_Output.ReinterpretSize(cTensor_dKernel.Size_W,dkernel_z*delta_z,dkernel_y,dkernel_x);
-
- //копируем результаты в поправки ядер (прибавляем к имеющимся)
- cTensor_dKernel.CopyFromDevice();
- for(uint32_t w=0;w<cTensor_Output.GetSizeW();w++)
- {
-  for(uint32_t k=0;k<dkernel_amount;k++)
-  {
-   const type_t *s_ptr=cTensor_Output.GetColumnPtr(w,k*dkernel_z,0);
-   type_t *d_ptr=cTensor_dKernel.GetColumnPtr(w,0,k);
-   for(uint32_t n=0;n<dkernel_x*dkernel_y*dkernel_z;n++,s_ptr++,d_ptr++) *d_ptr+=*s_ptr;
-  }
- }
-
- cTensor_dKernel.SetHostOnChange();
+ CTensorMath<type_t>::MulAbstract(cTensor_dKernel,sTensorKernel_dKernel,cTensor_Delta,sTensorKernel_Delta,cTensor_Image,sTensorKernel_Image);
 
  CTensor<type_t> dB=cTensor_dBias;
 
- cTensor_dBias.CopyToDevice();
+ cTensor_dBias.CopyToDevice();//так как мы прибавляем поправки к уже имеющимся, обязательно нужно перенести данные на устройство
  CTensorMath<type_t>::SummXY(dB,cTensor_Delta);
  CTensorMath<type_t>::Add(cTensor_dBias,cTensor_dBias,dB,1,1);
  cTensor_dBias.CopyFromDevice();
@@ -1304,9 +1216,9 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,CTensor<type_t> &cTensor_Tmp)
+void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
- CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dkernel_x,dkernel_y,dkernel_z,dkernel_amount,cTensor_dBias,cTensor_Delta,cTensor_Image,stride_x,stride_y,padding_x,padding_y,cTensor_Tmp);
+ CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dkernel_x,dkernel_y,dkernel_z,dkernel_amount,cTensor_dBias,cTensor_Delta,cTensor_Image,stride_x,stride_y,padding_x,padding_y);
  CTensorMath<type_t>::Fill(cTensor_dBias,0);//TODO: неясно, нужно ли использовать эти поправки
 }
 

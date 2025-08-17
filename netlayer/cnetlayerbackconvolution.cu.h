@@ -73,7 +73,6 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
 
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
-  CTensor<type_t> cTensor_DWBTmp;///<вспомогательный тензор для вычисления поправок (нужен функции вычисления поправок)
 
   //для оптимизации Adam
   CTensor<type_t> cTensor_MK;///<тензор фильтра 1
@@ -447,7 +446,6 @@ void CNetLayerBackConvolution<type_t>::TrainingStop(void)
  cTensor_VK=CTensor<type_t>(1,1,1,1);
  cTensor_MB=CTensor<type_t>(1,1,1,1);
  cTensor_VB=CTensor<type_t>(1,1,1,1);
- cTensor_DWBTmp=CTensor<type_t>(1,1,1);
 
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
 }
@@ -474,7 +472,7 @@ void CNetLayerBackConvolution<type_t>::TrainingBackward(bool create_delta_weight
   CTensorMath<type_t>::Fill(cTensor_dKernel_Batch,0);
   CTensorMath<type_t>::Fill(cTensor_dBias_Batch,0);
 
-  CTensorConv<type_t>::CreateBackDeltaWeightAndBias(cTensor_dKernel_Batch,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_dBias_Batch,PrevLayerPtr->GetOutputTensor(),cTensor_Delta,Stride_X,Stride_Y,Padding_X,Padding_Y,cTensor_DWBTmp);
+  CTensorConv<type_t>::CreateBackDeltaWeightAndBias(cTensor_dKernel_Batch,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_dBias_Batch,PrevLayerPtr->GetOutputTensor(),cTensor_Delta,Stride_X,Stride_Y,Padding_X,Padding_Y);
 
   CTensorMath<type_t>::AddSumW(cTensor_dKernel,cTensor_dKernel,cTensor_dKernel_Batch);
   CTensorMath<type_t>::AddSumW(cTensor_dBias,cTensor_dBias,cTensor_dBias_Batch);
