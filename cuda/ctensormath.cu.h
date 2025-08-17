@@ -1103,7 +1103,7 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
  cTensor_Output.SetDeviceOnChange();
  cTensor_Input.ReinterpretSize(input_z,input_y,input_x);
 }
-/*
+
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для умножения тензоров
 //----------------------------------------------------------------------------------------------------
@@ -1233,12 +1233,12 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  HANDLE_ERROR(cudaDeviceSynchronize());
 
  cTensor_Output.SetDeviceOnChange();
-}*/
+}
 
 
 
 
-
+/*
 static const uint32_t TENSOR_OPERATION_TILE_SIZE_X=32;///<размер блока операций с тензорами по X
 static const uint32_t TENSOR_OPERATION_TILE_SIZE_Y=32;///<размер блока операций с тензорами по Y
 static const uint32_t TENSOR_OPERATION_TILE_SIZE_K=32;///<размер блока операций с тензорами по общей стороне K
@@ -1343,6 +1343,7 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
  }
 }
 
+
 //----------------------------------------------------------------------------------------------------
 //умножить тензоры
 //----------------------------------------------------------------------------------------------------
@@ -1380,6 +1381,9 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
 
  cTensor_Output.SetDeviceOnChange();
 }
+*/
+
+
 
 
 
