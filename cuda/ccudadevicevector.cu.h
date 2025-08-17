@@ -47,11 +47,11 @@ class CCUDADeviceVector
   //-константы------------------------------------------------------------------------------------------
  private:
   //-переменные-----------------------------------------------------------------------------------------
-  size_t Size;///<размер данных в элементах
+  uint32_t Size;///<размер данных в элементах
   type_t *ItemPtr;///<указатель на данные на видеокарте
   public:
   //-конструктор----------------------------------------------------------------------------------------
-  __host__ CCUDADeviceVector(size_t size=0);
+  __host__ CCUDADeviceVector(uint32_t size=0);
   //-конструктор копирования----------------------------------------------------------------------------
   __host__ CCUDADeviceVector(const CCUDADeviceVector<type_t> &cCUDADeviceVector);
   //-деструктор-----------------------------------------------------------------------------------------
@@ -59,14 +59,14 @@ class CCUDADeviceVector
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   __host__ void clear(void);///<удалить данные
-  __host__ void resize(size_t size);///<изменить размер данных
+  __host__ void resize(uint32_t size);///<изменить размер данных
   __host__ void swap(CCUDADeviceVector<type_t> &cCUDADeviceVector);///<обменять местами
   __host__ void move(CCUDADeviceVector<type_t> &cCUDADeviceVector);///<переместить
-  __device__ __host__ size_t size(void);///<получить количество элементов
+  __device__ __host__ uint32_t size(void);///<получить количество элементов
   __device__ __host__ type_t* get(void) const;///<получить указатель
   __host__ CCUDADeviceVector<type_t>& operator=(const CCUDADeviceVector<type_t> &cCUDADeviceVector);///<оператор "="
-  __host__ void copy_host_to_device(const type_t *item_ptr,size_t items,size_t items_offset=0) const;///<скопировать на устройство
-  __host__ void copy_device_to_host(type_t *item_ptr,size_t items,size_t items_offset=0) const;///<скопировать с устройства
+  __host__ void copy_host_to_device(const type_t *item_ptr,uint32_t items,uint32_t items_offset=0) const;///<скопировать на устройство
+  __host__ void copy_device_to_host(type_t *item_ptr,uint32_t items,uint32_t items_offset=0) const;///<скопировать с устройства
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -78,7 +78,7 @@ class CCUDADeviceVector
 //конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__host__ CCUDADeviceVector<type_t>::CCUDADeviceVector(size_t size)
+__host__ CCUDADeviceVector<type_t>::CCUDADeviceVector(uint32_t size)
 {
  Size=0;
  ItemPtr=NULL;
@@ -132,7 +132,7 @@ __host__ void CCUDADeviceVector<type_t>::clear(void)
 ///!изменить размер данных
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__host__ void CCUDADeviceVector<type_t>::resize(size_t size)
+__host__ void CCUDADeviceVector<type_t>::resize(uint32_t size)
 {
  if (size==Size) return;
  clear();
@@ -174,7 +174,7 @@ __host__ CCUDADeviceVector<type_t>& CCUDADeviceVector<type_t>::operator=(const C
 template<class type_t>
 __host__ void CCUDADeviceVector<type_t>::swap(CCUDADeviceVector<type_t> &cCUDADeviceVector)
 {
- size_t size=cCUDADeviceVector.Size;
+ uint32_t size=cCUDADeviceVector.Size;
  type_t *ptr=cCUDADeviceVector.ItemPtr;
  cCUDADeviceVector.Size=Size;
  cCUDADeviceVector.ItemPtr=ItemPtr;
@@ -197,7 +197,7 @@ __host__ void CCUDADeviceVector<type_t>::move(CCUDADeviceVector<type_t> &cCUDADe
 ///!получить количество элементов
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__device__ __host__ size_t CCUDADeviceVector<type_t>::size(void)
+__device__ __host__ uint32_t CCUDADeviceVector<type_t>::size(void)
 {
  return(Size);
 }
@@ -206,7 +206,7 @@ __device__ __host__ size_t CCUDADeviceVector<type_t>::size(void)
 ///!скопировать на устройство
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__host__ void CCUDADeviceVector<type_t>::copy_host_to_device(const type_t *item_ptr,size_t items,size_t items_offset) const
+__host__ void CCUDADeviceVector<type_t>::copy_host_to_device(const type_t *item_ptr,uint32_t items,uint32_t items_offset) const
 {
  if (items+items_offset>Size) throw("CCUDADeviceVector<type_t>::copy_host_to_device: копируемое количество элементов превышает размер выделенной памяти!");
  if (items>0)
@@ -218,7 +218,7 @@ __host__ void CCUDADeviceVector<type_t>::copy_host_to_device(const type_t *item_
 ///!скопировать с устройства
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__host__ void CCUDADeviceVector<type_t>::copy_device_to_host(type_t *item_ptr,size_t items,size_t items_offset) const
+__host__ void CCUDADeviceVector<type_t>::copy_device_to_host(type_t *item_ptr,uint32_t items,uint32_t items_offset) const
 {
  if (items+items_offset>Size) throw("CCUDADeviceVector<type_t>::copy_device_to_host: копируемое количество элементов превышает размер выделенной памяти!");
  if (items>0)

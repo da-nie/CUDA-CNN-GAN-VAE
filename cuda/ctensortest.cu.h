@@ -75,20 +75,20 @@ template<class type_t>
 bool CTensorTest<type_t>::TestForwardConvolution(void)
 {
  SYSTEM::PutMessageToConsole("Тест функции ForwardConvolution.");
- const size_t kernel_x=2;
- const size_t kernel_y=2;
- const size_t kernel_z=3;
- const size_t batch_size=10;
- const size_t kernel_amount=2;
+ const uint32_t kernel_x=2;
+ const uint32_t kernel_y=2;
+ const uint32_t kernel_z=3;
+ const uint32_t batch_size=10;
+ const uint32_t kernel_amount=2;
 
  type_t kernel_a[kernel_x*kernel_y*kernel_z]={1,2,3,4,5,6,7,8,9,10,11,12};
  type_t kernel_b[kernel_x*kernel_y*kernel_z]={12,11,10,9,8,7,6,5,4,3,2,1};
 
  //создаём тензор ядер
  CTensor<type_t> cTensor_Kernel=CTensor<type_t>(1,1,kernel_amount,kernel_x*kernel_y*kernel_z);
- for(size_t w=0;w<1;w++)
+ for(uint32_t w=0;w<1;w++)
  {
-  for(size_t n=0;n<kernel_x*kernel_y*kernel_z;n++)
+  for(uint32_t n=0;n<kernel_x*kernel_y*kernel_z;n++)
   {
    cTensor_Kernel.SetElement(w,0,0,n,kernel_a[n]);
    cTensor_Kernel.SetElement(w,0,1,n,kernel_b[n]);
@@ -97,12 +97,12 @@ bool CTensorTest<type_t>::TestForwardConvolution(void)
 
  //создаём тензор смещений
  CTensor<type_t> cTensor_Bias=CTensor<type_t>(1,kernel_amount,1,1);
- cTensor_Bias.Zero();
+ CTensorMath<type_t>::Fill(cTensor_Bias,0);
 
  //входное изображение
  CTensor<type_t> cTensor_Image(batch_size,3,3,3);
 
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   cTensor_Image.SetElement(w,0,0,0,1);
   cTensor_Image.SetElement(w,0,0,1,2);
@@ -139,7 +139,7 @@ bool CTensorTest<type_t>::TestForwardConvolution(void)
  CTensor<type_t> cTensor_Output(batch_size,2,2,2);
  //проверочный тензор свёртки
  CTensor<type_t> cTensor_Control(batch_size,2,2,2);
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   cTensor_Control.SetElement(w,0,0,0,1245);
   cTensor_Control.SetElement(w,0,0,1,1323);
@@ -170,20 +170,20 @@ template<class type_t>
 bool CTensorTest<type_t>::TestForwardConvolutionWithStepAndPadding(void)
 {
  SYSTEM::PutMessageToConsole("Тест функции ForwardConvolution с шагом и дополнением.");
- const size_t kernel_x=3;
- const size_t kernel_y=3;
- const size_t kernel_z=3;
- const size_t batch_size=10;
- const size_t kernel_amount=2;
+ const uint32_t kernel_x=3;
+ const uint32_t kernel_y=3;
+ const uint32_t kernel_z=3;
+ const uint32_t batch_size=10;
+ const uint32_t kernel_amount=2;
 
  type_t kernel_a[kernel_x*kernel_y*kernel_z]={-1,1,1, -1,1,1, 0,0,1, 0,-1,1, -1,0,-1, 1,0,0, 1,-1,0, -1,0,-1, 0,1,-1};
  type_t kernel_b[kernel_x*kernel_y*kernel_z]={0,0,-1, 1,0,0, 0,-1,0, 1,-1,0, -1,1,0, -1,1,1, 1,0,1, 1,-1,1, -1,0,0};
 
  //создаём тензор ядер
  CTensor<type_t> cTensor_Kernel=CTensor<type_t>(1,1,kernel_amount,kernel_x*kernel_y*kernel_z);
- for(size_t w=0;w<1;w++)
+ for(uint32_t w=0;w<1;w++)
  {
-  for(size_t n=0;n<kernel_x*kernel_y*kernel_z;n++)
+  for(uint32_t n=0;n<kernel_x*kernel_y*kernel_z;n++)
   {
    cTensor_Kernel.SetElement(w,0,0,n,kernel_a[n]);
    cTensor_Kernel.SetElement(w,0,1,n,kernel_b[n]);
@@ -192,11 +192,11 @@ bool CTensorTest<type_t>::TestForwardConvolutionWithStepAndPadding(void)
 
  //создаём тензор смещений
  CTensor<type_t> cTensor_Bias=CTensor<type_t>(1,kernel_amount,1,1);
- cTensor_Bias.Zero();
+ CTensorMath<type_t>::Fill(cTensor_Bias,0);
 
  //создаём изображение
  CTensor<type_t> cTensor_Image(batch_size,3,5,5);
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   cTensor_Image.SetElement(w,0,0,0,1);
   cTensor_Image.SetElement(w,0,0,1,2);
@@ -309,15 +309,15 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBiasWithStepAndPadding(void)
 {
  SYSTEM::PutMessageToConsole("Тест функции CreateDeltaWeightAndBias с шагом и дополнением.");
 
- const size_t batch_size=10;
+ const uint32_t batch_size=10;
 
  CTensor<type_t> cTensor_Image(batch_size,1,7,7);
  //входное изображение
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
-  for(size_t y=0;y<7;y++)
+  for(uint32_t y=0;y<7;y++)
   {
-   for(size_t x=0;x<7;x++)
+   for(uint32_t x=0;x<7;x++)
    {
     cTensor_Image.SetElement(w,0,y,x,x+y*7+1);
    }
@@ -325,31 +325,31 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBiasWithStepAndPadding(void)
  }
  //дельта
  CTensor<type_t> cTensor_Delta(batch_size,1,4,4);
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
-  for(size_t y=0;y<4;y++)
+  for(uint32_t y=0;y<4;y++)
   {
-   for(size_t x=0;x<4;x++)
+   for(uint32_t x=0;x<4;x++)
    {
     cTensor_Delta.SetElement(w,0,y,x,x+y*4+1);
    }
   }
  }
  //создаём тензор поправок ядер
- const size_t kernel_x=5;
- const size_t kernel_y=5;
- const size_t kernel_z=1;
- const size_t kernel_amount=1;
+ const uint32_t kernel_x=5;
+ const uint32_t kernel_y=5;
+ const uint32_t kernel_z=1;
+ const uint32_t kernel_amount=1;
  CTensor<type_t> cTensor_dKernel(batch_size,1,kernel_amount,kernel_x*kernel_y*kernel_z);
  //создаём тензор поправок смещений
  CTensor<type_t> cTensor_dBias=CTensor<type_t>(batch_size,kernel_amount,1,1);
- cTensor_dBias.Zero();
+ CTensorMath<type_t>::Fill(cTensor_dBias,0);
  CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_dBias,cTensor_Image,cTensor_Delta,2,2,2,2);
 
  //проверочный тензор
  CTensor<type_t> cTensor_Control(batch_size,1,5,5);
 
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   cTensor_Control.SetElement(w,0,0,0,2031);
   cTensor_Control.SetElement(w,0,0,1,2130);
@@ -384,14 +384,14 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBiasWithStepAndPadding(void)
 
  CTensor<type_t> cTensor_dKernelBased=CTensor<type_t>(batch_size,kernel_z,kernel_y,kernel_x);
 
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
-  size_t pos=0;
-  for(size_t z=0;z<kernel_z;z++)
+  uint32_t pos=0;
+  for(uint32_t z=0;z<kernel_z;z++)
   {
-   for(size_t y=0;y<kernel_y;y++)
+   for(uint32_t y=0;y<kernel_y;y++)
    {
-    for(size_t x=0;x<kernel_x;x++,pos++)
+    for(uint32_t x=0;x<kernel_x;x++,pos++)
     {
      cTensor_dKernelBased.SetElement(w,z,y,x,cTensor_dKernel.GetElement(w,0,0,pos));
     }
@@ -412,31 +412,31 @@ template<class type_t>
 bool CTensorTest<type_t>::TestCreateDeltaWeightAndBias(void)
 {
  SYSTEM::PutMessageToConsole("Тест функции CreateDeltaWeightAndBias.");
- const size_t kernel_x=3;
- const size_t kernel_y=3;
- const size_t kernel_z=1;
- const size_t batch_size=10;
- const size_t kernel_amount=1;
+ const uint32_t kernel_x=3;
+ const uint32_t kernel_y=3;
+ const uint32_t kernel_z=1;
+ const uint32_t batch_size=10;
+ const uint32_t kernel_amount=1;
 
  type_t kernel_a[kernel_x*kernel_y*kernel_z]={1,4,1, 1,4,3, 3,3,1};
 
  //создаём тензор ядер
  CTensor<type_t> cTensor_Kernel=CTensor<type_t>(batch_size,1,kernel_amount,kernel_x*kernel_y*kernel_z);
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
-  for(size_t n=0;n<kernel_x*kernel_y*kernel_z;n++)
+  for(uint32_t n=0;n<kernel_x*kernel_y*kernel_z;n++)
   {
    cTensor_Kernel.SetElement(w,0,0,n,kernel_a[n]);
   }
  }
  //создаём тензор смещений
  CTensor<type_t> cTensor_Bias=CTensor<type_t>(batch_size,kernel_amount,1,1);
- cTensor_Bias.Zero();
+ CTensorMath<type_t>::Fill(cTensor_Bias,0);
 
  //создаём изображение
  CTensor<type_t> cTensor_Image(batch_size,1,4,4);
 
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   cTensor_Image.SetElement(w,0,0,0,4);
   cTensor_Image.SetElement(w,0,0,1,5);
@@ -463,7 +463,7 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBias(void)
  CTensorConv<type_t>::ForwardConvolution(cTensor_Convolution,cTensor_Image,cTensor_Kernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_Bias,1,1,0,0);
 
  CTensor<type_t> cTensor_dOut(batch_size,1,2,2);
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   cTensor_dOut.SetElement(w,0,0,0,2);
   cTensor_dOut.SetElement(w,0,0,1,1);
@@ -476,7 +476,7 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBias(void)
  CTensor<type_t> cTensor_Delta(batch_size,1,4,4);
 
  CTensor<type_t> cTensor_dBias=CTensor<type_t>(batch_size,kernel_amount,1,1);
- cTensor_Bias.Zero();
+ CTensorMath<type_t>::Fill(cTensor_Bias,0);
 
  CTensorConv<type_t>::BackwardConvolution(cTensor_Delta,cTensor_dOut,cTensor_Kernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_dBias,1,1,0,0);
  cTensor_Delta.Print("Тензор поправок дельта");
@@ -484,16 +484,16 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBias(void)
  //создаём вектор тензоров поправок к ядрам
  CTensor<type_t> cTensor_dKernel=CTensor<type_t>(batch_size,1,kernel_amount,kernel_x*kernel_y*kernel_z);
 
- cTensor_dKernel.Zero();
+ CTensorMath<type_t>::Fill(cTensor_dKernel,0);
  //создаём вектор поправок смещений
- cTensor_dBias.Zero();
+ CTensorMath<type_t>::Fill(cTensor_dBias,0);
 
  CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_dBias,cTensor_Image,cTensor_dOut,1,1,0,0);
 
  //проверяем
  CTensor<type_t> cTensor_Control(batch_size,1,3,3);
 
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   cTensor_Control.SetElement(w,0,0,0,49);
   cTensor_Control.SetElement(w,0,0,1,82);
@@ -510,14 +510,14 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBias(void)
 
  CTensor<type_t> cTensor_dKernelBased=CTensor<type_t>(batch_size,kernel_z,kernel_y,kernel_x);
 
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
-  size_t pos=0;
-  for(size_t z=0;z<kernel_z;z++)
+  uint32_t pos=0;
+  for(uint32_t z=0;z<kernel_z;z++)
   {
-   for(size_t y=0;y<kernel_y;y++)
+   for(uint32_t y=0;y<kernel_y;y++)
    {
-    for(size_t x=0;x<kernel_x;x++,pos++)
+    for(uint32_t x=0;x<kernel_x;x++,pos++)
     {
      cTensor_dKernelBased.SetElement(w,z,y,x,cTensor_dKernel.GetElement(w,0,0,pos));
     }
@@ -539,22 +539,22 @@ bool CTensorTest<type_t>::TestBackwardConvolutionWithStepAndPadding(void)
  {
   SYSTEM::PutMessageToConsole("Тест функции BackwardConvolution с шагом и дополнением.");
 
- const size_t kernel_x=5;
- const size_t kernel_y=5;
- const size_t kernel_z=1;
- const size_t batch_size=10;
- const size_t kernel_amount=1;
+ const uint32_t kernel_x=5;
+ const uint32_t kernel_y=5;
+ const uint32_t kernel_z=1;
+ const uint32_t batch_size=10;
+ const uint32_t kernel_amount=1;
 
  //создаём тензор ядер
  CTensor<type_t> cTensor_Kernel=CTensor<type_t>(1,1,kernel_amount,kernel_x*kernel_y*kernel_z);
- for(size_t w=0;w<1;w++)
+ for(uint32_t w=0;w<1;w++)
  {
-  size_t pos=0;
-  for(size_t z=0;z<1;z++)
+  uint32_t pos=0;
+  for(uint32_t z=0;z<1;z++)
   {
-   for(size_t y=0;y<5;y++)
+   for(uint32_t y=0;y<5;y++)
    {
-    for(size_t x=0;x<5;x++,pos++)
+    for(uint32_t x=0;x<5;x++,pos++)
     {
      cTensor_Kernel.SetElement(w,0,0,pos,x+y*5+1);
     }
@@ -566,11 +566,11 @@ bool CTensorTest<type_t>::TestBackwardConvolutionWithStepAndPadding(void)
  cTensor_Bias.Zero();
  //входное изображение
  CTensor<type_t> cTensor_Delta(batch_size,1,4,4);
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
-  for(size_t y=0;y<4;y++)
+  for(uint32_t y=0;y<4;y++)
   {
-   for(size_t x=0;x<4;x++)
+   for(uint32_t x=0;x<4;x++)
    {
     cTensor_Delta.SetElement(w,0,y,x,x+y*4+1);
    }
@@ -583,7 +583,7 @@ bool CTensorTest<type_t>::TestBackwardConvolutionWithStepAndPadding(void)
  //выполняем обратную свёртку
  CTensorConv<type_t>::BackwardConvolution(cTensor_Output,cTensor_Delta,cTensor_Kernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_Bias,2,2,2,2);
 
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   cTensor_Control.SetElement(w,0,0,0,56);
   cTensor_Control.SetElement(w,0,0,1,70);
@@ -666,7 +666,7 @@ bool CTensorTest<type_t>::TestBackwardConvolutionWithStepAndPadding(void)
 template<class type_t>
 bool CTensorTest<type_t>::Test(void)
 {
- const size_t batch_size=10;
+ const uint32_t batch_size=10;
 
  CTensor<type_t> cTensorA(batch_size,1,2,2);
  CTensor<type_t> cTensorB(batch_size,1,2,2);
@@ -675,7 +675,7 @@ bool CTensorTest<type_t>::Test(void)
  CTensor<type_t> cTensorAone(1,1,2,2);
  CTensor<type_t> cTensorBone(1,1,2,2);
 
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   cTensorA.SetElement(w,0,0,0,1);
   cTensorA.SetElement(w,0,0,1,2);
@@ -703,7 +703,7 @@ bool CTensorTest<type_t>::Test(void)
 
  SYSTEM::PutMessageToConsole("Тест заполнения тензора по элементам.");
  //проверка на заполнение тензора
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorA.GetElement(w,0,0,0)!=1) return(false);
   if (cTensorA.GetElement(w,0,0,1)!=2) return(false);
@@ -716,7 +716,7 @@ bool CTensorTest<type_t>::Test(void)
  //умножение на число справа
  SYSTEM::PutMessageToConsole("Тест умножения на число справа.");
  cTensorC=cTensorA*static_cast<type_t>(2.0);
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorC.GetElement(w,0,0,0)!=2) return(false);
   if (cTensorC.GetElement(w,0,0,1)!=4) return(false);
@@ -729,7 +729,7 @@ bool CTensorTest<type_t>::Test(void)
  //умножение на число слева
  SYSTEM::PutMessageToConsole("Тест умножения на число слева.");
  cTensorC=static_cast<type_t>(2.0)*cTensorA;
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorC.GetElement(w,0,0,0)!=2) return(false);
   if (cTensorC.GetElement(w,0,0,1)!=4) return(false);
@@ -743,7 +743,7 @@ bool CTensorTest<type_t>::Test(void)
  SYSTEM::PutMessageToConsole("Тест умножения тензоров.");
  cTensorC=cTensorA*cTensorB;
  cTensorC.Print("Mul");
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorC.GetElement(w,0,0,0)!=7) return(false);
   if (cTensorC.GetElement(w,0,0,1)!=10) return(false);
@@ -757,7 +757,7 @@ bool CTensorTest<type_t>::Test(void)
  SYSTEM::PutMessageToConsole("Тест умножения тензоров разной глубины w C=1xB.");
  cTensorC=cTensorAone*cTensorB;
  cTensorC.Print("Mul");
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorC.GetElement(w,0,0,0)!=7) return(false);
   if (cTensorC.GetElement(w,0,0,1)!=10) return(false);
@@ -771,7 +771,7 @@ bool CTensorTest<type_t>::Test(void)
  SYSTEM::PutMessageToConsole("Тест умножения тензоров разной глубины w C=Bx1.");
  CTensorMath<type_t>::Mul(cTensorC,cTensorA,cTensorBone);
  cTensorC.Print("Mul");
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorC.GetElement(w,0,0,0)!=7) return(false);
   if (cTensorC.GetElement(w,0,0,1)!=10) return(false);
@@ -784,7 +784,7 @@ bool CTensorTest<type_t>::Test(void)
  //вычитание тензоров
  SYSTEM::PutMessageToConsole("Тест вычитания тензоров.");
  cTensorC=cTensorA-cTensorB;
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorC.GetElement(w,0,0,0)!=0) return(false);
   if (cTensorC.GetElement(w,0,0,1)!=0) return(false);
@@ -797,7 +797,7 @@ bool CTensorTest<type_t>::Test(void)
  //сложение тензоров
  SYSTEM::PutMessageToConsole("Тест сложения тензоров.");
  cTensorC=cTensorA+cTensorB;
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorC.GetElement(w,0,0,0)!=2) return(false);
   if (cTensorC.GetElement(w,0,0,1)!=4) return(false);
@@ -810,7 +810,7 @@ bool CTensorTest<type_t>::Test(void)
  //транспонирование тензора
  SYSTEM::PutMessageToConsole("Тест транспонирования тензоров.");
  cTensorC=CTensorMath<type_t>::Transpose(cTensorA);
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorC.GetElement(w,0,0,0)!=1) return(false);
   if (cTensorC.GetElement(w,0,0,1)!=3) return(false);
@@ -824,7 +824,7 @@ bool CTensorTest<type_t>::Test(void)
  SYSTEM::PutMessageToConsole("Тест поэлементного умножения тензоров.");
  CTensor<type_t> cTensorE(batch_size,1,2,2);
  CTensorMath<type_t>::TensorItemProduction(cTensorE,cTensorA,cTensorB);
- for(size_t w=0;w<batch_size;w++)
+ for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorE.GetElement(w,0,0,0)!=1) return(false);
   if (cTensorE.GetElement(w,0,0,1)!=4) return(false);

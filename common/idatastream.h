@@ -44,10 +44,10 @@ class IDataStream
 
   //сохранить массив
   template<class Type>
-  void LoadArray(Type *ptr,size_t size)
+  void LoadArray(Type *ptr,uint32_t size)
   {
    uint8_t *v=reinterpret_cast<uint8_t*>(ptr);
-   for(size_t n=0;n<size*sizeof(Type);n++,v++) *v=LoadUInt8();
+   for(uint32_t n=0;n<size*sizeof(Type);n++,v++) *v=LoadUInt8();
   }
 
   virtual void SaveInt8(int8_t value)=0;//запись числа типа int8_t
@@ -59,17 +59,17 @@ class IDataStream
   virtual void SaveUInt32(int32_t value)=0;//запись числа типа uint32_t
 
   template<class Type>//сохранить массив
-  void SaveArray(const Type *ptr,size_t size)
+  void SaveArray(const Type *ptr,uint32_t size)
   {
    const uint8_t *v=reinterpret_cast<const uint8_t*>(ptr);
-   for(size_t n=0;n<size*sizeof(Type);n++,v++) SaveUInt8(*v);
+   for(uint32_t n=0;n<size*sizeof(Type);n++,v++) SaveUInt8(*v);
   }
 
   virtual bool IsFail(void) const=0;//получить, была ли ошибка
-  //-статические функции--------------------------------------------------------------------------------  
+  //-статические функции--------------------------------------------------------------------------------
   static IDataStream* CreateNewDataStreamFile(std::string file_name,bool write=false);//создать новый объект загрузки из файла
  private:
-  //-закрытые функции-----------------------------------------------------------------------------------  
+  //-закрытые функции-----------------------------------------------------------------------------------
 };
 
 #endif

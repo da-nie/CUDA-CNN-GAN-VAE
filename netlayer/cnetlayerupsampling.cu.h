@@ -44,29 +44,29 @@ class CNetLayerUpSampling:public INetLayer<type_t>
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  size_t BatchSize;///<размер пакета для обучения
+  uint32_t BatchSize;///<размер пакета для обучения
 
   CTensor<type_t> cTensor_H;///<тензоры значений нейронов после функции активации
 
-  size_t UpSampling_X;///<коэффициент расширения по X
-  size_t UpSampling_Y;///<коэффициент расширения по Y
+  uint32_t UpSampling_X;///<коэффициент расширения по X
+  uint32_t UpSampling_Y;///<коэффициент расширения по Y
 
-  size_t InputSize_X;///<размер входного тензора по X
-  size_t InputSize_Y;///<размер входного тензора по Y
-  size_t InputSize_Z;///<размер входного тензора по Z
+  uint32_t InputSize_X;///<размер входного тензора по X
+  uint32_t InputSize_Y;///<размер входного тензора по Y
+  uint32_t InputSize_Z;///<размер входного тензора по Z
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerUpSampling(size_t upsampling_y,size_t upsampling_x,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);
+  CNetLayerUpSampling(uint32_t upsampling_y,uint32_t upsampling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
   CNetLayerUpSampling(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerUpSampling();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(size_t upsampling_y,size_t upsampling_x,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);///<создать слой
+  void Create(uint32_t upsampling_y,uint32_t upsampling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -100,7 +100,7 @@ class CNetLayerUpSampling:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerUpSampling<type_t>::CNetLayerUpSampling(size_t upsampling_y,size_t upsampling_x,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+CNetLayerUpSampling<type_t>::CNetLayerUpSampling(uint32_t upsampling_y,uint32_t upsampling_x,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  UpSampling_X=0;///<коэффициент расширения по X
  UpSampling_Y=0;///<коэффициент расширения по Y
@@ -139,7 +139,7 @@ CNetLayerUpSampling<type_t>::~CNetLayerUpSampling()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerUpSampling<type_t>::Create(size_t upsampling_y,size_t upsampling_x,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+void CNetLayerUpSampling<type_t>::Create(uint32_t upsampling_y,uint32_t upsampling_x,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
@@ -154,13 +154,13 @@ void CNetLayerUpSampling<type_t>::Create(size_t upsampling_y,size_t upsampling_x
  if (prev_layer_ptr==NULL) throw("Слой обратной субдискретизации не может быть входным!");//слой без предшествующего считается входным
 
  //размер входного тензора
- size_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- size_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- size_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ uint32_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ uint32_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ uint32_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
  //размер выходного тензора
- size_t output_x=input_x*upsampling_x;
- size_t output_y=input_y*upsampling_y;
- size_t output_z=input_z;
+ uint32_t output_x=input_x*upsampling_x;
+ uint32_t output_y=input_y*upsampling_y;
+ uint32_t output_z=input_z;
 
  //запомним размеры входного тензора, чтобы потом всегда к ним приводить
  InputSize_X=input_x;
@@ -219,15 +219,15 @@ template<class type_t>
 void CNetLayerUpSampling<type_t>::Forward(void)
 {
  //размер выходного тензора
- size_t output_x=cTensor_H.GetSizeX();
- size_t output_y=cTensor_H.GetSizeY();
- size_t output_z=cTensor_H.GetSizeZ();
+ uint32_t output_x=cTensor_H.GetSizeX();
+ uint32_t output_y=cTensor_H.GetSizeY();
+ uint32_t output_z=cTensor_H.GetSizeZ();
 
  //приведём входной тензор к нужному виду
 
- size_t basic_input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- size_t basic_input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- size_t basic_input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ uint32_t basic_input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ uint32_t basic_input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ uint32_t basic_input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
 
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
@@ -342,9 +342,9 @@ void CNetLayerUpSampling<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerUpSampling<type_t>::TrainingBackward(bool create_delta_weight)
 {
- size_t basic_input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- size_t basic_input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- size_t basic_input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ uint32_t basic_input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ uint32_t basic_input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ uint32_t basic_input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
  //приведём входной тензор к нужному виду
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
  cTensor_PrevLayerError.ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);

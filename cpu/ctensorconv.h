@@ -47,10 +47,10 @@ class CTensorConv
   //-деструктор-----------------------------------------------------------------------------------------
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  static void ForwardConvolution(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,size_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<прямая свёртка
-  static void BackwardConvolution(CTensor<type_t> &cTensor_OutputDelta,const CTensor<type_t> &cTensor_Delta,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,size_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<обратная свёртка
-  static void CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,size_t dkernel_amount,CTensor<type_t> &cTensor_dBias,const CTensor<type_t> &cTensor_Image,CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<вычисление поправок весов и смещений
-  static void CreateBackDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,size_t dkernel_amount,CTensor<type_t> &cTensor_dBias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<создание поправок весов и смещений для обратной свёртки
+  static void ForwardConvolution(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,uint32_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<прямая свёртка
+  static void BackwardConvolution(CTensor<type_t> &cTensor_OutputDelta,const CTensor<type_t> &cTensor_Delta,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,uint32_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<обратная свёртка
+  static void CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,const CTensor<type_t> &cTensor_Image,CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<вычисление поправок весов и смещений
+  static void CreateBackDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y);///<создание поправок весов и смещений для обратной свёртки
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -81,7 +81,7 @@ class CTensorConv
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,size_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
+void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,uint32_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
  //вычисляем размеры выходного тензора
  int32_t output_z=kernel_amount;
@@ -103,7 +103,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
 
  //странно, но работает быстро
  //для каждого фильтра
- for(size_t k=0;k<output_z;k++)
+ for(uint32_t k=0;k<output_z;k++)
  {
   for(int32_t y=0;y<output_y;y++)
   {
@@ -136,7 +136,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
 
  /*
  //для каждого ядра
- for(size_t k=0;k<output_z;k++)
+ for(uint32_t k=0;k<output_z;k++)
  {
   for(int32_t y=0;y<output_y;y++)
   {
@@ -145,22 +145,22 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
     type_t sum=bias[k];//прибавляем смещение
     const type_t *input_ptr=cTensor_Image.GetColumnPtr(0,0);
     const type_t *kernel_ptr=cTensor_Kernel[k].GetColumnPtr(0,0);
-    size_t offset_kernel_ptr=(y*output_x+x);
+    uint32_t offset_kernel_ptr=(y*output_x+x);
     type_t *output_ptr=cTensor_Output.GetColumnPtr(k,0)+offset_kernel_ptr;
 
-    for(size_t ky=0;ky<kernel_y;ky++)
+    for(uint32_t ky=0;ky<kernel_y;ky++)
     {
      int32_t y0=static_cast<int32_t>(stride_y*y+ky);
      y0-=static_cast<int32_t>(padding_y);
      if (y0<0 || y0>=input_y) continue;
-     for(size_t kx=0;kx<kernel_x;kx++)
+     for(uint32_t kx=0;kx<kernel_x;kx++)
      {
       int32_t x0=static_cast<int32_t>(stride_x*x+kx);
       x0-=static_cast<int32_t>(padding_x);
       if (x0<0 || x0>=input_x) continue;
-      size_t offset_i_ptr=y0*input_x+x0;
-      size_t offset_d_ptr=ky*kernel_x+kx;
-      for(size_t d=0;d<input_z;d++)
+      uint32_t offset_i_ptr=y0*input_x+x0;
+      uint32_t offset_d_ptr=ky*kernel_x+kx;
+      for(uint32_t d=0;d<input_z;d++)
       {
        const type_t *i_ptr=input_ptr+d*input_x*input_y+offset_i_ptr;
        const type_t *k_ptr=kernel_ptr+d*kernel_x*kernel_y+offset_d_ptr;
@@ -180,7 +180,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDelta,const CTensor<type_t> &cTensor_Delta,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,size_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
+void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDelta,const CTensor<type_t> &cTensor_Delta,const CTensor<type_t> &cTensor_Kernel,int32_t kernel_x,int32_t kernel_y,int32_t kernel_z,uint32_t kernel_amount,const CTensor<type_t> &cTensor_Bias,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
  //вычисляем размеры выходного тензора
  if (kernel_amount==0) throw("Для обратной свёртки требуется хотя бы одно ядро свёртки");
@@ -248,17 +248,17 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
    {
     const type_t *delta_ptr=cTensor_Delta.GetColumnPtr(0,0);
     type_t *output_ptr=cTensor_OutputDelta.GetColumnPtr(0,0)+z*output_x*output_y+y*output_x+x;
-    size_t kernel_depth_offset=z*kernel_x*kernel_y;
+    uint32_t kernel_depth_offset=z*kernel_x*kernel_y;
     type_t sum=0;//сумма для градиента
     //идём по всем весовым коэффициентам фильтров
-    for(size_t ky=0;ky<kernel_y;ky++)
+    for(uint32_t ky=0;ky<kernel_y;ky++)
     {
      int32_t y0=static_cast<int32_t>(y+ky);
      y0-=static_cast<int32_t>(padding_y);
      if (y0%stride_y!=0) continue;//delta=0
      int32_t delta_y0=y0/stride_y;
      if (delta_y0<0 || delta_y0>=input_y) continue;
-     for(size_t kx=0;kx<kernel_x;kx++)
+     for(uint32_t kx=0;kx<kernel_x;kx++)
      {
       int32_t x0=static_cast<int32_t>(x+kx);
       x0-=static_cast<int32_t>(padding_x);
@@ -267,9 +267,9 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
 	  int32_t delta_x0=x0/stride_x;
 	  if (delta_x0<0 || delta_x0>=input_x) continue;
       //суммируем по всем ядрам
-      size_t offset_k_ptr=(kernel_y-1-ky)*kernel_x+(kernel_x-1-kx)+kernel_depth_offset;
-      size_t offset_d_ptr=delta_y0*input_x+delta_x0;
-      for(size_t k=0;k<kernel_amount;k++)
+      uint32_t offset_k_ptr=(kernel_y-1-ky)*kernel_x+(kernel_x-1-kx)+kernel_depth_offset;
+      uint32_t offset_d_ptr=delta_y0*input_x+delta_x0;
+      for(uint32_t k=0;k<kernel_amount;k++)
       {
        sum+=bias[k];//TODO: надо выяснить, как прибавлять смещения
        const type_t *d_ptr=delta_ptr+k*input_x*input_y+offset_d_ptr;
@@ -290,7 +290,7 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,size_t dkernel_amount,CTensor<type_t> &cTensor_dBias,const CTensor<type_t> &cTensor_Image,CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
+void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,const CTensor<type_t> &cTensor_Image,CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
  if (dkernel_amount==0) throw("Для создания поправок весов и смещений требуется не пустой вектор поправок к ядрам");
  if (cTensor_dBias.GetSizeZ()!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы количество поправок фильтров и поправок сдвигов совпадало");
@@ -350,10 +350,10 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,size_t dkernel_amount,CTensor<type_t> &cTensor_dBias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
+void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
  CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dkernel_x,dkernel_y,dkernel_z,dkernel_amount,cTensor_dBias,cTensor_Delta,cTensor_Image,stride_x,stride_y,padding_x,padding_y);
- cTensor_dBias.Zero();//TODO: неясно, нужно ли использовать эти поправки
+ CTensorMath<type_t>::Fill(cTensor_dBias,0);//TODO: неясно, нужно ли использовать эти поправки
 }
 
 #endif

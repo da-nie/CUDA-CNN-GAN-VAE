@@ -42,18 +42,18 @@ class CNetLayerConvolutionInput:public INetLayer<type_t>
   //-переменные-----------------------------------------------------------------------------------------
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  size_t BatchSize;///<размер пакета для обучения
+  uint32_t BatchSize;///<размер пакета для обучения
 
   CTensor<type_t> cTensor_H;///<тензоры значений нейронов после функции активации
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerConvolutionInput(size_t size_z,size_t size_y,size_t size_x,size_t batch_size=1);
+  CNetLayerConvolutionInput(uint32_t size_z,uint32_t size_y,uint32_t size_x,uint32_t batch_size=1);
   CNetLayerConvolutionInput(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerConvolutionInput();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(size_t size_z,size_t size_y,size_t size_x,size_t batch_size=1);///<создать слой
+  void Create(uint32_t size_z,uint32_t size_y,uint32_t size_x,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -87,7 +87,7 @@ class CNetLayerConvolutionInput:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerConvolutionInput<type_t>::CNetLayerConvolutionInput(size_t size_z,size_t size_y,size_t size_x,size_t batch_size)
+CNetLayerConvolutionInput<type_t>::CNetLayerConvolutionInput(uint32_t size_z,uint32_t size_y,uint32_t size_x,uint32_t batch_size)
 {
  Create(size_z,size_y,size_x,batch_size);
 }
@@ -124,7 +124,7 @@ CNetLayerConvolutionInput<type_t>::~CNetLayerConvolutionInput()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConvolutionInput<type_t>::Create(size_t size_z,size_t size_y,size_t size_x,size_t batch_size)
+void CNetLayerConvolutionInput<type_t>::Create(uint32_t size_z,uint32_t size_y,uint32_t size_x,uint32_t batch_size)
 {
  NextLayerPtr=NULL;
  BatchSize=batch_size;

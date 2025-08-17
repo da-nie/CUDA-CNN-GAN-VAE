@@ -453,9 +453,9 @@ bool CTensorTest<type_t>::Test(void)
 
    //создаём вектор тензоров поправок к ядрам
    std::vector<CTensor<type_t>> cTensor_dKernel;
-   cTensor_KernelA.Zero();
+   CTensorMath<type_t>::Fill(cTensor_KernelA,0);
    cTensor_dKernel.push_back(cTensor_KernelA);
-   for(size_t n=0;n<cTensor_dKernel.size();n++) cTensor_dKernel[n].Zero();
+   for(uint32_t n=0;n<cTensor_dKernel.size();n++) CTensorMath<type_t>::Fill(cTensor_dKernel[n],0);
    cTensor_dKernel[0].Print("Тензор поправок ядра A после обнуления");
    //создаём вектор попрвок смещений
    std::vector<type_t> dbias;
@@ -669,9 +669,9 @@ bool CTensorTest<type_t>::Test(void)
   CTensorMath<type_t>::Mul(cTensorD,cTensorAt,cTensorB);
 
   //сравниваем
-  for(size_t x=0;x<cTensorC.GetSizeX();x++)
+  for(uint32_t x=0;x<cTensorC.GetSizeX();x++)
   {
-   for(size_t y=0;y<cTensorC.GetSizeY();y++)
+   for(uint32_t y=0;y<cTensorC.GetSizeY();y++)
    {
     type_t e1=cTensorC.GetElement(0,y,x);
     type_t e2=cTensorD.GetElement(0,y,x);

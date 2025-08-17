@@ -97,7 +97,7 @@ double CRandom<type_t>::GetGaussRandValue(double MO,double sko)
 {
  double sum=0;
  double x;
- for(size_t n=0;n<28;n++) sum+=1.0*rand()/RAND_MAX;
+ for(uint32_t n=0;n<28;n++) sum+=1.0*rand()/RAND_MAX;
  x=(sqrt(2.0)*(sko)*(sum-14.))/2.11233+MO;
  return(x);
 }
@@ -109,16 +109,16 @@ double CRandom<type_t>::GetGaussRandValue(double MO,double sko)
 template<class type_t>
 void CRandom<type_t>::SetRandomNormal(CTensor<type_t> &cTensor,double min,double max)
 {
- size_t size=cTensor.GetSizeX()*cTensor.GetSizeY()*cTensor.GetSizeZ();
+ uint32_t size=cTensor.GetSizeX()*cTensor.GetSizeY()*cTensor.GetSizeZ();
  double average=(max+min)/2.0;
  double sigma=(average-min)/3.0;
- for(size_t w=0;w<cTensor.GetSizeW();w++)
+ for(uint32_t w=0;w<cTensor.GetSizeW();w++)
  {
-  for(size_t x=0;x<cTensor.GetSizeX();x++)
+  for(uint32_t x=0;x<cTensor.GetSizeX();x++)
   {
-   for(size_t y=0;y<cTensor.GetSizeY();y++)
+   for(uint32_t y=0;y<cTensor.GetSizeY();y++)
    {
-    for(size_t z=0;z<cTensor.GetSizeZ();z++)
+    for(uint32_t z=0;z<cTensor.GetSizeZ();z++)
     {
      type_t value=static_cast<type_t>(GetGaussRandValue(average,sigma));
      //есть вероятность (0.3%) что сгенерированное число выйдет за нужный нам диапазон

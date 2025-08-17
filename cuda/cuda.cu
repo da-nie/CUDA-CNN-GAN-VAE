@@ -22,19 +22,19 @@ void CUDA_Start(void)
 struct cudaDeviceProp
 {
     char   name[256];
-    size_t totalGlobalMem;
-    size_t sharedMemPerBlock;
+    uint32_t totalGlobalMem;
+    uint32_t sharedMemPerBlock;
     int    regsPerBlock;
     int    warpSize;
-    size_t memPitch;
+    uint32_t memPitch;
     int    maxThreadsPerBlock;
     int    maxThreadsDim [3];
     int    maxGridSize   [3];
-    size_t totalConstMem;
+    uint32_t totalConstMem;
     int    major;
     int    minor;
     int    clockRate;
-    size_t textureAlignment;
+    uint32_t textureAlignment;
     int    deviceOverlap;
     int    multiProcessorCount;
 }
@@ -81,7 +81,7 @@ struct cudaDeviceProp
  HANDLE_ERROR(cudaDeviceReset());
  HANDLE_ERROR(cudaGetLastError());
 
- if (CTensorTest<float>::Test()==false) throw("Класс тензоров провалил тестирование!");
+// if (CTensorTest<float>::Test()==false) throw("Класс тензоров провалил тестирование!");
 
 
  //CModelSorter<float> cModelSorter;

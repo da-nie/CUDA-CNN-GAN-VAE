@@ -49,8 +49,8 @@ class CModelMain
   //-перечисления---------------------------------------------------------------------------------------
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
-  static const size_t STRING_BUFFER_SIZE=1024;///<размер буфера строки
-  static const size_t CUDA_PAUSE_MS=1;///<пауза для CUDA
+  static const uint32_t STRING_BUFFER_SIZE=1024;///<размер буфера строки
+  static const uint32_t CUDA_PAUSE_MS=1;///<пауза для CUDA
  protected:
   //-структуры------------------------------------------------------------------------------------------
   struct SProtectedVariables
@@ -72,15 +72,15 @@ class CModelMain
   void SetExitState(bool state);///<задать необходимость выхода из потока
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
-  bool LoadMNISTImage(const std::string &file_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);///<загрузить образы изображений из MNIST
-  bool LoadImage(const std::string &path_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);///<загрузить образы изображений
-  bool CreateResamplingImage(size_t input_image_width,size_t input_image_height,size_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image_output);///<создать изображения другого разрешения
+  bool LoadMNISTImage(const std::string &file_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<uint32_t> &index);///<загрузить образы изображений из MNIST
+  bool LoadImage(const std::string &path_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<uint32_t> &index);///<загрузить образы изображений
+  bool CreateResamplingImage(uint32_t input_image_width,uint32_t input_image_height,uint32_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image_output);///<создать изображения другого разрешения
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<загрузить слои сети
-  void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration,bool backward=false);///<сохранить параметры обучения слоёв сети
-  void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration,bool backward=false);///<загрузить параметры обучения слоёв сети
-  void ExchangeImageIndex(std::vector<size_t> &index);///<перемешать индексы изображений
-  void SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t w,size_t output_image_width,size_t output_image_height,size_t output_image_depth);///<сохранить изображение
+  void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t iteration,bool backward=false);///<сохранить параметры обучения слоёв сети
+  void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t &iteration,bool backward=false);///<загрузить параметры обучения слоёв сети
+  void ExchangeImageIndex(std::vector<uint32_t> &index);///<перемешать индексы изображений
+  void SaveImage(CTensor<type_t> &cTensor,const std::string &name,uint32_t w,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth);///<сохранить изображение
   void SpeedTest(void);///<тест скорости
 };
 
@@ -106,14 +106,14 @@ CModelMain<type_t>::~CModelMain()
 //загрузить образы истинных изображений MNIST
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CModelMain<type_t>::LoadMNISTImage(const std::string &file_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index)
+bool CModelMain<type_t>::LoadMNISTImage(const std::string &file_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<uint32_t> &index)
 {
  image.clear();
  index.clear();
 
- static const size_t MNIST_IMAGE_AMOUNT=60000;///<количество обучающих изображений
- static const size_t MNIST_IMAGE_WIDTH=28; ///<ширина входных изображений
- static const size_t MNIST_IMAGE_HEIGHT=28; ///<высота входных изображений
+ static const uint32_t MNIST_IMAGE_AMOUNT=60000;///<количество обучающих изображений
+ static const uint32_t MNIST_IMAGE_WIDTH=28; ///<ширина входных изображений
+ static const uint32_t MNIST_IMAGE_HEIGHT=28; ///<высота входных изображений
 
  #pragma pack(1)
  //все числа в big-endian!
@@ -173,7 +173,7 @@ bool CModelMain<type_t>::LoadMNISTImage(const std::string &file_name,size_t outp
  double dx=static_cast<double>(sHeader.Width)/static_cast<double>(output_image_width);
  double dy=static_cast<double>(sHeader.Height)/static_cast<double>(output_image_height);
 
- size_t amount=MNIST_IMAGE_AMOUNT;
+ uint32_t amount=MNIST_IMAGE_AMOUNT;
  amount/=5;
  for(uint32_t n=0;n<amount;n++)
  {
@@ -182,14 +182,14 @@ bool CModelMain<type_t>::LoadMNISTImage(const std::string &file_name,size_t outp
   index.push_back(n);
   SImage sImage;
   if (fread(&sImage,sizeof(SImage),1,file)<1) continue;
-  size_t index=0;
+  uint32_t index=0;
 
   for(uint32_t y=0;y<output_image_height;y++)
   {
    for(uint32_t x=0;x<output_image_width;x++,index++)
    {
-    size_t xp=x*dx;
-    size_t yp=y*dy;
+    uint32_t xp=x*dx;
+    uint32_t yp=y*dy;
 
     uint32_t offset=(xp+yp*sHeader.Width);
     float gray=sImage.Color[offset];
@@ -223,7 +223,7 @@ bool CModelMain<type_t>::LoadMNISTImage(const std::string &file_name,size_t outp
 //загрузить образы изображений
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CModelMain<type_t>::LoadImage(const std::string &path_name,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index)
+bool CModelMain<type_t>::LoadImage(const std::string &path_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<uint32_t> &index)
 {
  image.clear();
  index.clear();
@@ -233,16 +233,16 @@ bool CModelMain<type_t>::LoadImage(const std::string &path_name,size_t output_im
  std::vector<std::string> file_list;
  SYSTEM::CreateFileList(path,file_list);
  //обрабатываем файлы
- size_t current_index=0;
- size_t size=file_list.size();
+ uint32_t current_index=0;
+ uint32_t size=file_list.size();
  image.reserve(size);
  index.reserve(size);
 
- for(size_t n=0;n<size;n++)
+ for(uint32_t n=0;n<size;n++)
  {
   std::string &file_name=file_list[n];
   //проверяем расширение
-  size_t length=file_name.length();
+  uint32_t length=file_name.length();
   if (length<4) continue;
   if (file_name[length-4]!='.') continue;
   if (file_name[length-3]!='t' && file_name[length-3]!='T')  continue;
@@ -272,8 +272,8 @@ bool CModelMain<type_t>::LoadImage(const std::string &path_name,size_t output_im
   {
    for(uint32_t x=0;x<output_image_width;x++)
    {
-    size_t xp=x*dx;
-    size_t yp=y*dy;
+    uint32_t xp=x*dx;
+    uint32_t yp=y*dy;
 
     uint32_t offset=(xp+yp*width);
     uint32_t color=img_ptr[offset];
@@ -360,11 +360,11 @@ bool CModelMain<type_t>::LoadImage(const std::string &path_name,size_t output_im
 //создать изображения другого разрешения
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CModelMain<type_t>::CreateResamplingImage(size_t input_image_width,size_t input_image_height,size_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,size_t output_image_width,size_t output_image_height,size_t output_image_depth,std::vector< std::vector<type_t> > &image_output)
+bool CModelMain<type_t>::CreateResamplingImage(uint32_t input_image_width,uint32_t input_image_height,uint32_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image_output)
 {
  image_output.clear();
- size_t size=image_input.size();
- for(size_t n=0;n<size;n++)
+ uint32_t size=image_input.size();
+ for(uint32_t n=0;n<size;n++)
  {
   //изображение
   std::vector<type_t> image=std::vector<type_t>(output_image_depth*output_image_width*output_image_height);
@@ -378,8 +378,8 @@ bool CModelMain<type_t>::CreateResamplingImage(size_t input_image_width,size_t i
   {
    for(uint32_t x=0;x<output_image_width;x++)
    {
-    size_t xp=x*dx;
-    size_t yp=y*dy;
+    uint32_t xp=x*dx;
+    uint32_t yp=y*dy;
     for(uint32_t z=0;z<output_image_depth;z++)
     {
      uint32_t offset=xp+yp*input_image_width+z*input_image_width*input_image_height;
@@ -402,8 +402,8 @@ bool CModelMain<type_t>::CreateResamplingImage(size_t input_image_width,size_t i
 template<class type_t>
 void CModelMain<type_t>::SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward)
 {
- if (backward==false) for(size_t n=0;n<net.size();n++) net[n]->Save(iDataStream_Ptr);
-                 else for(size_t n=net.size();n>0;n--) net[n-1]->Save(iDataStream_Ptr);
+ if (backward==false) for(uint32_t n=0;n<net.size();n++) net[n]->Save(iDataStream_Ptr);
+                 else for(uint32_t n=net.size();n>0;n--) net[n-1]->Save(iDataStream_Ptr);
 }
 //----------------------------------------------------------------------------------------------------
 /*!загрузить слои сети
@@ -414,7 +414,7 @@ void CModelMain<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<
 {
  if (backward==false)
  {
-  for(size_t n=0;n<net.size();n++)
+  for(uint32_t n=0;n<net.size();n++)
   {
    if (net[n]->IsMark()==true) continue;
    net[n]->Load(iDataStream_Ptr,true);
@@ -422,7 +422,7 @@ void CModelMain<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<
  }
  else
  {
-  for(size_t n=net.size();n>0;n--)
+  for(uint32_t n=net.size();n>0;n--)
   {
    if (net[n-1]->IsMark()==true) continue;
    net[n-1]->Load(iDataStream_Ptr,true);
@@ -435,23 +435,23 @@ void CModelMain<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t iteration,bool backward)
+void CModelMain<type_t>::SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t iteration,bool backward)
 {
  iDataStream_Ptr->SaveUInt32(iteration);
- if (backward==false) for(size_t n=0;n<net.size();n++) net[n]->SaveTrainingParam(iDataStream_Ptr);
-                 else for(size_t n=net.size();n>0;n--) net[n-1]->SaveTrainingParam(iDataStream_Ptr);
+ if (backward==false) for(uint32_t n=0;n<net.size();n++) net[n]->SaveTrainingParam(iDataStream_Ptr);
+                 else for(uint32_t n=net.size();n>0;n--) net[n-1]->SaveTrainingParam(iDataStream_Ptr);
 }
 //----------------------------------------------------------------------------------------------------
 /*!загрузить параметры обучения слоёв сети
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,size_t &iteration,bool backward)
+void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t &iteration,bool backward)
 {
  iteration=iDataStream_Ptr->LoadUInt32();
  if (backward==false)
  {
-  for(size_t n=0;n<net.size();n++)
+  for(uint32_t n=0;n<net.size();n++)
   {
    if (net[n]->IsMark()==true) continue;
    net[n]->LoadTrainingParam(iDataStream_Ptr);
@@ -459,7 +459,7 @@ void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr
  }
  else
  {
-  for(size_t n=net.size();n>0;n--)
+  for(uint32_t n=net.size();n>0;n--)
   {
    if (net[n-1]->IsMark()==true) continue;
    net[n-1]->LoadTrainingParam(iDataStream_Ptr);
@@ -470,17 +470,17 @@ void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr
 //перемешать индексы изображений
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::ExchangeImageIndex(std::vector<size_t> &index)
+void CModelMain<type_t>::ExchangeImageIndex(std::vector<uint32_t> &index)
 {
  //делаем перемешивание
- size_t image_amount=index.size();
- for(size_t n=0;n<image_amount;n++)
+ uint32_t image_amount=index.size();
+ for(uint32_t n=0;n<image_amount;n++)
  {
-  size_t index_1=n;
-  size_t index_2=static_cast<size_t>((rand()*static_cast<double>(image_amount*10))/static_cast<double>(RAND_MAX));
+  uint32_t index_1=n;
+  uint32_t index_2=static_cast<uint32_t>((rand()*static_cast<double>(image_amount*10))/static_cast<double>(RAND_MAX));
   index_2%=image_amount;
 
-  size_t tmp=index[index_1];
+  uint32_t tmp=index[index_1];
   index[index_1]=index[index_2];
   index[index_2]=tmp;
  }
@@ -490,7 +490,7 @@ void CModelMain<type_t>::ExchangeImageIndex(std::vector<size_t> &index)
 //сохранить изображение
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &name,size_t w,size_t output_image_width,size_t output_image_height,size_t output_image_depth)
+void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &name,uint32_t w,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth)
 {
  std::vector<uint32_t> image(output_image_width*output_image_height);
  type_t *ptr=cTensor.GetColumnPtr(w,0,0);
@@ -683,7 +683,7 @@ void CModelMain<type_t>::SpeedTest(void)
  cTensor_Kernel.push_back(cTensor_KernelA);
  cTensor_Kernel.push_back(cTensor_KernelB);
 
- for(size_t n=0;n<128;n++)
+ for(uint32_t n=0;n<128;n++)
  {
   cTensor_Kernel_Test.push_back(cTensor_KernelA);
   cTensor_Kernel_Test.push_back(cTensor_KernelB);
@@ -694,7 +694,7 @@ void CModelMain<type_t>::SpeedTest(void)
  bias.push_back(0);
  bias.push_back(0);
 
- for(size_t n=0;n<128;n++)
+ for(uint32_t n=0;n<128;n++)
  {
   bias_test.push_back(0);
   bias_test.push_back(0);
@@ -757,7 +757,7 @@ void CModelMain<type_t>::SpeedTest(void)
   CTensor<type_t> cTensor_OutputMax(256,299,299);
   CTimeStamp cTimeStamp("Скорость прямой свёртки:");
   {
-   for(size_t n=0;n<1;n++)
+   for(uint32_t n=0;n<1;n++)
    {
     CTensorConv<type_t>::ForwardConvolution(cTensor_OutputMax,cTensor_ImageMax,cTensor_Kernel_Test,bias_test,1,1,0,0);
    }
@@ -771,7 +771,7 @@ void CModelMain<type_t>::SpeedTest(void)
   CTensor<type_t> cTensor_OutputDeltaMax(3,300,300);
   CTimeStamp cTimeStamp("Скорость обратной свёртки:");
   {
-   for(size_t n=0;n<1;n++)
+   for(uint32_t n=0;n<1;n++)
    {
     CTensorConv<type_t>::BackwardConvolution(cTensor_OutputDeltaMax,cTensor_DeltaMax,cTensor_Kernel_Test,bias_test);
    }

@@ -43,7 +43,7 @@ class CNetLayerFunction:public INetLayer<type_t>
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  size_t BatchSize;///<размер пакета для обучения
+  uint32_t BatchSize;///<размер пакета для обучения
 
   NNeuron::NEURON_FUNCTION NeuronFunction;///<функция активации нейронов слоя
 
@@ -52,13 +52,13 @@ class CNetLayerFunction:public INetLayer<type_t>
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerFunction(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);
+  CNetLayerFunction(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
   CNetLayerFunction(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerFunction();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);///<создать слой
+  void Create(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -93,7 +93,7 @@ class CNetLayerFunction:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerFunction<type_t>::CNetLayerFunction(NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+CNetLayerFunction<type_t>::CNetLayerFunction(NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  Create(neuron_function,prev_layer_ptr,batch_size);
 }
@@ -129,7 +129,7 @@ CNetLayerFunction<type_t>::~CNetLayerFunction()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerFunction<type_t>::Create(NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+void CNetLayerFunction<type_t>::Create(NNeuron::NEURON_FUNCTION neuron_function,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
@@ -188,7 +188,7 @@ void CNetLayerFunction<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerFunction<type_t>::Forward(void)
 {
- for(size_t n=0;n<BatchSize;n++)
+ for(uint32_t n=0;n<BatchSize;n++)
  {
   //применим функцию активации
   if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplySigmoid(cTensor_H,PrevLayerPtr->GetOutputTensor());

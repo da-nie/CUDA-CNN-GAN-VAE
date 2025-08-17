@@ -44,30 +44,30 @@ class CNetLayerMaxPooling:public INetLayer<type_t>
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  size_t BatchSize;///<размер пакета для обучения
+  uint32_t BatchSize;///<размер пакета для обучения
 
   CTensor<type_t> cTensor_H;///<тензоры значений нейронов после функции активации
   CTensor<typename CTensorMath<type_t>::SPos> cTensor_P;///<тензоры выбранной позиции субдискретизации (номер точки в блоке)
 
-  size_t Pooling_X;///<коэффициент сжатия по X
-  size_t Pooling_Y;///<коэффициент сжатия по Y
+  uint32_t Pooling_X;///<коэффициент сжатия по X
+  uint32_t Pooling_Y;///<коэффициент сжатия по Y
 
-  size_t InputSize_X;///<размер входного тензора по X
-  size_t InputSize_Y;///<размер входного тензора по Y
-  size_t InputSize_Z;///<размер входного тензора по Z
+  uint32_t InputSize_X;///<размер входного тензора по X
+  uint32_t InputSize_Y;///<размер входного тензора по Y
+  uint32_t InputSize_Z;///<размер входного тензора по Z
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerMaxPooling(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);
+  CNetLayerMaxPooling(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
   CNetLayerMaxPooling(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerMaxPooling();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,size_t batch_size=1);///<создать слой
+  void Create(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -101,7 +101,7 @@ class CNetLayerMaxPooling:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerMaxPooling<type_t>::CNetLayerMaxPooling(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+CNetLayerMaxPooling<type_t>::CNetLayerMaxPooling(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  Pooling_X=1;///<коэффициент сжатия по X
  Pooling_Y=1;///<коэффициент сжатия по Y
@@ -140,7 +140,7 @@ CNetLayerMaxPooling<type_t>::~CNetLayerMaxPooling()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerMaxPooling<type_t>::Create(size_t pooling_y,size_t pooling_x,INetLayer<type_t> *prev_layer_ptr,size_t batch_size)
+void CNetLayerMaxPooling<type_t>::Create(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
@@ -155,13 +155,13 @@ void CNetLayerMaxPooling<type_t>::Create(size_t pooling_y,size_t pooling_x,INetL
  if (prev_layer_ptr==NULL) throw("Слой субдискретизации не может быть входным!");//слой без предшествующего считается входным
 
  //размер входного тензора
- size_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- size_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- size_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ uint32_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ uint32_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ uint32_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
  //размер выходного тензора
- size_t output_x=input_x/pooling_x;
- size_t output_y=input_y/pooling_y;
- size_t output_z=input_z;
+ uint32_t output_x=input_x/pooling_x;
+ uint32_t output_y=input_y/pooling_y;
+ uint32_t output_z=input_z;
 
  //запомним размеры входного тензора, чтобы потом всегда к ним приводить
  InputSize_X=input_x;
@@ -220,9 +220,9 @@ template<class type_t>
 void CNetLayerMaxPooling<type_t>::Forward(void)
 {
  //размер выходного тензора
- size_t output_x=cTensor_H.GetSizeX();
- size_t output_y=cTensor_H.GetSizeY();
- size_t output_z=cTensor_H.GetSizeZ();
+ uint32_t output_x=cTensor_H.GetSizeX();
+ uint32_t output_y=cTensor_H.GetSizeY();
+ uint32_t output_z=cTensor_H.GetSizeZ();
 
  //приведём входной тензор к нужному виду
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
@@ -231,9 +231,9 @@ void CNetLayerMaxPooling<type_t>::Forward(void)
 
  CTensorMath<type_t>::MaxPooling(cTensor_H,cTensor_P,input,Pooling_X,Pooling_Y);
 
- size_t input_x=input.GetSizeX();
- size_t input_y=input.GetSizeY();
- size_t input_z=input.GetSizeZ();
+ uint32_t input_x=input.GetSizeX();
+ uint32_t input_y=input.GetSizeY();
+ uint32_t input_z=input.GetSizeZ();
 
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,input_z,input_y,input_x);
 }
@@ -343,9 +343,9 @@ void CNetLayerMaxPooling<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerMaxPooling<type_t>::TrainingBackward(bool create_delta_weight)
 {
- size_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- size_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- size_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ uint32_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ uint32_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ uint32_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
  //приведём входной тензор к нужному виду
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
  cTensor_PrevLayerError.ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
