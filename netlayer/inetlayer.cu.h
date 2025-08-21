@@ -76,7 +76,7 @@ class INetLayer
   virtual void TrainingStop(void)=0;///<завершить процесс обучения
   virtual void TrainingBackward(bool create_delta_weight=true)=0;///<выполнить обратный проход по сети для обучения
   virtual void TrainingResetDeltaWeight(void)=0;///<сбросить поправки к весам
-  virtual void TrainingUpdateWeight(double speed,double iteration)=0;///<выполнить обновления весов
+  virtual void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1)=0;///<выполнить обновления весов
   virtual CTensor<type_t>& GetDeltaTensor(void)=0;///<получить ссылку на тензор дельты слоя
   virtual void SetOutputError(CTensor<type_t>& error)=0;///<задать ошибку и расчитать дельту
   virtual void ClipWeight(type_t min,type_t max)=0;///<ограничить веса в диапазон

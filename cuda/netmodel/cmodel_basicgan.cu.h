@@ -423,9 +423,9 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorReal(uint32_t mini_batch_index
   }
 
   cost+=disc_real_error*disc_real_error;
-
   cTensor_Discriminator_Error.SetElement(b,0,0,0,disc_real_error);
  }
+
  {
   CTimeStamp cTimeStamp("Задание ошибки:");
   //задаём ошибку дискриминатору
@@ -725,7 +725,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
    str+=std::to_string(static_cast<long double>(BATCH_AMOUNT));
    SYSTEM::PutMessageToConsole(str);
 
-   if (batch%10==0)
+   if (batch%10==0 && batch!=0)
    {
     SaveRandomImage();
     SYSTEM::PutMessageToConsole("Save image.");
@@ -743,12 +743,13 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
     TrainingDiscriminatorFake(disc_cost);
     TrainingDiscriminatorReal(batch,disc_cost);
 
+
     //корректируем веса дискриминатора
     {
      CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
      for(uint32_t n=0;n<DiscriminatorNet.size();n++)
      {
-      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1);
+      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1,2);
       //DiscriminatorNet[n]->ClipWeight(-clip,clip);
      }
     }

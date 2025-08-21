@@ -1069,9 +1069,9 @@ struct STensorKernel_DeltaWeightAndBias_dKernel
  __host__ __device__ STensorKernel_DeltaWeightAndBias_dKernel()///<конструктор
  {
  }
- __host__ __device__ STensorKernel_DeltaWeightAndBias_dKernel(const CTensor<type_t> &cTensor,int32_t w,int32_t z,int32_t y,int32_t x)///<конструктор
+ __host__ __device__ STensorKernel_DeltaWeightAndBias_dKernel(const CTensor<type_t> &cTensor,int32_t z,int32_t y,int32_t x)///<конструктор
  {
-  Set(cTensor,w,z,y,x);
+  Set(cTensor,z,y,x);
  }
 
  __forceinline__ __host__ __device__ type_t* GetTensorDataPtr(uint32_t w,uint32_t z)///<получить указатель на элементы с глубиной z
@@ -1144,13 +1144,13 @@ struct STensorKernel_DeltaWeightAndBias_dKernel
   Size_W=0;
  }
 
- __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t w,int32_t z,int32_t y,int32_t x)
+ __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t z,int32_t y,int32_t x)
  {
   sTensorKernel_dKernel.Set(cTensor);
   Size_Z=z;
   Size_Y=y;
   Size_X=x;
-  Size_W=w;
+  Size_W=cTensor.GetSizeW();
 
   sTensorKernel_dKernel.SelectZ(0);
   sTensorKernel_dKernel.SelectW(0);
@@ -1196,7 +1196,7 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
 
  cTensor_dKernel.CopyToDevice();//так как мы прибавляем поправки к уже имеющимся, обязательно нужно перенести данные на устройство
 
- STensorKernel_DeltaWeightAndBias_dKernel<type_t> sTensorKernel_dKernel(cTensor_dKernel,cTensor_dKernel.GetSizeW(),1,delta_z,new_input_x);
+ STensorKernel_DeltaWeightAndBias_dKernel<type_t> sTensorKernel_dKernel(cTensor_dKernel,1,delta_z,new_input_x);
  STensorKernel_DeltaWeightAndBias_Delta<type_t> sTensorKernel_Delta(cTensor_Delta,new_delta_y,new_delta_x,stride_y,stride_x);
  STensorKernel_DeltaWeightAndBias_Image<type_t> sTensorKernel_Image(cTensor_Image,new_input_y,new_input_x,new_delta_y,new_delta_x,1,1,padding_y,padding_x,dst_y,dst_x);
 

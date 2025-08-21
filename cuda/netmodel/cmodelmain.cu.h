@@ -26,7 +26,7 @@
 #include "../../netlayer/cnetlayerfunction.cu.h"
 #include "../../netlayer/cnetlayerlinear.cu.h"
 #include "../../netlayer/cnetlayerdropout.cu.h"
-//#include "../../netlayer/cnetlayerbatchnormalization.cu.h"
+#include "../../netlayer/cnetlayerbatchnormalization.cu.h"
 #include "../../netlayer/cnetlayerconvolution.cu.h"
 #include "../../netlayer/cnetlayerconvolutioninput.cu.h"
 #include "../../netlayer/cnetlayerbackconvolution.cu.h"

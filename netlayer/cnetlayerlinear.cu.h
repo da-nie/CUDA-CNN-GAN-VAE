@@ -92,7 +92,7 @@ class CNetLayerLinear:public INetLayer<type_t>
   void TrainingStop(void);///<завершить процесс обучения
   void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
-  void TrainingUpdateWeight(double speed,double iteration);///<выполнить обновления весов
+  void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
   void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
@@ -409,6 +409,7 @@ void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
  CTensorMath<type_t>::TransponseMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta);
  cTensor_PrevLayerError.RestoreSize();
  //задаём ошибку предыдущего слоя
+
  PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
 
  if (create_delta_weight==true)
@@ -443,19 +444,19 @@ void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration)
+void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,BatchSize,speed,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,BatchSize,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorMath<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorMath<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
   speed/=static_cast<double>(BatchSize);
-  CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed);
-  CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed);
+  CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed/batch_scale);
+  CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed/batch_scale);
  }
 }
 //----------------------------------------------------------------------------------------------------

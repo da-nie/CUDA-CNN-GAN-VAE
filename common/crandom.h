@@ -123,7 +123,7 @@ void CRandom<type_t>::SetRandomNormal(CTensor<type_t> &cTensor,double min,double
      type_t value=static_cast<type_t>(GetGaussRandValue(average,sigma));
      //есть вероятность (0.3%) что сгенерированное число выйдет за нужный нам диапазон
      while(value<min || value>max) value=GetGaussRandValue(average,sigma);//если это произошло генерируем новое число.
-	 cTensor.SetElement(w,z,y,x,value);
+     cTensor.SetElement(w,z,y,x,value);
 	}
    }
   }

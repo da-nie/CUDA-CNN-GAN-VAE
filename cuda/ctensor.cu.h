@@ -526,7 +526,7 @@ bool CTensor<type_t>::Save(IDataStream *iDataStream_Ptr)
  CopyFromDevice();
 
  //сохраняем размерность тензора
- iDataStream_Ptr->SaveUInt32(Size_W);
+ //iDataStream_Ptr->SaveUInt32(Size_W);//TODO: тест
  iDataStream_Ptr->SaveUInt32(Size_Z);
  iDataStream_Ptr->SaveUInt32(Size_Y);
  iDataStream_Ptr->SaveUInt32(Size_X);
@@ -544,14 +544,14 @@ bool CTensor<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 
  if (check_size==true)
  {
-  if (Size_W!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки тензора: неверный размер W.");
+  //if (Size_W!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки тензора: неверный размер W.");//TODO: тест
   if (Size_Z!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки тензора: неверный размер Z.");
   if (Size_Y!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки тензора: неверный размер Y.");
   if (Size_X!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки тензора: неверный размер X.");
  }
  else
  {
-  Size_W=iDataStream_Ptr->LoadUInt32();
+  //Size_W=iDataStream_Ptr->LoadUInt32();//TODO: тест
   Size_Z=iDataStream_Ptr->LoadUInt32();
   Size_Y=iDataStream_Ptr->LoadUInt32();
   Size_X=iDataStream_Ptr->LoadUInt32();
