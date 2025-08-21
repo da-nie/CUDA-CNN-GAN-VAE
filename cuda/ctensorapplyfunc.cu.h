@@ -285,6 +285,10 @@ static void BlockInitFunction(dim3 &thread,dim3 &blocks,const CTensor<type_t> &c
  uint32_t block_z=cTensor_Output.GetSizeZ();
 
  blocks=dim3(block_x,block_y,block_z);
+
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
 }
 
 

@@ -1194,6 +1194,8 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
  __syncthreads();
 }
 
+
+
 //----------------------------------------------------------------------------------------------------
 //умножить тензоры
 //----------------------------------------------------------------------------------------------------
@@ -1232,18 +1234,73 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
+/*
+ std::vector<cudaStream_t> stream_array;
+ size_t z=0;
+ while(1)
+ {
+  if (stream_array.size()<32 && z<sTensorKernel_Output.Size_Z)
+  {
+   cudaStream_t stream;
+   cudaError_t err=cudaStreamCreate(&stream);
+   if (err==cudaSuccess)
+   {
+    stream_array.push_back(stream);
+    uint32_t shared_memory_size=0;
+    CUDATensorMulTensorFunction<type_t,kernel_output_t,kernel_left_t,kernel_right_t><<<blocks_basic,thread_basic,shared_memory_size,stream>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right,z);
+    z++;
+    //printf("Create Stream:%i\r\n",z);
+   }
+  }
+  //проверяем потоки
+  for(size_t n=0;n<stream_array.size();)
+  {
+   cudaError_t err=cudaStreamQuery(stream_array[n]);
+   if (err==cudaSuccess)//поток завершён
+   {
+    cudaStreamDestroy(stream_array[n]);
+    stream_array.erase(stream_array.begin()+n);
+    //printf("Delete Stream:%i\r\n",n);
+    continue;
+   }
+   n++;
+  }
+  if (stream_array.size()==0) break;
+ }
+*/
+
+
+/*
+ cudaError_t err=cudaStreamCreate(&stream);
+ if (err!=cudaSuccess)
+ {
+  fprintf(stderr,"Failed to create stream: %s\n", cudaGetErrorString(err));
+  throw("Стоп");
+ }
+ uint shared_memory_size=0;//1 ГБ – это много, но в демонстрационных целях такая величина подобрана специально
+ CUDATensorMulTensorFunction<type_t,kernel_output_t,kernel_left_t,kernel_right_t><<<blocks,thread_basic,shared_memory_size,stream>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right);
+ err=cudaStreamSynchronize(stream);
+ if (err!=cudaSuccess)
+ {
+  fprintf(stderr,"Failed to synchronize stream: %s\n",cudaGetErrorString(err));
+  cudaStreamDestroy(stream);
+  throw("Стоп");
+ }
+ cudaStreamDestroy(stream);
+ */
+
  cTensor_Output.SetDeviceOnChange();
 }
 
 
 
-
 /*
-static const uint32_t TENSOR_OPERATION_TILE_SIZE_X=32;///<размер блока операций с тензорами по X
-static const uint32_t TENSOR_OPERATION_TILE_SIZE_Y=32;///<размер блока операций с тензорами по Y
-static const uint32_t TENSOR_OPERATION_TILE_SIZE_K=32;///<размер блока операций с тензорами по общей стороне K
-static const uint32_t WORK_PER_TILE_SIZE_X=1;///<сколько элементов обрабатывает поток по X
-static const uint32_t WORK_PER_TILE_SIZE_Y=4;///<сколько элементов обрабатывает поток по Y
+
+static const uint32_t TENSOR_OPERATION_TILE_SIZE_X=128;///<размер блока операций с тензорами по X
+static const uint32_t TENSOR_OPERATION_TILE_SIZE_Y=128;///<размер блока операций с тензорами по Y
+static const uint32_t TENSOR_OPERATION_TILE_SIZE_K=16;///<размер блока операций с тензорами по общей стороне K
+static const uint32_t WORK_PER_TILE_SIZE_X=8;///<сколько элементов обрабатывает поток по X
+static const uint32_t WORK_PER_TILE_SIZE_Y=8;///<сколько элементов обрабатывает поток по Y
 static const uint32_t PART_WORK_PER_TILE_X=TENSOR_OPERATION_TILE_SIZE_X/WORK_PER_TILE_SIZE_X;///<количество обрабатываемых блоков по WORK_PER_TILE_SIZE_X элементов
 static const uint32_t PART_WORK_PER_TILE_Y=TENSOR_OPERATION_TILE_SIZE_Y/WORK_PER_TILE_SIZE_Y;///<количество обрабатываемых блоков по WORK_PER_TILE_SIZE_Y элементов
 static const uint32_t LPTA=(TENSOR_OPERATION_TILE_SIZE_K*WORK_PER_TILE_SIZE_Y*WORK_PER_TILE_SIZE_X)/(TENSOR_OPERATION_TILE_SIZE_X);// The amount of loads-per-thread for A
@@ -1381,9 +1438,8 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
 
  cTensor_Output.SetDeviceOnChange();
 }
+
 */
-
-
 
 
 
@@ -1467,6 +1523,7 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
  if (blocks.x==0) blocks.x=1;
  if (blocks.y==0) blocks.y=1;
  if (blocks.z==0) blocks.z=1;
+
  CUDATensorMulValueFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,value_right);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
