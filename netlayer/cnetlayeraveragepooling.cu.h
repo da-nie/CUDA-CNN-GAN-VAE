@@ -217,26 +217,23 @@ void CNetLayerAveragePooling<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerAveragePooling<type_t>::Forward(void)
 {
- for(uint32_t n=0;n<BatchSize;n++)
- {
-  //размер выходного тензора
-  uint32_t output_x=cTensor_H.GetSizeX();
-  uint32_t output_y=cTensor_H.GetSizeY();
-  uint32_t output_z=cTensor_H.GetSizeZ();
+ //размер выходного тензора
+ uint32_t output_x=cTensor_H.GetSizeX();
+ uint32_t output_y=cTensor_H.GetSizeY();
+ uint32_t output_z=cTensor_H.GetSizeZ();
 
-  //приведём входной тензор к нужному виду
+ //приведём входной тензор к нужному виду
 
-  uint32_t basic_input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
-  uint32_t basic_input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
-  uint32_t basic_input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ uint32_t basic_input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ uint32_t basic_input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ uint32_t basic_input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
 
-  PrevLayerPtr->GetOutputTensor(n).ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
-  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
+ PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
+ CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
-  CTensorMath<type_t>::DownSampling(cTensor_H,input,AveragePooling_X,AveragePooling_Y);
+ CTensorMath<type_t>::DownSampling(cTensor_H,input,AveragePooling_X,AveragePooling_Y);
 
-  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);
- }
+ PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор

@@ -188,17 +188,14 @@ void CNetLayerFunction<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerFunction<type_t>::Forward(void)
 {
- for(uint32_t n=0;n<BatchSize;n++)
- {
-  //применим функцию активации
-  if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplySigmoid(cTensor_H,PrevLayerPtr->GetOutputTensor());
-  if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyReLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
-  if (NeuronFunction==NNeuron::NEURON_FUNCTION_GELU) CTensorApplyFunc<type_t>::ApplyGeLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
-  if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyLeakyReLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
-  if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyLinear(cTensor_H,PrevLayerPtr->GetOutputTensor());
-  if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyTangence(cTensor_H,PrevLayerPtr->GetOutputTensor());
-  //if (NeuronFunction==NNeuron::NEURON_FUNCTION_SOFTMAX) CTensorApplyFunc<type_t>::ApplySoftMax(cTensor_H,PrevLayerPtr->GetOutputTensor());
- }
+ //применим функцию активации
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplySigmoid(cTensor_H,PrevLayerPtr->GetOutputTensor());
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyReLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_GELU) CTensorApplyFunc<type_t>::ApplyGeLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyLeakyReLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyLinear(cTensor_H,PrevLayerPtr->GetOutputTensor());
+ if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyTangence(cTensor_H,PrevLayerPtr->GetOutputTensor());
+ //if (NeuronFunction==NNeuron::NEURON_FUNCTION_SOFTMAX) CTensorApplyFunc<type_t>::ApplySoftMax(cTensor_H,PrevLayerPtr->GetOutputTensor());
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор

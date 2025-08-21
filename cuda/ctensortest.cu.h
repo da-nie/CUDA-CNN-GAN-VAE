@@ -344,6 +344,7 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBiasWithStepAndPadding(void)
  //создаём тензор поправок смещений
  CTensor<type_t> cTensor_dBias=CTensor<type_t>(batch_size,kernel_amount,1,1);
  CTensorMath<type_t>::Fill(cTensor_dBias,0);
+ CTensorMath<type_t>::Fill(cTensor_dKernel,0);
  CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,kernel_x,kernel_y,kernel_z,kernel_amount,cTensor_dBias,cTensor_Image,cTensor_Delta,2,2,2,2);
 
  //проверочный тензор
@@ -399,7 +400,7 @@ bool CTensorTest<type_t>::TestCreateDeltaWeightAndBiasWithStepAndPadding(void)
   }
  }
 
- if (cTensor_dKernelBased.Compare(cTensor_Control,"")==false) return(false);
+ if (cTensor_dKernelBased.Compare(cTensor_Control,"dKernel")==false) return(false);
  SYSTEM::PutMessageToConsole("Успешно.");
  SYSTEM::PutMessageToConsole("");
 

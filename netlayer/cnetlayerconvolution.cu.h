@@ -289,18 +289,15 @@ void CNetLayerConvolution<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerConvolution<type_t>::Forward(void)
 {
- for(uint32_t n=0;n<BatchSize;n++)
- {
-  uint32_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
-  uint32_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
-  uint32_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
-  //приведём входной тензор к нужному виду
-  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
+ uint32_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ uint32_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ uint32_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ //приведём входной тензор к нужному виду
+ PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
 
-  //выполняем прямую свёртку
-  CTensorConv<type_t>::ForwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
-  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,input_z,input_y,input_x);
- }
+ //выполняем прямую свёртку
+ CTensorConv<type_t>::ForwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
+ PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,input_z,input_y,input_x);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор

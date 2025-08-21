@@ -1330,9 +1330,10 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
  uint32_t out_y=out_in_block_y+out_block_y;
  uint32_t out_z=Mod(blockIdx.z,tensor_output.GetSizeZ());
 
- uint32_t w_left=Mod((blockIdx.z/tensor_output.GetSizeZ()),tensor_left.GetSizeW());
- uint32_t w_right=Mod((blockIdx.z/tensor_output.GetSizeZ()),tensor_right.GetSizeW());
- uint32_t w_out=Mod((blockIdx.z/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w_out=blockIdx.z/tensor_output.GetSizeZ();
+ uint32_t w_left=Mod(w_out,tensor_left.GetSizeW());
+ uint32_t w_right=Mod(w_out,tensor_right.GetSizeW());
+ w_out=Mod(w_out,tensor_output.GetSizeW());
 
  //получаем подматрицу выходной матрицы
  type_t Cvalue[CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE][CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE];
@@ -1414,8 +1415,6 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
 template<class type_t> template<class kernel_output_t,class kernel_left_t,class kernel_right_t>
 __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,kernel_output_t &sTensorKernel_Output,const CTensor<type_t> &cTensor_Left,kernel_left_t &sTensorKernel_Left,const CTensor<type_t> &cTensor_Right,kernel_right_t &sTensorKernel_Right)
 {
- //return;//TODO: тест
-
  if (sTensorKernel_Left.Size_X!=sTensorKernel_Right.Size_Y  || sTensorKernel_Left.Size_Z!=sTensorKernel_Right.Size_Z ||
      sTensorKernel_Output.Size_Y!=sTensorKernel_Left.Size_Y || sTensorKernel_Output.Size_X!=sTensorKernel_Right.Size_X ||
      sTensorKernel_Output.Size_Z!=sTensorKernel_Right.Size_Z)

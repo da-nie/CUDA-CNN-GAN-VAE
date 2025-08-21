@@ -238,7 +238,7 @@ void CNetLayerMaxDePooling<type_t>::Forward(void)
 
  for(uint32_t w=0;w<BatchSize;w++)
  {
- for(uint32_t z=0;z<input_z;z++)
+  for(uint32_t z=0;z<input_z;z++)
   {
    for(uint32_t y=0;y<input_y;y++)
    {

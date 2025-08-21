@@ -804,7 +804,6 @@ struct STensorKernel_DeltaWeightAndBias_Image
 
  __forceinline__ __host__ __device__ void SelectZ(uint32_t z)///<выбрать слой Z
  {
-  sTensorKernel_Image.SelectZ(z);
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
@@ -888,6 +887,7 @@ struct STensorKernel_DeltaWeightAndBias_Image
  {
   sTensorKernel_Image.Set(cTensor);
   sTensorKernel_Image.SelectZ(0);
+  sTensorKernel_Image.SelectW(0);
 
   Input_Z=cTensor.GetSizeZ();
   Conv_Kernel_X=kernel_x;
@@ -979,7 +979,6 @@ __forceinline__ __host__ __device__ void SelectW(uint32_t w)///<выбрать �
 
  __forceinline__ __host__ __device__ void SelectZ(uint32_t z)///<выбрать слой Z
  {
-  sTensorKernel_Delta.SelectZ(z);
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
