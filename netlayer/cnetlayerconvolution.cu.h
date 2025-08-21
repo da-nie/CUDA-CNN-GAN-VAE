@@ -473,10 +473,8 @@ void CNetLayerConvolution<type_t>::TrainingBackward(bool create_delta_weight)
  //вычисляем ошибку предшествующего слоя
  CTensor<type_t> cTensor_BiasZero=cTensor_Bias;
 
- CTensorMath<type_t>::Mul(cTensor_dBias,cTensor_dBias,0);
-
+ CTensorMath<type_t>::Fill(cTensor_BiasZero,0);
  CTensorConv<type_t>::BackwardConvolution(cTensor_PrevLayerError,cTensor_Delta,cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_BiasZero,Stride_X,Stride_Y,Padding_X,Padding_Y);
-
 
  if (create_delta_weight==true)
  {
@@ -488,6 +486,7 @@ void CNetLayerConvolution<type_t>::TrainingBackward(bool create_delta_weight)
   CTensorMath<type_t>::AddSumW(cTensor_dKernel,cTensor_dKernel,cTensor_dKernel_Batch);
   CTensorMath<type_t>::AddSumW(cTensor_dBias,cTensor_dBias,cTensor_dBias_Batch);
  }
+
  //задаём ошибку предыдущего слоя
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,input_z,input_y,input_x);
  cTensor_PrevLayerError.ReinterpretSize(BatchSize,input_z,input_y,input_x);
@@ -512,10 +511,6 @@ void CNetLayerConvolution<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerConvolution<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
- printf("%i k:%f ",cTensor_dKernel.GetSizeY(),cTensor_dKernel.GetElement(0,0,0,0));
-
- //speed=1;
-
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam
@@ -528,8 +523,6 @@ void CNetLayerConvolution<type_t>::TrainingUpdateWeight(double speed,double iter
   CTensorMath<type_t>::Sub(cTensor_Kernel,cTensor_Kernel,cTensor_dKernel,1,speed/batch_scale);
   CTensorMath<type_t>::Sub(cTensor_Bias,cTensor_Bias,cTensor_dBias,1,speed/batch_scale);
  }
-
- printf("->:%f \r\n",cTensor_dKernel.GetElement(0,0,0,0));
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на тензор дельты слоя

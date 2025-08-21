@@ -743,7 +743,6 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
     TrainingDiscriminatorFake(disc_cost);
     TrainingDiscriminatorReal(batch,disc_cost);
 
-
     //корректируем веса дискриминатора
     {
      CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
@@ -753,7 +752,6 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
       //DiscriminatorNet[n]->ClipWeight(-clip,clip);
      }
     }
-
 
     for(uint32_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingResetDeltaWeight();
     TrainingGenerator(gen_cost,middle_answer);
@@ -766,7 +764,6 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
       //GeneratorNet[n]->ClipWeight(-clip,clip);//не нужно делать для генератора!
      }
     }
-
 
     str="Ошибка дискриминатора:";
     str+=std::to_string((long double)disc_cost);
@@ -810,12 +807,12 @@ void CModelBasicGAN<type_t>::TrainingNet(bool mnist)
  //включаем обучение
  for(uint32_t n=0;n<GeneratorNet.size();n++)
  {
-  //GeneratorNet[n]->TrainingModeAdam(0.5,0.9);
+  GeneratorNet[n]->TrainingModeAdam(0.5,0.9);
   GeneratorNet[n]->TrainingStart();
  }
  for(uint32_t n=0;n<DiscriminatorNet.size();n++)
  {
-  //DiscriminatorNet[n]->TrainingModeAdam(0.5,0.9);
+  DiscriminatorNet[n]->TrainingModeAdam(0.5,0.9);
   DiscriminatorNet[n]->TrainingStart();
  }
 

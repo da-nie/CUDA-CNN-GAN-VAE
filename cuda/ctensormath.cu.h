@@ -285,12 +285,12 @@ struct STensorTransponseKernel
 
  __host__ __device__ type_t GetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x)
  {
-  if (x>=Size_Y || y>=Size_X || z>=Size_Z || z>=Size_W) return(0);
+  if (x>=Size_X || y>=Size_Y || z>=Size_Z || w>=Size_W) return(0);
   return TensorData_Ptr[w*StrideW+z*StrideZ+x*StrideX+y];
  }
  __host__ __device__ void SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
-  if (x>=Size_Y || y>=Size_X || z>=Size_Z || w>=Size_W) return;
+  if (x>=Size_X || y>=Size_Y || z>=Size_Z || w>=Size_W) return;
   TensorData_Ptr[w*StrideW+z*StrideZ+x*StrideX+y]=value;
  }
 
@@ -329,23 +329,23 @@ struct STensorTransponseKernel
 
 __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
  {
-  if (x>=Size_Y || y>=Size_X) return(0);
+  if (x>=Size_X || y>=Size_Y) return(0);
   return(TensorData_WZ_Ptr[x*StrideX+y]);
  }
  __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
  {
-  if (x>=Size_Y || y>=Size_X) return;
+  if (x>=Size_X || y>=Size_Y) return;
   TensorData_WZ_Ptr[x*StrideX+y]=value;
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
  {
-  if (x>=Size_Y || y>=Size_X || z>=Size_Z) return(0);
+  if (x>=Size_X || y>=Size_Y || z>=Size_Z) return(0);
   return(TensorData_W_Ptr[z*StrideZ+x*StrideX+y]);
  }
  __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
-  if (x>=Size_Y || y>=Size_X || z>=Size_Z) return;
+  if (x>=Size_X || y>=Size_Y || z>=Size_Z) return;
   TensorData_W_Ptr[z*StrideZ+x*StrideX+y]=value;
  }
 
@@ -1956,8 +1956,10 @@ __global__ void CUDAMaxPoolingTensorBackward(STensorKernel<type_t> tensor_output
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
- uint32_t w=0;
+ uint32_t z=Mod(blockIdx.z,tensor_output.GetSizeZ());
+ uint32_t w_out=Mod((blockIdx.z/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w_in=Mod((blockIdx.z/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
+ uint32_t w_pos=Mod((blockIdx.z/tensor_output.GetSizeZ()),tensor_position.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -1970,10 +1972,10 @@ __global__ void CUDAMaxPoolingTensorBackward(STensorKernel<type_t> tensor_output
  uint32_t ixp=xp/pooling_x;
  uint32_t iyp=yp/pooling_y;
 
- type_t value=tensor_input.GetElement(w,z,iyp,ixp);
- typename CTensorMath<type_t>::SPos sPos=tensor_position.TensorData_Ptr[w*tensor_position.StrideW+z*tensor_position.StrideZ+iyp*tensor_position.StrideX+ixp];
+ type_t value=tensor_input.GetElement(w_in,z,iyp,ixp);
+ typename CTensorMath<type_t>::SPos sPos=tensor_position.TensorData_Ptr[w_pos*tensor_position.StrideW+z*tensor_position.StrideZ+iyp*tensor_position.StrideX+ixp];
  if (sPos.X!=xp || sPos.Y!=yp) value=0;
- tensor_output.SetElement(w,z,yp,xp,value);
+ tensor_output.SetElement(w_out,z,yp,xp,value);
 
  __syncthreads();
 }
@@ -2004,7 +2006,7 @@ void CTensorMath<type_t>::MaxPoolingBackward(CTensor<type_t> &cTensor_Output,con
  if (cTensor_Output.Size_X%thread.x) block_x++;
  uint32_t block_y=cTensor_Output.Size_Y/thread.y;
  if (cTensor_Output.Size_Y%thread.y) block_y++;
- uint32_t block_z=cTensor_Output.Size_Z;
+ uint32_t block_z=cTensor_Output.Size_Z*cTensor_Output.Size_W;
 
  dim3 blocks(block_x,block_y,block_z);
  if (blocks.x==0) blocks.x=1;
