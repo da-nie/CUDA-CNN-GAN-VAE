@@ -39,6 +39,10 @@ class CModelBasicGAN:public CModelMain<type_t>
  protected:
   //-структуры------------------------------------------------------------------------------------------
   //-переменные-----------------------------------------------------------------------------------------
+
+  type_t INPUT_NOISE_MIN;///<минимальное значение входного шума
+  type_t INPUT_NOISE_MAX;///<максимальное значение входного шума
+
   uint32_t IMAGE_WIDTH;///<ширина входных изображений
   uint32_t IMAGE_HEIGHT;///<высота входных изображений
   uint32_t IMAGE_DEPTH;///<глубина входных изображений
@@ -136,6 +140,9 @@ CModelBasicGAN<type_t>::CModelBasicGAN(void)
 
  ITERATION_OF_SAVE_IMAGE=1;
  ITERATION_OF_SAVE_NET=1;
+
+ INPUT_NOISE_MIN=0;
+ INPUT_NOISE_MAX=1;
 
  Iteration=0;
 }
@@ -236,7 +243,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
  for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
   if (IsExit()==true) throw("Стоп");
-  CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,-1,1);
+  CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
   GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
   //выполняем прямой проход по сети генератора
   {
@@ -323,7 +330,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFake(double &disc_cost)
  double fake_output=0;
  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
 
- CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,-1,1);
+ CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
  //выполняем прямой проход по сети генератора
  {
@@ -455,7 +462,7 @@ void CModelBasicGAN<type_t>::TrainingGenerator(double &cost,double &middle_answe
  double fake_output=0;
  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
 
- CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,-1,1);
+ CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
  //выполняем прямой проход по сети генератора
  {
@@ -520,7 +527,7 @@ template<class type_t>
 void CModelBasicGAN<type_t>::SaveRandomImage(void)
 {
  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
- CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,-1,1);
+ CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
  //выполняем прямой проход по сети
  for(uint32_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
@@ -905,7 +912,7 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
    //SaveRandomImage();
    for(uint32_t n=0;n<BATCH_SIZE;n++)
    {
-    CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,-1,1);
+    CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
     GeneratorNet[0]->SetOutput(n,cTensor_Generator_Input);//входной вектор
    }
    //выполняем прямой проход по сети
@@ -925,7 +932,7 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   for(uint32_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingResetDeltaWeight();
   for(uint32_t n=0;n<BATCH_SIZE;n++)
   {
-   CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,-1,1);
+   CRandom<type_t>::SetRandomNormal(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
    GeneratorNet[0]->SetOutput(n,cTensor_Generator_Input);//входной вектор
   }
   //выполняем прямой проход по сети генератора

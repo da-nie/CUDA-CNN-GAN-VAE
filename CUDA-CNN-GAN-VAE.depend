@@ -338,10 +338,10 @@
 
 1745048730 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/jerror.h
 
-1755793453 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_gan.cu.h
+1755800096 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_gan.cu.h
 	"cmodel_basicgan.cu.h"
 
-1755792709 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicgan.cu.h
+1755801314 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicgan.cu.h
 	<string>
 	<vector>
 	<array>
