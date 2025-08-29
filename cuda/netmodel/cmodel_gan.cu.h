@@ -41,6 +41,9 @@ class CModelGAN:public CModelBasicGAN<type_t>
   using CModelBasicGAN<type_t>::ITERATION_OF_SAVE_IMAGE;
   using CModelBasicGAN<type_t>::ITERATION_OF_SAVE_NET;
 
+  using CModelBasicGAN<type_t>::INPUT_NOISE_MIN;
+  using CModelBasicGAN<type_t>::INPUT_NOISE_MAX;
+
   using CModelBasicGAN<type_t>::GeneratorNet;
   using CModelBasicGAN<type_t>::DiscriminatorNet;
 
@@ -69,23 +72,24 @@ class CModelGAN:public CModelBasicGAN<type_t>
 template<class type_t>
 CModelGAN<type_t>::CModelGAN(void)
 {
+ INPUT_NOISE_MIN=-1;
+ INPUT_NOISE_MAX=1;
 
  IMAGE_HEIGHT=128;//128;//192;
  IMAGE_WIDTH=128;//128;//256;
  IMAGE_DEPTH=3;
- NOISE_LAYER_SIDE_X=32;
- NOISE_LAYER_SIDE_Y=32;
+ NOISE_LAYER_SIDE_X=10;
+ NOISE_LAYER_SIDE_Y=10;
  NOISE_LAYER_SIDE_Z=1;
  NOISE_LAYER_SIZE=NOISE_LAYER_SIDE_X*NOISE_LAYER_SIDE_Y*NOISE_LAYER_SIDE_Z;
 
- SPEED_DISCRIMINATOR=0.00002;
- SPEED_GENERATOR=0.0002;
+ SPEED_DISCRIMINATOR=0.000025;
+ SPEED_GENERATOR=0.0001;
 
  ITERATION_OF_SAVE_IMAGE=1;
  ITERATION_OF_SAVE_NET=1;
 
  BATCH_SIZE=32;
-
 
 /*
  //ZX
@@ -245,6 +249,7 @@ void CModelGAN<type_t>::CreateDiscriminator(void)
  DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
  //DiscriminatorNet[DiscriminatorNet.size()-1]->SetMark(true);
  DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutputTensor().Print("Disc Output tensor",false);
+
 /*
  DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(32,5,2,2,2,2,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
  DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
@@ -258,6 +263,7 @@ void CModelGAN<type_t>::CreateDiscriminator(void)
  DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
  //DiscriminatorNet[DiscriminatorNet.size()-1]->SetMark(true);
  DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutputTensor().Print("Disc Output tensor",false);
+
  //4
  DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128,5,2,2,2,2,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
  //DiscriminatorNet[DiscriminatorNet.size()-1]->SetMark(true);

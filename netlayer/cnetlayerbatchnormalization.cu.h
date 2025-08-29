@@ -288,6 +288,7 @@ bool
   CTensorMath<type_t>::AddSumW(cTensor_TmpA,cTensor_TmpA,PrevLayerPtr->GetOutputTensor(),1,1.0/N);
 
   CTensorMath<type_t>::Add(cTensor_NewMean,cTensor_NewMean,cTensor_TmpA,Momentum,1.0-Momentum);
+
   //считаем разность от среднего для каждого пакета
   //xmu = x - mu
   CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_TmpA,1.0,1.0);

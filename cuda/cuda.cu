@@ -9,7 +9,7 @@
 //#include "netmodel/cmodel_sorter.cu.h"
 #include "netmodel/cmodel_gan.cu.h"
 //#include "netmodel/cmodel_srgan.cu.h"
-//#include "netmodel/cmodel_vae.cu.h"
+#include "netmodel/cmodel_vae.cu.h"
 #include "../system/system.h"
 
 //----------------------------------------------------------------------------------------------------

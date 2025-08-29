@@ -235,7 +235,7 @@ void CNetLayerBackConvolution<type_t>::Reset(void)
    //используем метод инициализации He (Ге)
    //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
    //type_t init=rnd*koeff;
-   type_t init=cTensor_Rand.GetElement(0,0,m);
+   type_t init=cTensor_Rand.GetElement(0,0,0,m);
    cTensor_Kernel.SetElement(0,0,n,m,init);
   }
  }
