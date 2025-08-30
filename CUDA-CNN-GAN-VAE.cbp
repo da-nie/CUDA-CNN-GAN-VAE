@@ -44,8 +44,6 @@
 		<Unit filename="cpu/ctensorconv.h" />
 		<Unit filename="cpu/ctensormath.cpp" />
 		<Unit filename="cpu/ctensormath.h" />
-		<Unit filename="cpu/ctensortest.cpp" />
-		<Unit filename="cpu/ctensortest.h" />
 		<Unit filename="cpu/tensor.cpp" />
 		<Unit filename="cpu/tensor.h" />
 		<Unit filename="cuda/ccudadevicevector.cu.h" />
@@ -90,9 +88,11 @@
 		</Unit>
 		<Unit filename="cuda/cuda.cu.h" />
 		<Unit filename="cuda/handle_error.cu.h" />
+		<Unit filename="cuda/netmodel/cmodel_basicdiffusion.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicgan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicsrgan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicvae.cu.h" />
+		<Unit filename="cuda/netmodel/cmodel_diffusion.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_gan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_sorter.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_srgan.cu.h" />

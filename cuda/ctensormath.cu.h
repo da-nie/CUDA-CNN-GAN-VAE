@@ -468,8 +468,6 @@ __global__ void CUDATensorFillFunction(STensorKernel<type_t> tensor_output,type_
 template<class type_t>
 void CTensorMath<type_t>::Fill(CTensor<type_t> &cTensor_Output,type_t value)
 {
- //return;//TODO: тест
-
  if (cTensor_Output.GetSizeX()*cTensor_Output.GetSizeY()*cTensor_Output.GetSizeZ()<CTensorMath<type_t>::TILE_BLOCK_SIZE*CTensorMath<type_t>::TILE_BLOCK_SIZE*CTensorMath<type_t>::TILE_BLOCK_SIZE)
  {
   cTensor_Output.Fill(value);
@@ -534,7 +532,6 @@ __global__ void CUDATensorInvTensorFunction(STensorKernel<type_t> tensor_output,
 template<class type_t>
 void CTensorMath<type_t>::Inv(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- //return;//TODO: тест
  if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::Inv: Размерности тензоров не совпадают!";
@@ -600,7 +597,6 @@ __global__ void CUDATensorDivTensorFunction(STensorKernel<type_t> tensor_output,
 template<class type_t>
 void CTensorMath<type_t>::Div(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale,type_t right_scale)
 {
- //return;//TODO: тест
  if (cTensor_Left.Size_X!=cTensor_Right.Size_X || cTensor_Left.Size_Y!=cTensor_Right.Size_Y || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
@@ -669,7 +665,6 @@ __global__ void CUDATensorAddTensorFunction(STensorKernel<type_t> tensor_output,
 template<class type_t>
 void CTensorMath<type_t>::Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale,type_t right_scale)
 {
- //return;//TODO: тест
  if (cTensor_Left.Size_X!=cTensor_Right.Size_X || cTensor_Left.Size_Y!=cTensor_Right.Size_Y || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
@@ -747,11 +742,10 @@ __global__ void CUDATensorAddSumWTensorFunction(STensorKernel<type_t> tensor_out
 template<class type_t>
 void CTensorMath<type_t>::AddSumW(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale,type_t right_scale)
 {
- //return;//TODO: тест
  if (cTensor_Left.Size_X!=cTensor_Right.Size_X || cTensor_Left.Size_Y!=cTensor_Right.Size_Y || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
-  throw "CTensor::Add: Размерности тензоров не совпадают!";
+  throw "CTensor::AddSumW: Размерности тензоров не совпадают!";
  }
 
  cTensor_Left.CopyToDevice();
@@ -818,7 +812,6 @@ __global__ void CUDATensorAddValueTensorFunction(STensorKernel<type_t> tensor_ou
 template<class type_t>
 void CTensorMath<type_t>::AddValue(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t tensor_scale,type_t value)
 {
- //return;//TODO: тест
  if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::AddValue: Размерности тензоров не совпадают!";
@@ -855,7 +848,6 @@ void CTensorMath<type_t>::AddValue(CTensor<type_t> &cTensor_Output,const CTensor
 template<class type_t>
 void CTensorMath<type_t>::Sub(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale,type_t right_scale)
 {
- //return;//TODO: тест
  if (cTensor_Left.Size_X!=cTensor_Right.Size_X || cTensor_Left.Size_Y!=cTensor_Right.Size_Y || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
@@ -896,7 +888,6 @@ void CTensorMath<type_t>::Sub(CTensor<type_t> &cTensor_Output,const CTensor<type
 template<class type_t>
 void CTensorMath<type_t>::SubValue(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t tensor_scale,type_t value)
 {
- //return;//TODO: тест
  if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::SubValue: Размерности тензоров не совпадают!";
@@ -963,7 +954,6 @@ __global__ void CUDATensorSetTensorFunction(STensorKernel<type_t> tensor_output,
 template<class type_t>
 void CTensorMath<type_t>::Set(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_value)
 {
- //return;//TODO: тест
  if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::Set: Размерности тензоров не совпадают!";
@@ -1031,7 +1021,6 @@ __global__ void CUDATensorPow2TensorFunction(STensorKernel<type_t> tensor_output
 template<class type_t>
 void CTensorMath<type_t>::Pow2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale)
 {
- //return;//TODO: тест
  if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::Pow2: Размерности тензоров не совпадают!";
@@ -1097,7 +1086,6 @@ __global__ void CUDATensorSQRTTensorFunction(STensorKernel<type_t> tensor_output
 template<class type_t>
 void CTensorMath<type_t>::SQRT(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_sqrt_value)
 {
- //return;//TODO: тест
  if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::SQRT: Размерности тензоров не совпадают!";
@@ -1163,7 +1151,6 @@ __global__ void CUDATensorAddBiasFunction(STensorKernel<type_t> tensor_working,S
 template<class type_t>
 void CTensorMath<type_t>::AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias)
 {
- //return;//TODO: тест
  if (cTensor_Working.Size_Z!=cTensor_Bias.Size_Z)
  {
   throw "CTensor::AddBias: Размерности тензоров не совпадают!";
@@ -1272,8 +1259,6 @@ __global__ void CUDASummXYTensorFunction(int32_t size,STensorKernel<type_t> tens
 template<class type_t>
 void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input)
 {
- //return;//TODO: тест
-
  const int32_t B_SIZE=6;
  const int32_t BLOCK_SIZE=1<<B_SIZE;
 
@@ -1738,7 +1723,6 @@ __global__ void CUDATensorMulValueFunction(STensorKernel<type_t> tensor_output,S
 template<class type_t>
 void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const type_t &value_right)
 {
- //return;//TODO: тест
  if (cTensor_Output.Size_X!=cTensor_Left.Size_X || cTensor_Output.Size_Y!=cTensor_Left.Size_Y || cTensor_Output.Size_Z!=cTensor_Left.Size_Z)
  {
   throw "CTensor::Mul: Размерности тензоров не совпадают!";
@@ -1774,7 +1758,6 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
 template<class type_t>
 void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const type_t &value_left,const CTensor<type_t> &cTensor_Right)
 {
- //return;//TODO: тест
  if (cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
   throw "CTensor::Mul: Размерности тензоров не совпадают!";
@@ -1811,7 +1794,6 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const type_t &valu
 template<class type_t>
 void CTensorMath<type_t>::Transponse(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- //return;//TODO: тест
  if (cTensor_Output.Size_Y!=cTensor_Input.Size_X || cTensor_Output.Size_X!=cTensor_Input.Size_Y || cTensor_Output.Size_Z!=cTensor_Input.Size_Z || cTensor_Output.Size_W!=cTensor_Input.Size_W)
  {
   throw "void CTensor::Transponse: Размерности матриц не совпадают!";
@@ -1874,7 +1856,6 @@ __global__ void CUDATensorItemProductionFunction(STensorKernel<type_t> tensor_ou
 template<class type_t>
 void CTensorMath<type_t>::TensorItemProduction(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Left,CTensor<type_t> &cTensor_Right)
 {
- //return;//TODO: тест
  if (cTensor_Right.Size_X!=cTensor_Left.Size_X || cTensor_Right.Size_Y!=cTensor_Left.Size_Y || cTensor_Right.Size_Z!=cTensor_Left.Size_Z) throw("Ошибка поэлементного умножения тензора на тензор");
  if (cTensor_Right.Size_X!=cTensor_Output.Size_X || cTensor_Right.Size_Y!=cTensor_Output.Size_Y || cTensor_Right.Size_Z!=cTensor_Output.Size_Z) throw("Ошибка поэлементного умножения тензора на тензор");
 
@@ -1967,7 +1948,6 @@ __global__ void CUDAUpSamplingTensor(STensorKernel<type_t> tensor_output,STensor
 template<class type_t>
 void CTensorMath<type_t>::UpSampling(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,uint32_t upsampling_x,uint32_t upsampling_y)
 {
- //return;//TODO: тест
  if (cTensor_Input.Size_X!=cTensor_Output.Size_X/upsampling_x || cTensor_Input.Size_Y!=cTensor_Output.Size_Y/upsampling_y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::UpSampling: Размерности тензоров не совпадают!";
@@ -2049,7 +2029,6 @@ __global__ void CUDADownSamplingTensor(STensorKernel<type_t> tensor_output,STens
 template<class type_t>
 void CTensorMath<type_t>::DownSampling(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,uint32_t downsampling_x,uint32_t downsampling_y)
 {
- //return;//TODO: тест
  if (cTensor_Input.Size_X/downsampling_x!=cTensor_Output.Size_X || cTensor_Input.Size_Y/downsampling_y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::DownSampling: Размерности тензоров не совпадают!";
@@ -2142,7 +2121,6 @@ __global__ void CUDAMaxPoolingTensor(STensorKernel<type_t> tensor_output,STensor
 template<class type_t>
 void CTensorMath<type_t>::MaxPooling(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,uint32_t pooling_x,uint32_t pooling_y)
 {
- //return;//TODO: тест
  if ((cTensor_Input.Size_X/pooling_x)!=cTensor_Output.Size_X || (cTensor_Input.Size_Y/pooling_y)!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Position.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensor::MaxPooling: Размерности тензоров не совпадают!";
@@ -2216,7 +2194,6 @@ __global__ void CUDAMaxPoolingTensorBackward(STensorKernel<type_t> tensor_output
 template<class type_t>
 void CTensorMath<type_t>::MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<CTensorMath<type_t>::SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,uint32_t pooling_x,uint32_t pooling_y)
 {
- //return;//TODO: тест
  if (cTensor_Input.Size_X!=(cTensor_Output.Size_X/pooling_x) || cTensor_Input.Size_Y!=(cTensor_Output.Size_Y/pooling_y) || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::MaxPooling: Размерности тензоров не совпадают!";
@@ -2284,8 +2261,6 @@ __global__ void CUDAClipTensor(STensorKernel<type_t> tensor,type_t min_value,typ
 template<class type_t>
 void CTensorMath<type_t>::Clip(CTensor<type_t> &cTensor,type_t min_value,type_t max_value)
 {
- //return;//TODO: тест
-
  cTensor.CopyToDevice();
 
  STensorKernel<type_t> sTensorKernel(cTensor);
@@ -2370,10 +2345,9 @@ __global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_
 template<class type_t>
 void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,uint32_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration)
 {
- //return;//TODO: тест
- if (cTensor_Weight.Size_X!=cTensor_dWeight.Size_X || cTensor_Weight.Size_Y!=cTensor_dWeight.Size_Y || cTensor_Weight.Size_Z!=cTensor_dWeight.Size_Z ||
-     cTensor_Weight.Size_X!=cTensor_M.Size_X || cTensor_Weight.Size_Y!=cTensor_M.Size_Y || cTensor_Weight.Size_Z!=cTensor_M.Size_Z ||
-     cTensor_Weight.Size_X!=cTensor_V.Size_X || cTensor_Weight.Size_Y!=cTensor_V.Size_Y || cTensor_Weight.Size_Z!=cTensor_V.Size_Z)
+ if (cTensor_Weight.Size_X!=cTensor_dWeight.Size_X || cTensor_Weight.Size_Y!=cTensor_dWeight.Size_Y || cTensor_Weight.Size_Z!=cTensor_dWeight.Size_Z || cTensor_Weight.Size_W!=cTensor_dWeight.Size_W ||
+     cTensor_Weight.Size_X!=cTensor_M.Size_X || cTensor_Weight.Size_Y!=cTensor_M.Size_Y || cTensor_Weight.Size_Z!=cTensor_M.Size_Z || cTensor_Weight.Size_W!=cTensor_M.Size_W ||
+     cTensor_Weight.Size_X!=cTensor_V.Size_X || cTensor_Weight.Size_Y!=cTensor_V.Size_Y || cTensor_Weight.Size_Z!=cTensor_V.Size_Z || cTensor_Weight.Size_W!=cTensor_V.Size_W)
  {
   throw "CTensor::Adam: Размерности тензоров не совпадают!";
  }

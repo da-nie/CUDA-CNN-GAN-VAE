@@ -12,7 +12,6 @@
 #include "ctensormath.h"
 #include "ctensorconv.h"
 #include "ctensorapplyfunc.h"
-#include "ctensortest.h"
 
 //****************************************************************************************************
 //макроопределения

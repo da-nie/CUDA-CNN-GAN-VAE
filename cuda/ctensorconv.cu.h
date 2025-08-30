@@ -284,11 +284,13 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  int32_t input_y=cTensor_Image.Size_Y;
  int32_t input_x=cTensor_Image.Size_X;
  int32_t input_z=cTensor_Image.Size_Z;
+ int32_t input_w=cTensor_Image.Size_W;
 
  int32_t output_x=(input_x-kernel_x+2*padding_x)/stride_x+1;
  int32_t output_y=(input_y-kernel_y+2*padding_y)/stride_y+1;
 
- if (cTensor_Output.Size_X!=output_x || cTensor_Output.Size_Y!=output_y || cTensor_Output.Size_Z!=output_z) throw("Ошибочная размерность выходного тензора для свёртки");
+
+ if (cTensor_Output.Size_X!=output_x || cTensor_Output.Size_Y!=output_y || cTensor_Output.Size_Z!=output_z || cTensor_Output.Size_W!=output_w) throw("Ошибочная размерность выходного тензора для свёртки");
 
  if (input_z!=kernel_z) throw("Для прямой свёртки требуется чтобы глубина фильтров и входного тензора совпадали");
 
@@ -1182,7 +1184,6 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
  //новая дельта
  int32_t new_delta_x=stride_x*(delta_x-1)+1;
  int32_t new_delta_y=stride_y*(delta_y-1)+1;
-
 
  //перестроим входной тензор для выполнения умножения
  int32_t dst_y=dkernel_y;

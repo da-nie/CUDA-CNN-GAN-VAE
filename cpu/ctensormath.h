@@ -53,9 +53,11 @@ class CTensorMath
   //-деструктор-----------------------------------------------------------------------------------------
  public:
   //-открытые функции-----------------------------------------------------------------------------------
+  static void Fill(CTensor<type_t> &cTensor_Output,type_t value=0);///<записать в тензор число
   static void Inv(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<вычислить обратный тензор
   static void Div(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<поделить тензоры
   static void Add(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры
+  static void AddSumW(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<сложить тензоры по координате W
   static void Sub(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale=1,type_t right_scale=1);///<вычесть тензоры
   static void AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias);///<добавить смещения к элементам тензора (смещения одинаковы для x и y, но по z смещения разные)
   static void Pow2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale=1);///<возведение элементов тензора в квадрат
@@ -95,7 +97,7 @@ class CTensorMath
 template<class type_t>
 CTensor<type_t> operator+(const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
 {
- CTensor<type_t> cTensor(cTensor_Left.Size_Z,cTensor_Left.Size_Y,cTensor_Left.Size_X);
+ CTensor<type_t> cTensor(cTensor_Right.Size_W,cTensor_Left.Size_Z,cTensor_Left.Size_Y,cTensor_Left.Size_X);
  CTensorMath<type_t>::Add(cTensor,cTensor_Left,cTensor_Right);
  return(cTensor);
 }
@@ -105,7 +107,7 @@ CTensor<type_t> operator+(const CTensor<type_t> &cTensor_Left,const CTensor<type
 template<class type_t>
 CTensor<type_t> operator-(const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
 {
- CTensor<type_t> cTensor(cTensor_Left.Size_Z,cTensor_Left.Size_Y,cTensor_Left.Size_X);
+ CTensor<type_t> cTensor(cTensor_Right.Size_W,cTensor_Left.Size_Z,cTensor_Left.Size_Y,cTensor_Left.Size_X);
  CTensorMath<type_t>::Sub(cTensor,cTensor_Left,cTensor_Right);
  return(cTensor);
 }
@@ -115,7 +117,7 @@ CTensor<type_t> operator-(const CTensor<type_t> &cTensor_Left,const CTensor<type
 template<class type_t>
 CTensor<type_t> operator*(const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
 {
- CTensor<type_t> cTensor(cTensor_Left.Size_Z,cTensor_Left.Size_Y,cTensor_Right.Size_X);
+ CTensor<type_t> cTensor(cTensor_Right.Size_W,cTensor_Left.Size_Z,cTensor_Left.Size_Y,cTensor_Right.Size_X);
  CTensorMath<type_t>::Mul(cTensor,cTensor_Left,cTensor_Right);
  return(cTensor);
 }
@@ -125,7 +127,7 @@ CTensor<type_t> operator*(const CTensor<type_t> &cTensor_Left,const CTensor<type
 template<class type_t>
 CTensor<type_t> operator*(const CTensor<type_t> &cTensor_Left,const type_t &value_right)
 {
- CTensor<type_t> cTensor(cTensor_Left.Size_Z,cTensor_Left.Size_Y,cTensor_Left.Size_X);
+ CTensor<type_t> cTensor(cTensor_Left.Size_W,cTensor_Left.Size_Z,cTensor_Left.Size_Y,cTensor_Left.Size_X);
  CTensorMath<type_t>::Mul(cTensor,cTensor_Left,value_right);
  return(cTensor);
 }
@@ -135,7 +137,7 @@ CTensor<type_t> operator*(const CTensor<type_t> &cTensor_Left,const type_t &valu
 template<class type_t>
 CTensor<type_t> operator*(const type_t &value_left,const CTensor<type_t> &cTensor_Right)
 {
- CTensor<type_t> cTensor(cTensor_Right.Size_Z,cTensor_Right.Size_Y,cTensor_Right.Size_X);
+ CTensor<type_t> cTensor(cTensor_Right.Size_W,cTensor_Right.Size_Z,cTensor_Right.Size_Y,cTensor_Right.Size_X);
  CTensorMath<type_t>::Mul(cTensor,value_left,cTensor_Right);
  return(cTensor);
 }
@@ -143,6 +145,15 @@ CTensor<type_t> operator*(const type_t &value_left,const CTensor<type_t> &cTenso
 //****************************************************************************************************
 //открытые функции
 //****************************************************************************************************
+
+//----------------------------------------------------------------------------------------------------
+//записать в тензор число
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Fill(CTensor<type_t> &cTensor_Output,type_t value)
+{
+ cTensor_Output.Fill(value);
+}
 
 //----------------------------------------------------------------------------------------------------
 //вычисление обратного тензора
@@ -154,16 +165,24 @@ void CTensorMath<type_t>::Inv(CTensor<type_t> &cTensor_Output,const CTensor<type
  {
   throw "CTensor::Inv: Размерности тензоров не совпадают!";
  }
- const type_t *i_ptr=&cTensor_Input.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
+ uint32_t input_w=cTensor_Input.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
 
- for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
+  uint32_t w_input=w%input_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,i_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    *o_ptr=1.0/(*i_ptr);
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     type_t i=cTensor_Input.GetElement(w_input,z,y,x);
+     type_t o=1.0/i;
+     cTensor_Output.SetElement(w_output,z,y,x,o);
+    }
    }
   }
  }
@@ -181,17 +200,28 @@ void CTensorMath<type_t>::Div(CTensor<type_t> &cTensor_Output,const CTensor<type
  {
   throw "CTensor::Div: Размерности тензоров не совпадают!";
  }
- const type_t *left_ptr=&cTensor_Left.Item[0];
- const type_t *right_ptr=&cTensor_Right.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(uint32_t z=0;z<cTensor_Left.Size_Z;z++)
+ uint32_t left_w=cTensor_Left.Size_W;
+ uint32_t right_w=cTensor_Right.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
+
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<cTensor_Left.Size_Y;y++)
+  uint32_t w_left=w%left_w;
+  uint32_t w_right=w%right_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Left.Size_X;x++,o_ptr++,left_ptr++,right_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    *o_ptr=left_scale*(*left_ptr)/(right_scale*(*right_ptr));
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     type_t l=cTensor_Left.GetElement(w_left,z,y,x);
+     type_t r=cTensor_Right.GetElement(w_right,z,y,x);
+     type_t o=(left_scale*l)/(right_scale*r);
+     cTensor_Output.SetElement(w_output,z,y,x,o);
+    }
    }
   }
  }
@@ -208,21 +238,74 @@ void CTensorMath<type_t>::Add(CTensor<type_t> &cTensor_Output,const CTensor<type
  {
   throw "CTensor::Add(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
  }
- const type_t *left_ptr=&cTensor_Left.Item[0];
- const type_t *right_ptr=&cTensor_Right.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
+
+ uint32_t left_w=cTensor_Left.Size_W;
+ uint32_t right_w=cTensor_Right.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
+
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
+ {
+  uint32_t w_left=w%left_w;
+  uint32_t w_right=w%right_w;
+  uint32_t w_output=w%output_w;
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
+  {
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
+   {
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     type_t l=cTensor_Left.GetElement(w_left,z,y,x);
+     type_t r=cTensor_Right.GetElement(w_right,z,y,x);
+     type_t o=(left_scale*l)+(right_scale*r);
+     cTensor_Output.SetElement(w_output,z,y,x,o);
+    }
+   }
+  }
+ }
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//сложить тензоры по координате W
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::AddSumW(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right,type_t left_scale,type_t right_scale)
+{
+ if (cTensor_Left.Size_X!=cTensor_Right.Size_X || cTensor_Left.Size_Y!=cTensor_Right.Size_Y || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
+     cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
+ {
+  throw "CTensor::AddSumW: Размерности тензоров не совпадают!";
+ }
 
  for(uint32_t z=0;z<cTensor_Left.Size_Z;z++)
  {
   for(uint32_t y=0;y<cTensor_Left.Size_Y;y++)
   {
-   for(uint32_t x=0;x<cTensor_Left.Size_X;x++,o_ptr++,left_ptr++,right_ptr++)
+   for(uint32_t x=0;x<cTensor_Left.Size_X;x++)
    {
-    *o_ptr=left_scale*(*left_ptr)+right_scale*(*right_ptr);
+    type_t summ_left=0;
+    type_t summ_right=0;
+    for(uint32_t w=0;w<cTensor_Left.GetSizeW();w++)
+    {
+     type_t v=cTensor_Left.GetElement(w,z,y,x);
+     summ_left+=v;
+    }
+    summ_left*=left_scale;
+    for(uint32_t w=0;w<cTensor_Right.GetSizeW();w++)
+    {
+     type_t v=cTensor_Right.GetElement(w,z,y,x);
+     summ_right+=v;
+    }
+    summ_right*=right_scale;
+    type_t summ_output=summ_left+summ_right;
+    cTensor_Output.SetElement(0,z,y,x,summ_output);//помещаем сумму в нулевой слой w
+    for(uint32_t w=1;w<cTensor_Output.GetSizeW();w++) cTensor_Output.SetElement(w,z,y,x,0);//все остальные слои w обнулены
    }
   }
  }
 }
+
+
 //----------------------------------------------------------------------------------------------------
 //вычесть тензоры
 //----------------------------------------------------------------------------------------------------
@@ -234,17 +317,28 @@ void CTensorMath<type_t>::Sub(CTensor<type_t> &cTensor_Output,const CTensor<type
  {
   throw "CTensor::Sub(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
  }
- const type_t *left_ptr=&cTensor_Left.Item[0];
- const type_t *right_ptr=&cTensor_Right.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(uint32_t z=0;z<cTensor_Left.Size_Z;z++)
+ uint32_t left_w=cTensor_Left.Size_W;
+ uint32_t right_w=cTensor_Right.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
+
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<cTensor_Left.Size_Y;y++)
+  uint32_t w_left=w%left_w;
+  uint32_t w_right=w%right_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Left.Size_X;x++,o_ptr++,left_ptr++,right_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    *o_ptr=left_scale*(*left_ptr)-right_scale*(*right_ptr);
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     type_t l=cTensor_Left.GetElement(w_left,z,y,x);
+     type_t r=cTensor_Right.GetElement(w_right,z,y,x);
+     type_t o=(left_scale*l)-(right_scale*r);
+     cTensor_Output.SetElement(w_output,z,y,x,o);
+    }
    }
   }
  }
@@ -261,18 +355,25 @@ void CTensorMath<type_t>::AddBias(CTensor<type_t> &cTensor_Working,const CTensor
   throw "CTensor::AddBias: Размерности тензоров не совпадают!";
  }
 
- type_t *work_ptr=&cTensor_Working.Item[0];
- const type_t *bias_ptr=&cTensor_Bias.Item[0];
+ uint32_t working_w=cTensor_Working.Size_W;
+ uint32_t bias_w=cTensor_Bias.Size_W;
 
- for(uint32_t z=0;z<cTensor_Working.Size_Z;z++,bias_ptr++)
+ for(uint32_t w=0;w<cTensor_Working.Size_W;w++)
  {
-  type_t bias=*bias_ptr;
+  uint32_t w_working=w%working_w;
+  uint32_t w_bias=w%bias_w;
 
-  for(uint32_t y=0;y<cTensor_Working.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Working.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Working.Size_X;x++,work_ptr++)
+   type_t b=cTensor_Bias.GetElement(w_bias,z,0,0);
+   for(uint32_t y=0;y<cTensor_Working.Size_Y;y++)
    {
-    *work_ptr+=bias;
+    for(uint32_t x=0;x<cTensor_Working.Size_X;x++)
+    {
+     type_t s=cTensor_Working.GetElement(w_working,z,y,x);
+     s+=b;
+     cTensor_Working.SetElement(w_working,z,y,x,s);
+    }
    }
   }
  }
@@ -289,17 +390,24 @@ void CTensorMath<type_t>::Pow2(CTensor<type_t> &cTensor_Output,const CTensor<typ
   throw "CTensor::Pow2: Размерности тензоров не совпадают!";
  }
 
- const type_t *i_ptr=&cTensor_Input.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
+ uint32_t input_w=cTensor_Input.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
 
- for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
+  uint32_t w_input=w%input_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,i_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    type_t e=(*i_ptr);
-    *o_ptr=scale*e*e;
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     type_t i=cTensor_Input.GetElement(w_input,z,y,x);
+     type_t o=i*i*scale;
+     cTensor_Output.SetElement(w_output,z,y,x,o);
+    }
    }
   }
  }
@@ -316,17 +424,24 @@ void CTensorMath<type_t>::SQRT(CTensor<type_t> &cTensor_Output,const CTensor<typ
   throw "CTensor::SQRT: Размерности тензоров не совпадают!";
  }
 
- const type_t *i_ptr=&cTensor_Input.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
+ uint32_t input_w=cTensor_Input.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
 
- for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
+  uint32_t w_input=w%input_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,i_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    type_t e=(*i_ptr);
-    *o_ptr=(sqrt(e+add_sqrt_value))*scale;
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     type_t i=cTensor_Input.GetElement(w_input,z,y,x);
+     type_t o=(sqrt(i+add_sqrt_value))*scale;
+     cTensor_Output.SetElement(w_output,z,y,x,o);
+    }
    }
   }
  }
@@ -342,23 +457,27 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
  {
   throw "CTensor::SummXY: Размерности тензоров не совпадают!";
  }
- cTensor_Input.CopyToDevice();
 
- type_t *output_ptr=&cTensor_Output.Item[0];
- type_t *input_ptr=&cTensor_Input.Item[0];
+ uint32_t input_w=cTensor_Input.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
 
- for(uint32_t z=0;z<cTensor_Input.Size_Z;z++,output_ptr++)
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  type_t summ=0;
-
-  for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
+  uint32_t w_input=w%input_w;
+  uint32_t w_output=w%output_w;
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Input.Size_X;x++,input_ptr++)
+   type_t summ=0;
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    summ+=*input_ptr;
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++)
+    {
+     type_t e=cTensor_Input.GetElement(w_input,z,y,x);
+     summ+=e;
+    }
    }
+   cTensor_Output.SetElement(w_output,z,0,0,summ);
   }
-  *output_ptr=summ;
  }
 }
 
@@ -373,19 +492,31 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
  {
   throw "CTensor::Mul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
  }
- for(uint32_t z=0;z<cTensor_Left.Size_Z;z++)
+
+ uint32_t left_w=cTensor_Left.Size_W;
+ uint32_t right_w=cTensor_Right.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
+
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  type_t *m=cTensor_Output.GetColumnPtr(z,0);
-  for(uint32_t y=0;y<cTensor_Left.Size_Y;y++)
+  uint32_t w_left=w%left_w;
+  uint32_t w_right=w%right_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Left.Size_Z;z++)
   {
-   const type_t *m1_begin=cTensor_Left.GetColumnPtr(z,0)+y*cTensor_Left.Size_X;
-   for(uint32_t x=0;x<cTensor_Right.Size_X;x++,m++)
+   type_t *m=cTensor_Output.GetColumnPtr(w_output,z,0);
+   for(uint32_t y=0;y<cTensor_Left.Size_Y;y++)
    {
-    type_t s=0;
-    const type_t *m2=cTensor_Right.GetColumnPtr(z,0)+x;
-    const type_t *m1=m1_begin;
-    for(uint32_t n=0;n<cTensor_Left.Size_X;n++,m1++,m2+=cTensor_Right.Size_X) s+=(*m1)*(*m2);
-    *m=s;
+    const type_t *m1_begin=cTensor_Left.GetColumnPtr(w_left,z,0)+y*cTensor_Left.Size_X;
+    for(uint32_t x=0;x<cTensor_Right.Size_X;x++,m++)
+    {
+     type_t s=0;
+     const type_t *m2=cTensor_Right.GetColumnPtr(w_right,z,0)+x;
+     const type_t *m1=m1_begin;
+     for(uint32_t n=0;n<cTensor_Left.Size_X;n++,m1++,m2+=cTensor_Right.Size_X) s+=(*m1)*(*m2);
+     *m=s;
+    }
    }
   }
  }
@@ -401,19 +532,31 @@ void CTensorMath<type_t>::TransponseMul(CTensor<type_t> &cTensor_Output,const CT
  {
   throw "CTensor::TransponseMul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
  }
- for(uint32_t z=0;z<cTensor_Left.Size_Z;z++)
+
+ uint32_t left_w=cTensor_Left.Size_W;
+ uint32_t right_w=cTensor_Right.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
+
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  type_t *m=cTensor_Output.GetColumnPtr(z,0);
-  for(uint32_t y=0;y<cTensor_Left.Size_X;y++)
+  uint32_t w_left=w%left_w;
+  uint32_t w_right=w%right_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Left.Size_Z;z++)
   {
-   const type_t *m1_begin=cTensor_Left.GetColumnPtr(z,0)+y;
-   for(uint32_t x=0;x<cTensor_Right.Size_X;x++,m++)
+   type_t *m=cTensor_Output.GetColumnPtr(w_output,z,0);
+   for(uint32_t y=0;y<cTensor_Left.Size_X;y++)
    {
-    type_t s=0;
-    const type_t *m2=cTensor_Right.GetColumnPtr(z,0)+x;
-    const type_t *m1=m1_begin;
-    for(uint32_t n=0;n<cTensor_Left.Size_Y;n++,m1+=cTensor_Left.Size_X,m2+=cTensor_Right.Size_X) s+=(*m1)*(*m2);
-    *m=s;
+    const type_t *m1_begin=cTensor_Left.GetColumnPtr(w_left,z,0)+y;
+    for(uint32_t x=0;x<cTensor_Right.Size_X;x++,m++)
+    {
+     type_t s=0;
+     const type_t *m2=cTensor_Right.GetColumnPtr(w_right,z,0)+x;
+     const type_t *m1=m1_begin;
+     for(uint32_t n=0;n<cTensor_Left.Size_Y;n++,m1+=cTensor_Left.Size_X,m2+=cTensor_Right.Size_X) s+=(*m1)*(*m2);
+     *m=s;
+    }
    }
   }
  }
@@ -430,16 +573,24 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
   throw "CTensor::Mul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const type_t &value_right): Размерности тензоров не совпадают!";
  }
 
- const type_t *left_ptr=&cTensor_Left.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
+ uint32_t left_w=cTensor_Left.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
 
- for(uint32_t z=0;z<cTensor_Left.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<cTensor_Left.Size_Y;y++)
+  uint32_t w_left=w%left_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Left.Size_X;x++,o_ptr++,left_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    *o_ptr=(*left_ptr)*value_right;
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     type_t l=cTensor_Left.GetElement(w_left,z,y,x);
+     type_t o=l*value_right;
+     cTensor_Output.SetElement(w_output,z,y,x,o);
+    }
    }
   }
  }
@@ -450,21 +601,29 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
 template<class type_t>
 void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const type_t &value_left,const CTensor<type_t> &cTensor_Right)
 {
- if (cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y)
+ if (cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Y!=cTensor_Right.Size_Y || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
   throw "CTensor::Mul(CTensor &cTensor_Output,const type_t &value_left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
  }
 
- const type_t *right_ptr=&cTensor_Right.Item[0];
- type_t *o_ptr=&cTensor_Output.Item[0];
+ uint32_t right_w=cTensor_Right.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
 
- for(uint32_t z=0;z<cTensor_Right.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<cTensor_Right.Size_Y;y++)
+  uint32_t w_right=w%right_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Right.Size_X;x++,o_ptr++,right_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    *o_ptr=(*right_ptr)*value_left;
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     type_t r=cTensor_Right.GetElement(w_right,z,y,x);
+     type_t o=r*value_left;
+     cTensor_Output.SetElement(w_output,z,y,x,o);
+    }
    }
   }
  }
@@ -475,20 +634,30 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const type_t &valu
 template<class type_t>
 void CTensorMath<type_t>::Transponse(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Output.Size_Y!=cTensor_Input.Size_X || cTensor_Output.Size_X!=cTensor_Input.Size_Y || cTensor_Output.Size_Z!=cTensor_Input.Size_Z)
+ if (cTensor_Output.Size_Y!=cTensor_Input.Size_X || cTensor_Output.Size_X!=cTensor_Input.Size_Y || cTensor_Output.Size_Z!=cTensor_Input.Size_Z || cTensor_Output.Size_W!=cTensor_Input.Size_W)
  {
   throw "void CTensor::Transponse(CTensor &cTensor_Output,const CTensor &cTensor_Input): Размерности матриц не совпадают!";
  }
- for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
+
+ uint32_t input_w=cTensor_Input.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
+
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  const type_t *i_ptr=cTensor_Input.GetColumnPtr(z,0);
-  type_t *o_ptr=cTensor_Output.GetColumnPtr(z,0);
-  for(uint32_t y=0;y<cTensor_Input.Size_Y;y++,o_ptr++)
+  uint32_t w_input=w%input_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   type_t *o_ptr_local=o_ptr;
-   for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr_local+=cTensor_Input.Size_Y,i_ptr++)
+   const type_t *i_ptr=cTensor_Input.GetColumnPtr(w_input,z,0);
+   type_t *o_ptr=cTensor_Output.GetColumnPtr(w_output,z,0);
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++,o_ptr++)
    {
-    *o_ptr_local=*i_ptr;
+    type_t *o_ptr_local=o_ptr;
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr_local+=cTensor_Input.Size_Y,i_ptr++)
+    {
+     *o_ptr_local=*i_ptr;
+    }
    }
   }
  }
@@ -503,22 +672,27 @@ void CTensorMath<type_t>::TensorItemProduction(CTensor<type_t> &cTensor_Output,C
  if (cTensor_Right.Size_X!=cTensor_Left.Size_X || cTensor_Right.Size_Y!=cTensor_Left.Size_Y || cTensor_Right.Size_Z!=cTensor_Left.Size_Z) throw("Ошибка поэлементного умножения тензора на тензор");
  if (cTensor_Right.Size_X!=cTensor_Output.Size_X || cTensor_Right.Size_Y!=cTensor_Output.Size_Y || cTensor_Right.Size_Z!=cTensor_Output.Size_Z) throw("Ошибка поэлементного умножения тензора на тензор");
 
- type_t *right_ptr=cTensor_Right.GetColumnPtr(0,0);
- type_t *output_ptr=cTensor_Output.GetColumnPtr(0,0);
- type_t *left_ptr=cTensor_Left.GetColumnPtr(0,0);
+ uint32_t left_w=cTensor_Left.Size_W;
+ uint32_t right_w=cTensor_Right.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
 
- uint32_t size_y=cTensor_Left.GetSizeY();
- uint32_t size_x=cTensor_Left.GetSizeX();
- uint32_t size_z=cTensor_Left.GetSizeZ();
- for(uint32_t z=0;z<size_z;z++)
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<size_y;y++)
+  uint32_t w_left=w%left_w;
+  uint32_t w_right=w%right_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   for(uint32_t x=0;x<size_x;x++,left_ptr++,right_ptr++,output_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    type_t a=*left_ptr;
-    type_t b=*right_ptr;
-   *output_ptr=a*b;
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     type_t l=cTensor_Left.GetElement(w_left,z,y,x);
+     type_t r=cTensor_Right.GetElement(w_right,z,y,x);
+     type_t o=l*r;
+     cTensor_Output.SetElement(w_output,z,y,x,o);
+    }
    }
   }
  }
@@ -530,7 +704,7 @@ void CTensorMath<type_t>::TensorItemProduction(CTensor<type_t> &cTensor_Output,C
 template<class type_t>
 CTensor<type_t> CTensorMath<type_t>::Transpose(const CTensor<type_t> &cTensor_Input)
 {
- CTensor<type_t> cTensor(cTensor_Input.Size_Z,cTensor_Input.Size_X,cTensor_Input.Size_Y);
+ CTensor<type_t> cTensor(cTensor_Input.Size_W,cTensor_Input.Size_Z,cTensor_Input.Size_X,cTensor_Input.Size_Y);
  Transponse(cTensor,cTensor_Input);
  return(cTensor);
 }
@@ -546,27 +720,33 @@ void CTensorMath<type_t>::UpSampling(CTensor<type_t> &cTensor_Output,const CTens
   throw "CTensor::UpSampling: Размерности тензоров не совпадают!";
  }
 
- type_t *output_ptr=&cTensor_Output.Item[0];
+ uint32_t input_w=cTensor_Input.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
 
- for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
+  uint32_t w_input=w%input_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   uint32_t iy=y/upsampling_y;
-   for(uint32_t x=0;x<cTensor_Output.Size_X;x++,output_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    uint32_t ix=x/upsampling_x;
-	if (ix>=cTensor_Input.Size_X || iy>=cTensor_Input.Size_Y)
-	{
-     *output_ptr=0;
-	 continue;
-	}
-    type_t item=cTensor_Input.GetElement(z,iy,ix);
-    *output_ptr=item;
+    uint32_t iy=y/upsampling_y;
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     uint32_t ix=x/upsampling_x;
+ 	 if (ix>=cTensor_Input.Size_X || iy>=cTensor_Input.Size_Y)
+	 {
+      cTensor_Output.SetElement(w_output,z,y,x,0);
+	  continue;
+	 }
+     type_t item=cTensor_Input.GetElement(w_input,z,iy,ix);
+     cTensor_Output.SetElement(w_output,z,y,x,item);
+    }
    }
   }
  }
-
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -575,39 +755,45 @@ void CTensorMath<type_t>::UpSampling(CTensor<type_t> &cTensor_Output,const CTens
 template<class type_t>
 void CTensorMath<type_t>::DownSampling(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,uint32_t downsampling_x,uint32_t downsampling_y)
 {
- if (cTensor_Input.Size_X/downsampling_x!=cTensor_Output.Size_X || cTensor_Input.Size_Y/downsampling_y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ if (cTensor_Input.Size_X/downsampling_x!=cTensor_Output.Size_X || cTensor_Input.Size_Y/downsampling_y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensor::DownSampling: Размерности тензоров не совпадают!";
  }
 
- type_t *output_ptr=&cTensor_Output.Item[0];
+ uint32_t input_w=cTensor_Input.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
 
- for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
+  uint32_t w_input=w%input_w;
+  uint32_t w_output=w%output_w;
+
+  for(uint32_t z=0;z<cTensor_Output.Size_Z;z++)
   {
-   for(uint32_t x=0;x<cTensor_Output.Size_X;x++,output_ptr++)
+   for(uint32_t y=0;y<cTensor_Output.Size_Y;y++)
    {
-    uint32_t ix=x*downsampling_x;
-    uint32_t iy=y*downsampling_y;
-	type_t summ=0;
-    for(uint32_t dx=0;dx<downsampling_x;dx++)
-	{
-     uint32_t xp=ix+dx;
-	 if (xp>=cTensor_Input.Size_X) continue;
-     for(uint32_t dy=0;dy<downsampling_y;dy++)
+    for(uint32_t x=0;x<cTensor_Output.Size_X;x++)
+    {
+     uint32_t ix=x*downsampling_x;
+     uint32_t iy=y*downsampling_y;
+ 	 type_t summ=0;
+     for(uint32_t dx=0;dx<downsampling_x;dx++)
 	 {
-      uint32_t yp=iy+dy;
-  	  if (yp>=cTensor_Input.Size_Y) continue;
-	  summ+=cTensor_Input.GetElement(z,yp,xp);
+      uint32_t xp=ix+dx;
+	  if (xp>=cTensor_Input.Size_X) continue;
+      for(uint32_t dy=0;dy<downsampling_y;dy++)
+	  {
+       uint32_t yp=iy+dy;
+  	   if (yp>=cTensor_Input.Size_Y) continue;
+	   summ+=cTensor_Input.GetElement(w_input,z,yp,xp);
+	  }
 	 }
-	}
-	summ/=static_cast<type_t>(downsampling_x*downsampling_y);
-    *output_ptr=summ;
+	 summ/=static_cast<type_t>(downsampling_x*downsampling_y);
+     cTensor_Output.SetElement(w_output,z,y,x,summ);
+    }
    }
   }
  }
-
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -616,7 +802,7 @@ void CTensorMath<type_t>::DownSampling(CTensor<type_t> &cTensor_Output,const CTe
 template<class type_t>
 void CTensorMath<type_t>::MaxPooling(CTensor<type_t> &cTensor_Output,CTensor<SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,uint32_t pooling_x,uint32_t pooling_y)
 {
- if ((cTensor_Input.Size_X/pooling_x)!=cTensor_Output.Size_X || (cTensor_Input.Size_Y/pooling_y)!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ if ((cTensor_Input.Size_X/pooling_x)!=cTensor_Output.Size_X || (cTensor_Input.Size_Y/pooling_y)!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensor::MaxPooling: Размерности тензоров не совпадают!";
  }
@@ -629,39 +815,49 @@ void CTensorMath<type_t>::MaxPooling(CTensor<type_t> &cTensor_Output,CTensor<SPo
  uint32_t input_y=cTensor_Input.GetSizeY();
  uint32_t input_z=cTensor_Input.GetSizeZ();
 
- for(uint32_t z=0;z<output_z;z++)
+ uint32_t input_w=cTensor_Input.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
+ uint32_t position_w=cTensor_Position.Size_W;
+
+ for(uint32_t w=0;w<output_w;w++)
  {
-  for(uint32_t y=0;y<output_y;y++)
+  uint32_t w_input=w%input_w;
+  uint32_t w_output=w%output_w;
+  uint32_t w_position=w%position_w;
+
+  for(uint32_t z=0;z<output_z;z++)
   {
-   for(uint32_t x=0;x<output_x;x++)
+   for(uint32_t y=0;y<output_y;y++)
    {
-    uint32_t ix=x*pooling_x;
-    uint32_t iy=y*pooling_y;
-    type_t max=cTensor_Input.GetElement(z,iy,ix);
-    uint32_t max_x=ix;
-    uint32_t max_y=iy;
-    for(uint32_t py=0;py<pooling_y;py++)
+    for(uint32_t x=0;x<output_x;x++)
     {
-     for(uint32_t px=0;px<pooling_x;px++)
+     uint32_t ix=x*pooling_x;
+     uint32_t iy=y*pooling_y;
+     type_t max=cTensor_Input.GetElement(w_input,z,iy,ix);
+     uint32_t max_x=ix;
+     uint32_t max_y=iy;
+     for(uint32_t py=0;py<pooling_y;py++)
      {
-      type_t e=cTensor_Input.GetElement(z,iy+py,ix+px);
-      if (e>max)
+      for(uint32_t px=0;px<pooling_x;px++)
       {
-       max=e;
-       max_x=ix+px;
-       max_y=iy+py;
+       type_t e=cTensor_Input.GetElement(w_input,z,iy+py,ix+px);
+       if (e>max)
+       {
+        max=e;
+        max_x=ix+px;
+        max_y=iy+py;
+       }
       }
      }
+     cTensor_Output.SetElement(w_output,z,y,x,max);
+     SPos sPos;
+     sPos.X=max_x;
+     sPos.Y=max_y;
+     cTensor_Position.SetElement(w_position,z,y,x,sPos);
     }
-    cTensor_Output.SetElement(z,y,x,max);
-    SPos sPos;
-    sPos.X=max_x;
-    sPos.Y=max_y;
-    cTensor_Position.SetElement(z,y,x,sPos);
    }
   }
  }
-
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -670,7 +866,7 @@ void CTensorMath<type_t>::MaxPooling(CTensor<type_t> &cTensor_Output,CTensor<SPo
 template<class type_t>
 void CTensorMath<type_t>::MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,uint32_t pooling_x,uint32_t pooling_y)
 {
- if (cTensor_Input.Size_X!=(cTensor_Output.Size_X/pooling_x) || cTensor_Input.Size_Y!=(cTensor_Output.Size_Y/pooling_y) || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ if (cTensor_Input.Size_X!=(cTensor_Output.Size_X/pooling_x) || cTensor_Input.Size_Y!=(cTensor_Output.Size_Y/pooling_y) || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensor::MaxPooling: Размерности тензоров не совпадают!";
  }
@@ -681,19 +877,29 @@ void CTensorMath<type_t>::MaxPoolingBackward(CTensor<type_t> &cTensor_Output,con
 
  CTensorMath<type_t>::Fill(cTensor_Output,0);
 
- for(uint32_t z=0;z<input_z;z++)
+ uint32_t input_w=cTensor_Input.Size_W;
+ uint32_t output_w=cTensor_Output.Size_W;
+ uint32_t position_w=cTensor_Position.Size_W;
+
+ for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
-  for(uint32_t y=0;y<input_y;y++)
+  uint32_t w_input=w%input_w;
+  uint32_t w_output=w%output_w;
+  uint32_t w_position=w%position_w;
+
+  for(uint32_t z=0;z<input_z;z++)
   {
-   for(uint32_t x=0;x<input_x;x++)
+   for(uint32_t y=0;y<input_y;y++)
    {
-    type_t delta=cTensor_Input.GetElement(z,y,x);
-    SPos sPos=cTensor_Position.GetElement(z,y,x);
-    cTensor_Output.SetElement(z,sPos.Y,sPos.X,delta);
+    for(uint32_t x=0;x<input_x;x++)
+    {
+     type_t delta=cTensor_Input.GetElement(w_input,z,y,x);
+     SPos sPos=cTensor_Position.GetElement(w_position,z,y,x);
+     cTensor_Output.SetElement(w_output,z,sPos.Y,sPos.X,delta);
+    }
    }
   }
  }
-
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -702,20 +908,24 @@ void CTensorMath<type_t>::MaxPoolingBackward(CTensor<type_t> &cTensor_Output,con
 template<class type_t>
 void CTensorMath<type_t>::Clip(CTensor<type_t> &cTensor,type_t min_value,type_t max_value)
 {
- type_t *item_ptr=cTensor.GetColumnPtr(0,0);
+ type_t *item_ptr=cTensor.GetColumnPtr(0,0,0);
 
  uint32_t size_y=cTensor.GetSizeY();
  uint32_t size_x=cTensor.GetSizeX();
  uint32_t size_z=cTensor.GetSizeZ();
+ uint32_t size_w=cTensor.GetSizeW();
 
- for(uint32_t z=0;z<size_z;z++)
+ for(uint32_t w=0;w<size_w;w++)
  {
-  for(uint32_t y=0;y<size_y;y++)
+  for(uint32_t z=0;z<size_z;z++)
   {
-   for(uint32_t x=0;x<size_x;x++,item_ptr++)
+   for(uint32_t y=0;y<size_y;y++)
    {
-    if (*item_ptr<min_value) *item_ptr=min_value;
-    if (*item_ptr>max_value) *item_ptr=max_value;
+    for(uint32_t x=0;x<size_x;x++,item_ptr++)
+    {
+     if (*item_ptr<min_value) *item_ptr=min_value;
+     if (*item_ptr>max_value) *item_ptr=max_value;
+    }
    }
   }
  }
@@ -727,9 +937,9 @@ void CTensorMath<type_t>::Clip(CTensor<type_t> &cTensor,type_t min_value,type_t 
 template<class type_t>
 void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,uint32_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration)
 {
- if (cTensor_Weight.Size_X!=cTensor_dWeight.Size_X || cTensor_Weight.Size_Y!=cTensor_dWeight.Size_Y || cTensor_Weight.Size_Z!=cTensor_dWeight.Size_Z ||
-     cTensor_Weight.Size_X!=cTensor_M.Size_X || cTensor_Weight.Size_Y!=cTensor_M.Size_Y || cTensor_Weight.Size_Z!=cTensor_M.Size_Z ||
-     cTensor_Weight.Size_X!=cTensor_V.Size_X || cTensor_Weight.Size_Y!=cTensor_V.Size_Y || cTensor_Weight.Size_Z!=cTensor_V.Size_Z)
+ if (cTensor_Weight.Size_X!=cTensor_dWeight.Size_X || cTensor_Weight.Size_Y!=cTensor_dWeight.Size_Y || cTensor_Weight.Size_Z!=cTensor_dWeight.Size_Z || cTensor_Weight.Size_W!=cTensor_dWeight.Size_W ||
+     cTensor_Weight.Size_X!=cTensor_M.Size_X || cTensor_Weight.Size_Y!=cTensor_M.Size_Y || cTensor_Weight.Size_Z!=cTensor_M.Size_Z || cTensor_Weight.Size_W!=cTensor_M.Size_W ||
+     cTensor_Weight.Size_X!=cTensor_V.Size_X || cTensor_Weight.Size_Y!=cTensor_V.Size_Y || cTensor_Weight.Size_Z!=cTensor_V.Size_Z || cTensor_Weight.Size_W!=cTensor_V.Size_W)
  {
   throw "CTensor::Adam: Размерности тензоров не совпадают!";
  }
@@ -737,33 +947,37 @@ void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &
  uint32_t size_y=cTensor_Weight.GetSizeY();
  uint32_t size_x=cTensor_Weight.GetSizeX();
  uint32_t size_z=cTensor_Weight.GetSizeZ();
+ uint32_t size_w=cTensor_Weight.GetSizeW();
 
- for(uint32_t z=0;z<size_z;z++)
+ for(uint32_t w=0;w<size_w;w++)
  {
-  for(uint32_t y=0;y<size_y;y++)
+  for(uint32_t z=0;z<size_z;z++)
   {
-   for(uint32_t x=0;x<size_x;x++)
+   for(uint32_t y=0;y<size_y;y++)
    {
+    for(uint32_t x=0;x<size_x;x++)
+    {
 
-    type_t dw=cTensor_dWeight.GetElement(z,y,x);
-    type_t m=cTensor_M.GetElement(z,y,x);
-    type_t v=cTensor_V.GetElement(z,y,x);
+     type_t dw=cTensor_dWeight.GetElement(w,z,y,x);
+     type_t m=cTensor_M.GetElement(w,z,y,x);
+     type_t v=cTensor_V.GetElement(w,z,y,x);
 
-    dw/=static_cast<type_t>(batch_size);
+     dw/=static_cast<type_t>(batch_size);
 
-    m=beta1*m+(1.0-beta1)*dw;
-    v=beta2*v+(1.0-beta2)*dw*dw;
+     m=beta1*m+(1.0-beta1)*dw;
+     v=beta2*v+(1.0-beta2)*dw*dw;
 
-    type_t mc=m/(1.0-pow(beta1,iteration));
-    type_t vc=v/(1.0-pow(beta2,iteration));
+     type_t mc=m/(1.0-pow(beta1,iteration));
+     type_t vc=v/(1.0-pow(beta2,iteration));
 
-    dw=speed*mc/(sqrt(vc)+epsilon);
+     dw=speed*mc/(sqrt(vc)+epsilon);
 
-    cTensor_M.SetElement(z,y,x,m);
-    cTensor_V.SetElement(z,y,x,v);
-    //корректируем веса
-    type_t w=cTensor_Weight.GetElement(z,y,x);
-    cTensor_Weight.SetElement(z,y,x,w-dw);
+     cTensor_M.SetElement(w,z,y,x,m);
+     cTensor_V.SetElement(w,z,y,x,v);
+     //корректируем веса
+     type_t wc=cTensor_Weight.GetElement(w,z,y,x);
+     cTensor_Weight.SetElement(w,z,y,x,wc-dw);
+    }
    }
   }
  }

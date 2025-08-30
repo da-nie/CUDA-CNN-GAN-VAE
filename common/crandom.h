@@ -21,6 +21,8 @@
 //константы
 //****************************************************************************************************
 
+static const double RANDOM_M_PI=3.141592654;
+
 //****************************************************************************************************
 //предварительные объявления
 //****************************************************************************************************
@@ -49,6 +51,7 @@ class CRandom
   static type_t GetRandValue(type_t max_value);///<случайное число
   static double GetGaussRandValue(double MO,double sko);///<генератор случайных чисел с нормальным распределением
   static void SetRandomNormal(CTensor<type_t> &cTensor,double min=-1,double max=1);///<заполнить тензор случайными числами с нормальным распределением
+  static double GetPDF(double x,double mean,double sigma);///<получить плотность нормального распределения
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -131,4 +134,15 @@ void CRandom<type_t>::SetRandomNormal(CTensor<type_t> &cTensor,double min,double
  cTensor.SetHostOnChange();
 }
 
+//----------------------------------------------------------------------------------------------------
+//получить плотность нормального распределения
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+double CRandom<type_t>::GetPDF(double x,double mean,double sigma)
+{
+ double x2=(x-mean)*(x-mean);
+ double sigma2=sigma*sigma;
+ double y=exp(-x2/(2*sigma2))/(sigma*sqrt(2*RANDOM_M_PI));
+ return(y);
+}
 #endif

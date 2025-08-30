@@ -346,7 +346,6 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFake(double &disc_cost)
   DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutput(cTensor_Discriminator_Output);
  }
 
-
  //вычисляем ошибку
  for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
@@ -445,9 +444,6 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorReal(uint32_t mini_batch_index
   for(uint32_t m=0,n=DiscriminatorNet.size()-1;m<DiscriminatorNet.size();m++,n--) DiscriminatorNet[n]->TrainingBackward();
  }
 }
-
-
-
 
 
 //----------------------------------------------------------------------------------------------------
@@ -748,6 +744,18 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
 
     for(uint32_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingResetDeltaWeight();
     TrainingDiscriminatorFake(disc_cost);
+
+    //корректируем веса дискриминатора
+    {
+     CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
+     for(uint32_t n=0;n<DiscriminatorNet.size();n++)
+     {
+      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1,1);
+      //DiscriminatorNet[n]->ClipWeight(-clip,clip);
+     }
+    }
+
+    for(uint32_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingResetDeltaWeight();
     TrainingDiscriminatorReal(batch,disc_cost);
 
     //корректируем веса дискриминатора
@@ -755,11 +763,13 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
      CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
      for(uint32_t n=0;n<DiscriminatorNet.size();n++)
      {
-      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1,2);
+      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1,1);
       //DiscriminatorNet[n]->ClipWeight(-clip,clip);
      }
     }
 
+    for(uint32_t s=0;s<1;s++)
+    {
     for(uint32_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingResetDeltaWeight();
     TrainingGenerator(gen_cost,middle_answer);
     //корректируем веса генератора
@@ -770,6 +780,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
       GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration+1);
       //GeneratorNet[n]->ClipWeight(-clip,clip);//не нужно делать для генератора!
      }
+    }
     }
 
     str="Ошибка дискриминатора:";
