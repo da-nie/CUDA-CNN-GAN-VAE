@@ -21,6 +21,8 @@
 //константы
 //****************************************************************************************************
 
+static const double RANDOM_M_PI=3.141592654;
+
 //****************************************************************************************************
 //предварительные объявления
 //****************************************************************************************************
@@ -49,6 +51,8 @@ class CRandom
   static type_t GetRandValue(type_t max_value);///<случайное число
   static double GetGaussRandValue(double MO,double sko);///<генератор случайных чисел с нормальным распределением
   static void SetRandomNormal(CTensor<type_t> &cTensor,double min=-1,double max=1);///<заполнить тензор случайными числами с нормальным распределением
+  static void SetRandom(CTensor<type_t> &cTensor,double min=-1,double max=1);///<заполнить тензор случайными числами с равномерным распределением
+  static double GetPDF(double x,double mean,double sigma);///<получить плотность нормального распределения
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -97,7 +101,7 @@ double CRandom<type_t>::GetGaussRandValue(double MO,double sko)
 {
  double sum=0;
  double x;
- for(size_t n=0;n<28;n++) sum+=1.0*rand()/RAND_MAX;
+ for(uint32_t n=0;n<28;n++) sum+=1.0*rand()/RAND_MAX;
  x=(sqrt(2.0)*(sko)*(sum-14.))/2.11233+MO;
  return(x);
 }
@@ -109,24 +113,65 @@ double CRandom<type_t>::GetGaussRandValue(double MO,double sko)
 template<class type_t>
 void CRandom<type_t>::SetRandomNormal(CTensor<type_t> &cTensor,double min,double max)
 {
- size_t size=cTensor.GetSizeX()*cTensor.GetSizeY()*cTensor.GetSizeZ();
+ uint32_t size=cTensor.GetSizeX()*cTensor.GetSizeY()*cTensor.GetSizeZ();
  double average=(max+min)/2.0;
  double sigma=(average-min)/3.0;
-
- for(size_t x=0;x<cTensor.GetSizeX();x++)
+ for(uint32_t w=0;w<cTensor.GetSizeW();w++)
  {
-  for(size_t y=0;y<cTensor.GetSizeY();y++)
+  for(uint32_t x=0;x<cTensor.GetSizeX();x++)
   {
-   for(size_t z=0;z<cTensor.GetSizeZ();z++)
+   for(uint32_t y=0;y<cTensor.GetSizeY();y++)
    {
-    type_t value=static_cast<type_t>(GetGaussRandValue(average,sigma));
-    //есть вероятность (0.3%) что сгенерированное число выйдет за нужный нам диапазон
-    while(value<min || value>max) value=GetGaussRandValue(average,sigma);//если это произошло генерируем новое число.
-	cTensor.SetElement(z,y,x,value);
+    for(uint32_t z=0;z<cTensor.GetSizeZ();z++)
+    {
+     type_t value=static_cast<type_t>(GetGaussRandValue(average,sigma));
+     //есть вероятность (0.3%) что сгенерированное число выйдет за нужный нам диапазон
+     while(value<min || value>max) value=GetGaussRandValue(average,sigma);//если это произошло генерируем новое число.
+     cTensor.SetElement(w,z,y,x,value);
+	}
    }
   }
  }
  cTensor.SetHostOnChange();
 }
 
+
+//----------------------------------------------------------------------------------------------------
+//заполнить тензор случайными числами с равномерным распределением
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CRandom<type_t>::SetRandom(CTensor<type_t> &cTensor,double min,double max)
+{
+ uint32_t size=cTensor.GetSizeX()*cTensor.GetSizeY()*cTensor.GetSizeZ();
+ double average=(max+min)/2.0;
+ double sigma=(average-min)/3.0;
+ for(uint32_t w=0;w<cTensor.GetSizeW();w++)
+ {
+  for(uint32_t x=0;x<cTensor.GetSizeX();x++)
+  {
+   for(uint32_t y=0;y<cTensor.GetSizeY();y++)
+   {
+    for(uint32_t z=0;z<cTensor.GetSizeZ();z++)
+    {
+     type_t value=static_cast<type_t>(GetRandValue(max-min));
+     value+=min;
+     cTensor.SetElement(w,z,y,x,value);
+	}
+   }
+  }
+ }
+ cTensor.SetHostOnChange();
+}
+
+//----------------------------------------------------------------------------------------------------
+//получить плотность нормального распределения
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+double CRandom<type_t>::GetPDF(double x,double mean,double sigma)
+{
+ double x2=(x-mean)*(x-mean);
+ double sigma2=sigma*sigma;
+ double y=exp(-x2/(2*sigma2))/(sigma*sqrt(2*RANDOM_M_PI));
+ return(y);
+}
 #endif

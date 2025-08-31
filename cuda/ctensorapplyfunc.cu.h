@@ -282,7 +282,7 @@ static void BlockInitFunction(dim3 &thread,dim3 &blocks,const CTensor<type_t> &c
  if (cTensor_Output.GetSizeX()%thread.x) block_x++;
  uint32_t block_y=cTensor_Output.GetSizeY()/thread.y;
  if (cTensor_Output.GetSizeY()%thread.y) block_y++;
- uint32_t block_z=cTensor_Output.GetSizeZ();
+ uint32_t block_z=cTensor_Output.GetSizeZ()*cTensor_Output.GetSizeW();
 
  blocks=dim3(block_x,block_y,block_z);
 
@@ -300,7 +300,9 @@ __global__ void CUDATensorApplySigmoidFunction(STensorKernel<type_t> tensor_outp
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -311,8 +313,8 @@ __global__ void CUDATensorApplySigmoidFunction(STensorKernel<type_t> tensor_outp
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::Sigmoid(*a_ptr);
 
@@ -348,7 +350,9 @@ __global__ void CUDATensorApplyReLUFunction(STensorKernel<type_t> tensor_output,
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -359,8 +363,8 @@ __global__ void CUDATensorApplyReLUFunction(STensorKernel<type_t> tensor_output,
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::ReLU(*a_ptr);
 
@@ -396,7 +400,9 @@ __global__ void CUDATensorApplyGeLUFunction(STensorKernel<type_t> tensor_output,
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -407,8 +413,8 @@ __global__ void CUDATensorApplyGeLUFunction(STensorKernel<type_t> tensor_output,
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::GeLU(*a_ptr);
 
@@ -443,7 +449,9 @@ __global__ void CUDATensorApplyLeakyReLUFunction(STensorKernel<type_t> tensor_ou
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -454,8 +462,8 @@ __global__ void CUDATensorApplyLeakyReLUFunction(STensorKernel<type_t> tensor_ou
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::LeakyReLU(*a_ptr);
 
@@ -489,7 +497,9 @@ __global__ void CUDATensorApplyLinearFunction(STensorKernel<type_t> tensor_outpu
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -500,8 +510,8 @@ __global__ void CUDATensorApplyLinearFunction(STensorKernel<type_t> tensor_outpu
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::Linear(*a_ptr);
 
@@ -535,7 +545,9 @@ __global__ void CUDATensorApplyTangenceFunction(STensorKernel<type_t> tensor_out
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -546,8 +558,8 @@ __global__ void CUDATensorApplyTangenceFunction(STensorKernel<type_t> tensor_out
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::Tangence(*a_ptr);
 
@@ -581,7 +593,9 @@ __global__ void CUDATensorApplySoftMaxFunction(STensorKernel<type_t> tensor_outp
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -592,8 +606,8 @@ __global__ void CUDATensorApplySoftMaxFunction(STensorKernel<type_t> tensor_outp
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::SoftMax(*a_ptr);
 
@@ -629,7 +643,9 @@ __global__ void CUDATensorApplyDifferentialSigmoidFunction(STensorKernel<type_t>
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -640,8 +656,8 @@ __global__ void CUDATensorApplyDifferentialSigmoidFunction(STensorKernel<type_t>
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::dSigmoid(*a_ptr);
 
@@ -674,7 +690,9 @@ __global__ void CUDATensorApplyDifferentialReLUFunction(STensorKernel<type_t> te
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -685,8 +703,8 @@ __global__ void CUDATensorApplyDifferentialReLUFunction(STensorKernel<type_t> te
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::dReLU(*a_ptr);
 
@@ -721,7 +739,9 @@ __global__ void CUDATensorApplyDifferentialGeLUFunction(STensorKernel<type_t> te
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -732,8 +752,8 @@ __global__ void CUDATensorApplyDifferentialGeLUFunction(STensorKernel<type_t> te
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::dGeLU(*a_ptr);
 
@@ -768,7 +788,9 @@ __global__ void CUDATensorApplyDifferentialLeakyReLUFunction(STensorKernel<type_
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -779,8 +801,8 @@ __global__ void CUDATensorApplyDifferentialLeakyReLUFunction(STensorKernel<type_
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::dLeakyReLU(*a_ptr);
 
@@ -813,7 +835,9 @@ __global__ void CUDATensorApplyDifferentialLinearFunction(STensorKernel<type_t> 
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -824,8 +848,8 @@ __global__ void CUDATensorApplyDifferentialLinearFunction(STensorKernel<type_t> 
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::dLinear(*a_ptr);
 
@@ -858,7 +882,9 @@ __global__ void CUDATensorApplyDifferentialTangenceFunction(STensorKernel<type_t
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -869,8 +895,8 @@ __global__ void CUDATensorApplyDifferentialTangenceFunction(STensorKernel<type_t
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::dTangence(*a_ptr);
 
@@ -904,7 +930,9 @@ __global__ void CUDATensorApplyDifferentialSoftMaxFunction(STensorKernel<type_t>
 {
  uint32_t blockCol=blockIdx.x;
  uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.z;
+ uint32_t z=blockIdx.z%tensor_output.GetSizeZ();
+ uint32_t w_in=(blockIdx.z/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
+ uint32_t w_out=(blockIdx.z/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -915,8 +943,8 @@ __global__ void CUDATensorApplyDifferentialSoftMaxFunction(STensorKernel<type_t>
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(z)+offset;
+ type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
+ type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
 
  *b_ptr=CTensorApplyFunc<type_t>::dSoftMax(*a_ptr);
 

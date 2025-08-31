@@ -61,7 +61,7 @@ class CModelBasicVAE:public CModelMain<type_t>
   CTensor<type_t> cTensor_Error;
 
   std::vector< std::vector<type_t> > RealImage;///<образы истинных изображений
-  std::vector<size_t> RealImageIndex;///<индексы изображений в обучающем наборе
+  std::vector<uint32_t> RealImageIndex;///<индексы изображений в обучающем наборе
 
   using CModelMain<type_t>::STRING_BUFFER_SIZE;
   using CModelMain<type_t>::CUDA_PAUSE_MS;
@@ -98,7 +98,6 @@ class CModelBasicVAE:public CModelMain<type_t>
   void SaveNet(void);///<сохранить сети
   void LoadTrainingParam(void);///<загрузить параметры обучения
   void SaveTrainingParam(void);///<сохранить параметры обучения
-  void CreateFakeImage(CTensor<type_t> &cTensor_Image);///<создать мнимое изображение с помощью декодировщика
   void TrainingCoderAndDecoder(uint32_t mini_batch_index,double &cost);///<обучение кодировщика и декодировщика
   void SaveRandomImage(void);///<какую итерацию сохранять изображения
   void SaveKitImage(void);///<сохранить изображение из набора
@@ -217,37 +216,6 @@ void CModelBasicVAE<type_t>::SaveTrainingParam(void)
 }
 
 //----------------------------------------------------------------------------------------------------
-//создать мнимое изображение с помощью декодировщика
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CModelBasicVAE<type_t>::CreateFakeImage(CTensor<type_t> &cTensor_Image)
-{
- CTensor<type_t> cTensor_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
- if (IsExit()==true) throw("Стоп");
-/*
- for(uint32_t n=0;n<BATCH_SIZE;n++)
- {
-  CRandom<type_t>::SetRandomNormal(cTensor_Input,0,1);
-  CoderNet[CoderNet.size()-1]->SetOutput(n,cTensor_Input);//входной вектор
- }
- */
-
- //выполняем прямой проход по сети
- for(uint32_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
- //выполняем прямой проход по сети
- for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
- //получаем ответ сети
- for(uint32_t n=0;n<BATCH_SIZE;n++)
- {
-  cTensor_Image=DecoderNet[DecoderNet.size()-1]->GetOutputTensor(n);
-  char str[255];
-  sprintf(str,"Test/test-current-%i.tga",n);
-  SaveImage(cTensor_Image,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
- }
- cTensor_Image=DecoderNet[DecoderNet.size()-1]->GetOutputTensor(0);
-}
-
-//----------------------------------------------------------------------------------------------------
 //обучение кодировщика и декодировщика
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
@@ -265,8 +233,7 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
    uint32_t img=RealImageIndex[b+mini_batch_index*BATCH_SIZE];
    uint32_t size=RealImage[img].size();
    type_t *ptr=&RealImage[img][0];
-   cTensor_Image.CopyItemToDevice(ptr,size);
-   CoderNet[0]->SetOutput(b,cTensor_Image);
+   CoderNet[0]->GetOutputTensor().CopyItemLayerWToDevice(b,ptr,size);
   }
  }
  //вычисляем сеть кодировщика
@@ -280,13 +247,17 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
   CTimeStamp cTimeStamp("Вычисление декодировщика:");
   for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
  }
+ {
+  CTimeStamp cTimeStamp("Вычисление ошибки:");
+  CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(),CoderNet[0]->GetOutputTensor());
+ }
+ {
+  CTimeStamp cTimeStamp("Задание ошибки:");
+  DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
+ }
 
  for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
-  {
-   CTimeStamp cTimeStamp("Вычисление ошибки:");
-   CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(b),CoderNet[0]->GetOutputTensor(b));
-  }
 /*
   char str[255];
   sprintf(str,"Test/input-%i.tga",b);
@@ -296,10 +267,6 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
   sprintf(str,"Test/error-%i.tga",b);
   SaveImage(cTensor_Error,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
 */
-  {
-   CTimeStamp cTimeStamp("Задание ошибки:");
-   DecoderNet[DecoderNet.size()-1]->SetOutputError(b,cTensor_Error);
-  }
   //считаем ошибку
   double error=0;
   for(uint32_t x=0;x<cTensor_Error.GetSizeX();x++)
@@ -308,7 +275,7 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
    {
     for(uint32_t z=0;z<cTensor_Error.GetSizeZ();z++)
     {
-     type_t c=cTensor_Error.GetElement(z,y,x);
+     type_t c=cTensor_Error.GetElement(b,z,y,x);
      error+=c*c;
     }
    }
@@ -333,24 +300,28 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
 template<class type_t>
 void CModelBasicVAE<type_t>::SaveRandomImage(void)
 {
- static uint32_t counter=0;
+ CTensor<type_t> cTensor_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
+ if (IsExit()==true) throw("Стоп");
+/*
+ CRandom<type_t>::SetRandomNormal(cTensor_Input,0,1);
+ CoderNet[CoderNet.size()-1]->SetOutput(cTensor_Input);//входной вектор
+ */
 
- CTensor<type_t> cTensor;
-
+ //выполняем прямой проход по сети
+ for(uint32_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
+ //выполняем прямой проход по сети
+ for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
+ //получаем ответ сети
+ cTensor_Image=DecoderNet[DecoderNet.size()-1]->GetOutputTensor();
  char str[STRING_BUFFER_SIZE];
- for(uint32_t n=0;n<BATCH_SIZE*0+1;n++)
+ static uint32_t counter=0;
+ for(uint32_t n=0;n<BATCH_SIZE;n++)
  {
-  CreateFakeImage(cTensor);
   sprintf(str,"Test/test%05i-%03i.tga",static_cast<int>(counter),static_cast<int>(n));
   //SaveImage(cTensor,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
-  if (n==0) SaveImage(cTensor,"Test/test-current.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
-  //sprintf(str,"Test/test%03i.txt",n);
-  //cTensor.PrintToFile(str,"Изображение",true);
+  if (n==0) SaveImage(cTensor_Image,"Test/test-current.tga",n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
  }
  counter++;
-
- //CoderNet[0]->GetOutput(0,cTensor);
- //SaveImage(cTensor,"Test/test-input.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
 }
 //----------------------------------------------------------------------------------------------------
 //сохранить изображение из набора
@@ -473,8 +444,8 @@ void CModelBasicVAE<type_t>::TrainingNet(bool mnist)
  SYSTEM::MakeDirectory("Test");
 
 
- cTensor_Image=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
- cTensor_Error=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+ cTensor_Image=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+ cTensor_Error=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
 
  CreateCoder();
  CreateDecoder();
@@ -487,12 +458,12 @@ void CModelBasicVAE<type_t>::TrainingNet(bool mnist)
  //включаем обучение
  for(uint32_t n=0;n<CoderNet.size();n++)
  {
-  CoderNet[n]->TrainingModeAdam();
+  CoderNet[n]->TrainingModeAdam(0.5,0.9);
   CoderNet[n]->TrainingStart();
  }
  for(uint32_t n=0;n<DecoderNet.size();n++)
  {
-  DecoderNet[n]->TrainingModeAdam();
+  DecoderNet[n]->TrainingModeAdam(0.5,0.9);
   DecoderNet[n]->TrainingStart();
  }
 

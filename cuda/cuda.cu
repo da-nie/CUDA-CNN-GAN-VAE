@@ -6,10 +6,11 @@
 #include <stdint.h>
 
 #include "handle_error.cu.h"
-#include "netmodel/cmodel_sorter.cu.h"
+//#include "netmodel/cmodel_sorter.cu.h"
 #include "netmodel/cmodel_gan.cu.h"
 //#include "netmodel/cmodel_srgan.cu.h"
 #include "netmodel/cmodel_vae.cu.h"
+#include "netmodel/cmodel_diffusion.cu.h"
 #include "../system/system.h"
 
 //----------------------------------------------------------------------------------------------------
@@ -83,11 +84,15 @@ struct cudaDeviceProp
 
  if (CTensorTest<float>::Test()==false) throw("Класс тензоров провалил тестирование!");
 
+
  //CModelSorter<float> cModelSorter;
  //cModelSorter.Execute();
 
  CModelGAN<float> cModelGAN;
  cModelGAN.Execute();
+
+// CModelDiffusion<float> cModelDiffusion;
+ //cModelDiffusion.Execute();
 
  //CModelVAE<float> cModelVAE;
  //cModelVAE.Execute();

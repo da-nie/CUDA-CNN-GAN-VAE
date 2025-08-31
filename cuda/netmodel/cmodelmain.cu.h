@@ -72,15 +72,15 @@ class CModelMain
   void SetExitState(bool state);///<задать необходимость выхода из потока
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
-  bool LoadMNISTImage(const std::string &file_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);///<загрузить образы изображений из MNIST
-  bool LoadImage(const std::string &path_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index);///<загрузить образы изображений
+  bool LoadMNISTImage(const std::string &file_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<uint32_t> &index);///<загрузить образы изображений из MNIST
+  bool LoadImage(const std::string &path_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<uint32_t> &index);///<загрузить образы изображений
   bool CreateResamplingImage(uint32_t input_image_width,uint32_t input_image_height,uint32_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image_output);///<создать изображения другого разрешения
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<загрузить слои сети
   void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t iteration,bool backward=false);///<сохранить параметры обучения слоёв сети
   void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t &iteration,bool backward=false);///<загрузить параметры обучения слоёв сети
-  void ExchangeImageIndex(std::vector<size_t> &index);///<перемешать индексы изображений
-  void SaveImage(CTensor<type_t> &cTensor,const std::string &name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth);///<сохранить изображение
+  void ExchangeImageIndex(std::vector<uint32_t> &index);///<перемешать индексы изображений
+  void SaveImage(CTensor<type_t> &cTensor,const std::string &name,uint32_t w,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth);///<сохранить изображение
   void SpeedTest(void);///<тест скорости
 };
 
@@ -106,7 +106,7 @@ CModelMain<type_t>::~CModelMain()
 //загрузить образы истинных изображений MNIST
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CModelMain<type_t>::LoadMNISTImage(const std::string &file_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index)
+bool CModelMain<type_t>::LoadMNISTImage(const std::string &file_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<uint32_t> &index)
 {
  image.clear();
  index.clear();
@@ -223,7 +223,7 @@ bool CModelMain<type_t>::LoadMNISTImage(const std::string &file_name,uint32_t ou
 //загрузить образы изображений
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CModelMain<type_t>::LoadImage(const std::string &path_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<size_t> &index)
+bool CModelMain<type_t>::LoadImage(const std::string &path_name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image,std::vector<uint32_t> &index)
 {
  image.clear();
  index.clear();
@@ -470,14 +470,14 @@ void CModelMain<type_t>::LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr
 //перемешать индексы изображений
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::ExchangeImageIndex(std::vector<size_t> &index)
+void CModelMain<type_t>::ExchangeImageIndex(std::vector<uint32_t> &index)
 {
  //делаем перемешивание
  uint32_t image_amount=index.size();
  for(uint32_t n=0;n<image_amount;n++)
  {
   uint32_t index_1=n;
-  uint32_t index_2=static_cast<size_t>((rand()*static_cast<double>(image_amount*10))/static_cast<double>(RAND_MAX));
+  uint32_t index_2=static_cast<uint32_t>((rand()*static_cast<double>(image_amount*10))/static_cast<double>(RAND_MAX));
   index_2%=image_amount;
 
   uint32_t tmp=index[index_1];
@@ -490,10 +490,10 @@ void CModelMain<type_t>::ExchangeImageIndex(std::vector<size_t> &index)
 //сохранить изображение
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &name,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth)
+void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &name,uint32_t w,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth)
 {
  std::vector<uint32_t> image(output_image_width*output_image_height);
- type_t *ptr=cTensor.GetColumnPtr(0,0);
+ type_t *ptr=cTensor.GetColumnPtr(w,0,0);
  for(uint32_t y=0;y<output_image_height;y++)
  {
   for(uint32_t x=0;x<output_image_width;x++)

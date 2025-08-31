@@ -260,7 +260,7 @@ type_t CTensorApplyFunc<type_t>::dTangence(type_t v)
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplySigmoid(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -268,13 +268,16 @@ void CTensorApplyFunc<type_t>::ApplySigmoid(CTensor<type_t> &cTensor_Output,cons
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=Sigmoid(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=Sigmoid(*input_ptr);
+    }
    }
   }
  }
@@ -286,7 +289,7 @@ void CTensorApplyFunc<type_t>::ApplySigmoid(CTensor<type_t> &cTensor_Output,cons
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -294,13 +297,16 @@ void CTensorApplyFunc<type_t>::ApplyReLU(CTensor<type_t> &cTensor_Output,const C
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=ReLU(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=ReLU(*input_ptr);
+    }
    }
   }
  }
@@ -312,7 +318,7 @@ void CTensorApplyFunc<type_t>::ApplyReLU(CTensor<type_t> &cTensor_Output,const C
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyGeLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -320,13 +326,16 @@ void CTensorApplyFunc<type_t>::ApplyGeLU(CTensor<type_t> &cTensor_Output,const C
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=GeLU(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=GeLU(*input_ptr);
+    }
    }
   }
  }
@@ -338,7 +347,7 @@ void CTensorApplyFunc<type_t>::ApplyGeLU(CTensor<type_t> &cTensor_Output,const C
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyLeakyReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -346,13 +355,16 @@ void CTensorApplyFunc<type_t>::ApplyLeakyReLU(CTensor<type_t> &cTensor_Output,co
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=LeakyReLU(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=LeakyReLU(*input_ptr);
+    }
    }
   }
  }
@@ -364,7 +376,7 @@ void CTensorApplyFunc<type_t>::ApplyLeakyReLU(CTensor<type_t> &cTensor_Output,co
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyLinear(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -372,13 +384,16 @@ void CTensorApplyFunc<type_t>::ApplyLinear(CTensor<type_t> &cTensor_Output,const
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=Linear(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=Linear(*input_ptr);
+    }
    }
   }
  }
@@ -390,7 +405,7 @@ void CTensorApplyFunc<type_t>::ApplyLinear(CTensor<type_t> &cTensor_Output,const
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyTangence(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -398,13 +413,16 @@ void CTensorApplyFunc<type_t>::ApplyTangence(CTensor<type_t> &cTensor_Output,con
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=Tangence(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=Tangence(*input_ptr);
+    }
    }
   }
  }
@@ -416,7 +434,7 @@ void CTensorApplyFunc<type_t>::ApplyTangence(CTensor<type_t> &cTensor_Output,con
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplySoftMax(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -424,13 +442,16 @@ void CTensorApplyFunc<type_t>::ApplySoftMax(CTensor<type_t> &cTensor_Output,cons
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=SoftMax(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=SoftMax(*input_ptr);
+    }
    }
   }
  }
@@ -443,7 +464,7 @@ void CTensorApplyFunc<type_t>::ApplySoftMax(CTensor<type_t> &cTensor_Output,cons
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -451,13 +472,16 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(CTensor<type_t> &cTensor
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=dSigmoid(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=dSigmoid(*input_ptr);
+    }
    }
   }
  }
@@ -468,7 +492,7 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialSigmoid(CTensor<type_t> &cTensor
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyDifferentialReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -476,13 +500,16 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialReLU(CTensor<type_t> &cTensor_Ou
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=dReLU(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=dReLU(*input_ptr);
+    }
    }
   }
  }
@@ -494,7 +521,7 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialReLU(CTensor<type_t> &cTensor_Ou
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyDifferentialGeLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -502,13 +529,16 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialGeLU(CTensor<type_t> &cTensor_Ou
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=dGeLU(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=dGeLU(*input_ptr);
+    }
    }
   }
  }
@@ -520,7 +550,7 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialGeLU(CTensor<type_t> &cTensor_Ou
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -528,13 +558,16 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(CTensor<type_t> &cTens
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=dLeakyReLU(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=dLeakyReLU(*input_ptr);
+    }
    }
   }
  }
@@ -545,7 +578,7 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialLeakyReLU(CTensor<type_t> &cTens
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyDifferentialLinear(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
@@ -553,13 +586,16 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialLinear(CTensor<type_t> &cTensor_
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
 
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=dLinear(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=dLinear(*input_ptr);
+    }
    }
   }
  }
@@ -570,21 +606,23 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialLinear(CTensor<type_t> &cTensor_
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyDifferentialTangence(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
 
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
-
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=dTangence(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=dTangence(*input_ptr);
+    }
    }
   }
  }
@@ -596,21 +634,23 @@ void CTensorApplyFunc<type_t>::ApplyDifferentialTangence(CTensor<type_t> &cTenso
 template<class type_t>
 void CTensorApplyFunc<type_t>::ApplyDifferentialSoftMax(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
- if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y)
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
   throw "CTensorApplyFunc: Размерности тензоров не совпадают!";
  }
 
  const type_t *input_ptr=&cTensor_Input.Item[0];
  type_t *o_ptr=&cTensor_Output.Item[0];
-
- for(size_t z=0;z<cTensor_Input.Size_Z;z++)
+ for(uint32_t w=0;w<cTensor_Input.Size_W;w++)
  {
-  for(size_t y=0;y<cTensor_Input.Size_Y;y++)
+  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
   {
-   for(size_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++)
    {
-    *o_ptr=dSoftMax(*input_ptr);
+    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr++,input_ptr++)
+    {
+     *o_ptr=dSoftMax(*input_ptr);
+    }
    }
   }
  }

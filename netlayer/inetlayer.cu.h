@@ -63,10 +63,10 @@ class INetLayer
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   virtual void Reset(void)=0;///<выполнить инициализацию весов и сдвигов
-  virtual void SetOutput(uint32_t unit_index,CTensor<type_t> &output)=0;///<задать выход слоя
-  virtual void GetOutput(uint32_t unit_index,CTensor<type_t> &output)=0;///<получить выход слоя
+  virtual void SetOutput(CTensor<type_t> &output)=0;///<задать выход слоя
+  virtual void GetOutput(CTensor<type_t> &output)=0;///<получить выход слоя
   virtual void Forward(void)=0;///<выполнить прямой проход по слою
-  virtual CTensor<type_t>& GetOutputTensor(uint32_t unit_index)=0;///<получить ссылку на выходной тензор
+  virtual CTensor<type_t>& GetOutputTensor(void)=0;///<получить ссылку на выходной тензор
   virtual void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)=0;///<задать указатель на последующий слой
   virtual bool Save(IDataStream *iDataStream_Ptr)=0;///<сохранить параметры слоя
   virtual bool Load(IDataStream *iDataStream_Ptr,bool check_size=false)=0;///<загрузить параметры слоя
@@ -77,8 +77,8 @@ class INetLayer
   virtual void TrainingBackward(bool create_delta_weight=true)=0;///<выполнить обратный проход по сети для обучения
   virtual void TrainingResetDeltaWeight(void)=0;///<сбросить поправки к весам
   virtual void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1)=0;///<выполнить обновления весов
-  virtual CTensor<type_t>& GetDeltaTensor(uint32_t unit_index)=0;///<получить ссылку на тензор дельты слоя
-  virtual void SetOutputError(uint32_t unit_index,CTensor<type_t>& error)=0;///<задать ошибку и расчитать дельту
+  virtual CTensor<type_t>& GetDeltaTensor(void)=0;///<получить ссылку на тензор дельты слоя
+  virtual void SetOutputError(CTensor<type_t>& error)=0;///<задать ошибку и расчитать дельту
   virtual void ClipWeight(type_t min,type_t max)=0;///<ограничить веса в диапазон
 
   void SetMark(bool state)///<установить или снять метку

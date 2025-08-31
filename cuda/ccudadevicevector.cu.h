@@ -48,7 +48,7 @@ class CCUDADeviceVector
  private:
   //-переменные-----------------------------------------------------------------------------------------
   uint32_t Size;///<размер данных в элементах
-  type_t *ItemPtr;///<указатель на данные
+  type_t *ItemPtr;///<указатель на данные на видеокарте
   public:
   //-конструктор----------------------------------------------------------------------------------------
   __host__ CCUDADeviceVector(uint32_t size=0);
@@ -65,8 +65,8 @@ class CCUDADeviceVector
   __device__ __host__ uint32_t size(void);///<получить количество элементов
   __device__ __host__ type_t* get(void) const;///<получить указатель
   __host__ CCUDADeviceVector<type_t>& operator=(const CCUDADeviceVector<type_t> &cCUDADeviceVector);///<оператор "="
-  __host__ void copy_host_to_device(const type_t *item_ptr,uint32_t items) const;///<скопировать на устройство
-  __host__ void copy_device_to_host(type_t *item_ptr,uint32_t items) const;///<скопировать с устройства
+  __host__ void copy_host_to_device(const type_t *item_ptr,uint32_t items,uint32_t items_offset=0) const;///<скопировать на устройство
+  __host__ void copy_device_to_host(type_t *item_ptr,uint32_t items,uint32_t items_offset=0) const;///<скопировать с устройства
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -206,24 +206,24 @@ __device__ __host__ uint32_t CCUDADeviceVector<type_t>::size(void)
 ///!скопировать на устройство
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__host__ void CCUDADeviceVector<type_t>::copy_host_to_device(const type_t *item_ptr,uint32_t items) const
+__host__ void CCUDADeviceVector<type_t>::copy_host_to_device(const type_t *item_ptr,uint32_t items,uint32_t items_offset) const
 {
- if (items>Size) throw("CCUDADeviceVector<type_t>::copy_host_to_device: копируемое количество элементов превышает размер выделенной памяти!");
+ if (items+items_offset>Size) throw("CCUDADeviceVector<type_t>::copy_host_to_device: копируемое количество элементов превышает размер выделенной памяти!");
  if (items>0)
  {
-  HANDLE_ERROR(cudaMemcpy(ItemPtr,const_cast<type_t*>(item_ptr),sizeof(type_t)*items,cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(ItemPtr+items_offset,const_cast<type_t*>(item_ptr),sizeof(type_t)*items,cudaMemcpyHostToDevice));
  }
 }
 //----------------------------------------------------------------------------------------------------
 ///!скопировать с устройства
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__host__ void CCUDADeviceVector<type_t>::copy_device_to_host(type_t *item_ptr,uint32_t items) const
+__host__ void CCUDADeviceVector<type_t>::copy_device_to_host(type_t *item_ptr,uint32_t items,uint32_t items_offset) const
 {
- if (items>Size) throw("CCUDADeviceVector<type_t>::copy_device_to_host: копируемое количество элементов превышает размер выделенной памяти!");
+ if (items+items_offset>Size) throw("CCUDADeviceVector<type_t>::copy_device_to_host: копируемое количество элементов превышает размер выделенной памяти!");
  if (items>0)
  {
-  HANDLE_ERROR(cudaMemcpy(item_ptr,ItemPtr,sizeof(type_t)*items,cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(item_ptr,ItemPtr+items_offset,sizeof(type_t)*items,cudaMemcpyDeviceToHost));
  }
 }
 
