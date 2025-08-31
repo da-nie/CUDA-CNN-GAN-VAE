@@ -69,7 +69,7 @@ CModelDiffusion<type_t>::CModelDiffusion(void)
 {
  IMAGE_HEIGHT=128;
  IMAGE_WIDTH=128;
- IMAGE_DEPTH=1;
+ IMAGE_DEPTH=3;
  HIDDEN_LAYER_SIDE_X=32;
  HIDDEN_LAYER_SIDE_Y=32;
  HIDDEN_LAYER_SIDE_Z=1;
@@ -79,8 +79,8 @@ CModelDiffusion<type_t>::CModelDiffusion(void)
 
  BATCH_SIZE=32;
 
- ITERATION_OF_SAVE_IMAGE=10;
- ITERATION_OF_SAVE_NET=100;
+ ITERATION_OF_SAVE_IMAGE=1;
+ ITERATION_OF_SAVE_NET=1;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор

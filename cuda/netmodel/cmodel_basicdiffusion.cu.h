@@ -403,6 +403,9 @@ void CModelBasicDiffusion<type_t>::Training(void)
  }
 }
 
+
+#include <random>
+
 //----------------------------------------------------------------------------------------------------
 //запуск обучения нейросети
 //----------------------------------------------------------------------------------------------------
@@ -439,57 +442,77 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
  SYSTEM::PutMessage("Образы изображений загружены.");
 
 
+
+ //генератор случайных чисел
+ std::random_device rd;
+ std::mt19937 gen(rd());
+ std::normal_distribution<float> dist(0.0f, 1.0f);
  //делаем изображения с шумом
+ static const uint32_t T_COUNTER=20;
 
+ std::vector<float> beta(T_COUNTER);//параметры шума для каждого шага
+ std::vector<float> alpha(T_COUNTER);//1-beta
+ std::vector<float> alpha_bar(T_COUNTER);//произведение alpha от 0 до t
+ //заполняем коэффициенты
+ float beta_start=0.01f;
+ float beta_end=0.3f;
+ for(uint32_t i=0;i<T_COUNTER;i++)
+ {
+  beta[i]=beta_start+(beta_end-beta_start)*i/(T_COUNTER-1);
+  alpha[i]=1-beta[i];
+  alpha_bar[i]=(i==0)?alpha[i]:alpha_bar[i-1]*alpha[i];
+ }
  std::vector<type_t> &image=RealImage[0];//входное изображение
- std::vector<type_t> y(image.size());
- for(uint32_t n=0;n<image.size();n++) y[n]=CRandom<type_t>::GetPDF(image[n],0,1);
-
- static const uint32_t TIMESTEP=800;
-
- struct SImage
+ std::vector<std::vector<type_t> > output_array(T_COUNTER);
+ std::vector<std::vector<type_t> > noise_array(T_COUNTER);
+ for(uint32_t n=0;n<T_COUNTER;n++)
  {
-  std::vector<double> Image;
-  SImage(uint32_t amount,double scale)
-  {
-   Image.resize(amount);
-   for(uint32_t n=0;n<amount;n++) Image[n]=scale;
-  }
- };
-
- //число проходов порчи изображения
- std::vector<SImage> bt;
- bt.push_back(SImage(TIMESTEP,0.1));
- bt.push_back(SImage(TIMESTEP,0.3));
- bt.push_back(SImage(TIMESTEP,0.5));
- bt.push_back(SImage(TIMESTEP,0.7));
- bt.push_back(SImage(TIMESTEP,0.9));
- bt.push_back(SImage(TIMESTEP,0.999));
-
- double x0=1;//порча исходного изображения
- for(uint32_t b=0;b<bt.size();b++)
+  output_array[n]=std::vector<type_t>(image.size());
+  noise_array[n]=std::vector<type_t>(image.size());
+ }
+ for(uint32_t t=0;t<T_COUNTER;t++)
  {
-  double xt=x0;//текущее испорченное изображение
-  std::vector<type_t> q(image.size());
-  double mean;
-  double variance;
-  for(uint32_t t=0;t<TIMESTEP;t++)
-  {
-   //среднее
-   mean=sqrt(1-bt[b].Image[t])*xt;
-   //дисперсия
-   variance=bt[b].Image[t];
-   //вычисляем нормальное распределение
-   xt=CRandom<type_t>::GetGaussRandValue(mean,sqrt(variance));
-  }
-  for(uint32_t n=0;n<image.size();n++) q[n]=image[n];//CRandom<type_t>::GetPDF(image[n],mean,sqrt(variance));
-  //выводим картинку
-  sprintf(str,"Test/real%03i.tga",static_cast<int>(b));
-  type_t *ptr=&q[0];
+  //генерируем шум
+  for(uint32_t i=0;i<image.size();i++) noise_array[t][i]=dist(gen);
+  //вычисляем коэффициенты для текущего шага
+  float sqrt_alpha_bar=std::sqrt(alpha_bar[t]);
+  float sqrt_one_minus_alpha_bar=std::sqrt(1-alpha_bar[t]);
+  //применяем шум к изображению
+  for(uint32_t i=0;i<image.size();i++) output_array[t][i]=sqrt_alpha_bar*image[i]+sqrt_one_minus_alpha_bar*noise_array[t][i];
+ }
+ //сохраняем картинки с шумом
+ for(uint32_t t=0;t<T_COUNTER;t++)
+ {
+  sprintf(str,"Test/real%03i.tga",static_cast<int>(t));
+  type_t *ptr=&output_array[t][0];
   uint32_t size=image.size();
   cTensor_Image.CopyItemLayerWToDevice(0,ptr,size);
   SaveImage(cTensor_Image,str,0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
  }
+
+ //вычитаем шум
+ std::vector<type_t> prev_output(image.size());
+ std::vector<type_t> noise(image.size());//новый шум, который добаляется к изображению
+ prev_output=output_array[T_COUNTER-1];
+ for(int32_t t=T_COUNTER-1;t>=0;t--)
+ {
+  float sqrt_alpha_bar=std::sqrt(alpha_bar[t]);
+  float sqrt_one_minus_alpha_bar=std::sqrt(1-alpha_bar[t]);
+  for(uint32_t i=0;i<image.size();i++) noise[i]=dist(gen);
+
+  for(uint32_t i=0;i<image.size();i++)
+  {
+   type_t v=prev_output[i];
+   v=(1/sqrt_alpha_bar)*(v-noise_array[t][i]*(1-alpha_bar[t])/sqrt_one_minus_alpha_bar);//+beta[t]*noise[i];
+   prev_output[i]=v;
+  }
+  sprintf(str,"Test/real%03i-prev.tga",static_cast<int>(t));
+  type_t *ptr=&prev_output[0];
+  uint32_t size=image.size();
+  cTensor_Image.CopyItemLayerWToDevice(0,ptr,size);
+  SaveImage(cTensor_Image,str,0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+ }
+
  throw("Стоп");
 
  //дополняем набор до кратного размеру пакета
