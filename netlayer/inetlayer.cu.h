@@ -80,6 +80,7 @@ class INetLayer
   virtual CTensor<type_t>& GetDeltaTensor(void)=0;///<получить ссылку на тензор дельты слоя
   virtual void SetOutputError(CTensor<type_t>& error)=0;///<задать ошибку и расчитать дельту
   virtual void ClipWeight(type_t min,type_t max)=0;///<ограничить веса в диапазон
+  virtual void SetTimeStep(uint32_t index,uint32_t time_step)=0;///<задать временной шаг
 
   void SetMark(bool state)///<установить или снять метку
   {

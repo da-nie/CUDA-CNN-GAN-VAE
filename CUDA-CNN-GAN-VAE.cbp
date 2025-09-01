@@ -346,6 +346,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayermaxpooling.cu.h" />
+		<Unit filename="netlayer/cnetlayertimeembedding.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayertimeembedding.cu.h" />
 		<Unit filename="netlayer/cnetlayerupsampling.cu">
 			<Option compile="1" />
 			<Option link="1" />

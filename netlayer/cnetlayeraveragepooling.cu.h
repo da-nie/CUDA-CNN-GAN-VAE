@@ -88,6 +88,7 @@ class CNetLayerAveragePooling:public INetLayer<type_t>
   void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
+  void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -401,4 +402,15 @@ template<class type_t>
 void CNetLayerAveragePooling<type_t>::ClipWeight(type_t min,type_t max)
 {
 }
+//----------------------------------------------------------------------------------------------------
+/*!задать временной шаг
+\param[in] index Индекс элемента пакета
+\param[in] time_step Временной шаг
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerAveragePooling<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
+{
+}
+
 #endif

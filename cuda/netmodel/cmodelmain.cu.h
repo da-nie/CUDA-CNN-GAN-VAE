@@ -34,6 +34,7 @@
 #include "../../netlayer/cnetlayermaxdepooling.cu.h"
 #include "../../netlayer/cnetlayerupsampling.cu.h"
 #include "../../netlayer/cnetlayeraveragepooling.cu.h"
+#include "../../netlayer/cnetlayertimeembedding.cu.h"
 
 #include "../tensor.cu.h"
 
