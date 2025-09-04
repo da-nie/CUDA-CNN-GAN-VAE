@@ -105,7 +105,7 @@ class CTensorMath
 
   static void Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,uint32_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration);///<выполнить алгоритм Adam к весовому тензору
 
-
+  static void SetTimeStep(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<uint32_t> &cTensor_TimeStep);///<добавить к тензору временной шаг
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -2383,6 +2383,80 @@ void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &
  cTensor_Weight.SetDeviceOnChange();
  cTensor_M.SetDeviceOnChange();
  cTensor_V.SetDeviceOnChange();
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для добавления временного шага
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,STensorKernel<uint32_t> tensor_time_step)
+{
+ uint32_t blockCol=blockIdx.x;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=Mod(blockIdx.z,tensor_input.GetSizeZ());
+ uint32_t w=Mod((blockIdx.z/tensor_input.GetSizeZ()),tensor_input.GetSizeW());
+ //координаты элементов блока в выходном тензоре
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
+ //получаем подтензоры
+ uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
+
+ if (xp>=tensor_input.GetSizeX() || yp>=tensor_input.GetSizeY()) return;
+
+ uint32_t size=tensor_input.Size_X*tensor_input.Size_Y*tensor_input.Size_Z;
+ uint32_t pos=xp+yp*tensor_input.Size_X+z*tensor_input.Size_X*tensor_input.Size_Y;
+
+ type_t time_step=tensor_time_step.GetElement(w,0,0,0);
+
+ type_t angle=time_step/pow(10000.0f,static_cast<type_t>(pos)/static_cast<type_t>(size));
+ type_t value=tensor_input.GetElement(w,z,yp,xp);
+ if ((pos&0x01)==0) value+=sin(angle);//чётное
+               else value+=cos(angle);//нечётное
+ tensor_output.SetElement(w,z,yp,xp,value);
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+//!добавить к тензору временной шаг
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SetTimeStep(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<uint32_t> &cTensor_TimeStep)
+{
+ if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z ||
+     cTensor_Input.Size_W!=cTensor_Output.Size_W || cTensor_TimeStep.Size_W!=cTensor_Input.Size_W || cTensor_TimeStep.Size_X!=1 ||
+     cTensor_TimeStep.Size_Y!=1 || cTensor_TimeStep.Size_Z!=1)
+ {
+  throw "CTensor::SetTimeStep: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+ cTensor_Output.CopyToDevice();
+ cTensor_TimeStep.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+ STensorKernel<uint32_t> sTensorKernel_TimeStep(cTensor_TimeStep);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TILE_BLOCK_SIZE,CTensorMath<type_t>::TILE_BLOCK_SIZE);
+
+ uint32_t block_x=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_x++;
+ uint32_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ uint32_t block_z=cTensor_Input.Size_Z*cTensor_Input.Size_W;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDASetTimeStep<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,sTensorKernel_TimeStep);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
 }
 
 #endif

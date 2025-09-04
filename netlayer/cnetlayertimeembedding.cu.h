@@ -49,25 +49,23 @@ class CNetLayerTimeEmbedding:public INetLayer<type_t>
 
   CTensor<type_t> cTensor_H;///<выходной тензор значений нейронов
 
-  uint32_t Dimension;///<размерность слоя
-
   uint32_t InputSize_X;///<размер входного тензора по X
   uint32_t InputSize_Y;///<размер входного тензора по Y
   uint32_t InputSize_Z;///<размер входного тензора по Z
 
-  std::vector< std::vector<type_t> > TimeLine;///<вектор кодирования
+  CTensor<uint32_t> cTensor_TimeLine;///<тензор моментов времени
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerTimeEmbedding(uint32_t dimension,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
+  CNetLayerTimeEmbedding(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
   CNetLayerTimeEmbedding(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerTimeEmbedding();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(uint32_t dimension,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
+  void Create(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -103,9 +101,9 @@ class CNetLayerTimeEmbedding:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerTimeEmbedding<type_t>::CNetLayerTimeEmbedding(uint32_t dimension,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
+CNetLayerTimeEmbedding<type_t>::CNetLayerTimeEmbedding(INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
- Create(dimension,prev_layer_ptr,batch_size);
+ Create(prev_layer_ptr,batch_size);
 }
 //----------------------------------------------------------------------------------------------------
 //!конструктор
@@ -140,16 +138,12 @@ CNetLayerTimeEmbedding<type_t>::~CNetLayerTimeEmbedding()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerTimeEmbedding<type_t>::Create(uint32_t dimension,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
+void CNetLayerTimeEmbedding<type_t>::Create(INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
 
  BatchSize=batch_size;
-
- Dimension=dimension;
-
- if (dimension==0) throw("Размерность слоя времени не должна быть нулевой!");
 
  if (prev_layer_ptr==NULL) throw("Слой времени не может быть входным!");//слой без предшествующего считается входным
 
@@ -172,8 +166,7 @@ void CNetLayerTimeEmbedding<type_t>::Create(uint32_t dimension,INetLayer<type_t>
  //задаём предшествующему слою, что мы его последующий слой
  prev_layer_ptr->SetNextLayerPtr(this);
 
- TimeLine.resize(BatchSize);
- for(uint32_t n=0;n<BatchSize;n++) TimeLine[n].resize(Dimension);
+ cTensor_TimeLine=CTensor<uint32_t>(BatchSize,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить инициализацию слоя
@@ -219,37 +212,7 @@ void CNetLayerTimeEmbedding<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerTimeEmbedding<type_t>::Forward(void)
 {
- //приведём входной и выходной тензор к нужному виду
- CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
- CTensor<type_t> &output=cTensor_H;
-
- uint32_t input_x=input.GetSizeX();
- uint32_t input_y=input.GetSizeY();
- uint32_t input_z=input.GetSizeZ();
-
- uint32_t output_x=output.GetSizeX();
- uint32_t output_y=output.GetSizeY();
- uint32_t output_z=output.GetSizeZ();
-
- uint32_t size=input_x*input_y*input_z;
-
- input.ReinterpretSize(BatchSize,1,1,size);
- output.ReinterpretSize(BatchSize,1,1,size);
- //проецирование временной линии к нужной размерности
- type_t k=static_cast<type_t>(Dimension)/static_cast<type_t>(size);
- for(uint32_t b=0;b<BatchSize;b++)
- {
-  type_t kd=0;
-  for(uint32_t n=0;n<size;n++,kd+=k)
-  {
-   uint32_t i=static_cast<uint32_t>(kd);
-   type_t value=input.GetElement(b,0,0,n);
-   value+=TimeLine[b][i];
-   output.SetElement(b,0,0,n,value);
-  }
- }
- input.ReinterpretSize(BatchSize,input_z,input_y,input_x);
- output.ReinterpretSize(BatchSize,output_z,output_y,output_x);
+ CTensorMath<type_t>::SetTimeStep(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_TimeLine);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -281,7 +244,6 @@ void CNetLayerTimeEmbedding<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_lay
 template<class type_t>
 bool CNetLayerTimeEmbedding<type_t>::Save(IDataStream *iDataStream_Ptr)
 {
- iDataStream_Ptr->SaveUInt32(Dimension);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -293,14 +255,6 @@ bool CNetLayerTimeEmbedding<type_t>::Save(IDataStream *iDataStream_Ptr)
 template<class type_t>
 bool CNetLayerTimeEmbedding<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
- if (check_size==true)
- {
-  if (Dimension!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки слоя времени: неверный размер слоя.");
- }
- else
- {
-  Dimension=iDataStream_Ptr->LoadUInt32();
- }
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -412,13 +366,7 @@ void CNetLayerTimeEmbedding<type_t>::ClipWeight(type_t min,type_t max)
 template<class type_t>
 void CNetLayerTimeEmbedding<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
 {
- //создаём таблицу синусоидального позиционного кодирования
- for(uint32_t i=0;i<Dimension/2;i++)
- {
-  type_t angle=time_step/std::pow(10000.0f,2.0f*i/Dimension);
-  TimeLine[index][2*i]=std::sin(angle);
-  TimeLine[index][2*i+1]=std::cos(angle);
- }
+ cTensor_TimeLine.SetElement(index,0,0,0,time_step);
 }
 
 #endif
