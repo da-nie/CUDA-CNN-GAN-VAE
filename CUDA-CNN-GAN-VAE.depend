@@ -274,7 +274,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1756749259 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
+1756983432 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -2313,10 +2313,10 @@
 	<stdlib.h>
 	<math.h>
 
-1756982818 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_diffusion.cu.h
+1757054168 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_diffusion.cu.h
 	"cmodel_basicdiffusion.cu.h"
 
-1756981582 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicdiffusion.cu.h
+1757013598 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicdiffusion.cu.h
 	<string>
 	<vector>
 	<array>

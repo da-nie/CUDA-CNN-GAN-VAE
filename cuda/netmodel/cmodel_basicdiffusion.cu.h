@@ -170,7 +170,7 @@ CModelBasicDiffusion<type_t>::CModelBasicDiffusion(void)
 
  Iteration=0;
 
- TIME_COUNTER=32;
+ TIME_COUNTER=20;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -525,6 +525,8 @@ void CModelBasicDiffusion<type_t>::Training(void)
   fprintf(file,"%f\r\n",max_cost);
   fclose(file);
   Iteration++;
+
+  if (max_cost<10) break;
  }
 }
 
@@ -563,58 +565,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
  SYSTEM::PutMessage("Образы изображений загружены.");
  //инициализируем параметры диффузии
  InitDiffusion();
-/*
- //делаем изображения с шумом
- std::vector<type_t> &image=RealImage[0];//входное изображение
- std::vector<std::vector<type_t> > output_array(TIME_COUNTER);
- std::vector<std::vector<type_t> > noise_array(TIME_COUNTER);
- for(uint32_t n=0;n<TIME_COUNTER;n++)
- {
-  output_array[n]=std::vector<type_t>(image.size());
-  noise_array[n]=std::vector<type_t>(image.size());
- }
- for(uint32_t t=0;t<TIME_COUNTER;t++) GetNoisyImageAndNoise(t,image,output_array[t],noise_array[t]);
- //сохраняем картинки с шумом
- for(uint32_t t=0;t<TIME_COUNTER;t++)
- {
-  sprintf(str,"Test/real%03i.tga",static_cast<int>(t));
-  type_t *ptr=&output_array[t][0];
-  uint32_t size=image.size();
-  cTensor_Image.CopyItemLayerWToDevice(0,ptr,size);
-  SaveImage(cTensor_Image,str,0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
- }
-
- //вычитаем шум
- std::vector<type_t> prev_output(image.size());
- std::vector<type_t> noise(image.size());//новый шум, который добаляется к изображению
- prev_output=output_array[TIME_COUNTER-1];
- for(int32_t t=TIME_COUNTER-1;t>=0;t--)
- {
-  float sqrt_alpha=std::sqrt(sDiffusion.Alpha[t]);
-  float sqrt_alpha_bar=std::sqrt(sDiffusion.AlphaBar[t]);
-  float sqrt_one_minus_alpha_bar=std::sqrt(1.0-sDiffusion.AlphaBar[t]);
-  GetNoise(noise);
-  for(uint32_t i=0;i<image.size();i++)
-  {
-   type_t v;
-   type_t new_noise=noise_array[t][i]*(1.0-sDiffusion.AlphaBar[t])/sqrt_one_minus_alpha_bar;
-   type_t delta=prev_output[i]-new_noise;
-   v=(1.0/sqrt_alpha_bar)*delta;
-   if (t>0) v+=sDiffusion.Beta[t]*noise[i];
-   prev_output[i]=v;
-  }
-  sprintf(str,"Test/prev%03i.tga",static_cast<int>(t));
-  type_t *ptr=&prev_output[0];
-  uint32_t size=image.size();
-  cTensor_Image.CopyItemLayerWToDevice(0,ptr,size);
-  SaveImage(cTensor_Image,str,0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
- }
-
- throw("Стоп");
- */
-
-
- //создаём обучающий набор
+ //создаём обучающий набор с учётом временных меток
  TrainingImage.resize(RealImage.size()*TIME_COUNTER);
  TrainingImageIndex.resize(RealImage.size()*TIME_COUNTER);
  uint32_t index=0;
@@ -628,7 +579,6 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
   }
  }
  //дополняем набор до кратного размеру пакета
-
  uint32_t image_amount=TrainingImage.size();
  BATCH_AMOUNT=image_amount/BATCH_SIZE;
  if (BATCH_AMOUNT==0) BATCH_AMOUNT=1;
@@ -692,13 +642,12 @@ void CModelBasicDiffusion<type_t>::GetNoisyImageAndNoise(uint32_t time_step,cons
 template<class type_t>
 void CModelBasicDiffusion<type_t>::GetNoise(std::vector<type_t> &noise)
 {
-/*
  double max=1;
  double min=-1;
  uint32_t size=noise.size();
  double average=0;//(max+min)/2.0;
  double sigma=1;//(average-min)/3.0;
-
+/*
  for(uint32_t n=0;n<size;n++)
  {
   type_t value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,sigma));
@@ -710,11 +659,14 @@ void CModelBasicDiffusion<type_t>::GetNoise(std::vector<type_t> &noise)
  //генератор случайных чисел
  std::random_device rd;
  std::mt19937 gen(rd());
- std::normal_distribution<type_t> dist(0.0f,1.0f);
-
+ std::normal_distribution<type_t> dist(average,sigma);
 
  //генерируем шум
- for(uint32_t i=0;i<noise.size();i++) noise[i]=dist(gen);
+ for(uint32_t i=0;i<noise.size();i++)
+ {
+  noise[i]=dist(gen);
+  //while(noise[i]<min || noise[i]>max) noise[i]=dist(gen);
+ }
 
 }
 
