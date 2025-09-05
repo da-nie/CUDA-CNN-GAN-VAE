@@ -114,28 +114,25 @@ void CModelDiffusion<type_t>::CreateDiffusionNet(void)
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolutionInput<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH,BATCH_SIZE)));
  //блок 1
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128,5,2,2,2,2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerTimeEmbedding<type_t>(DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
- DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("DownNet output tensor",false);
  //делаем разделение для переноса через U-модель
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerSplitter<type_t>(2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  uint32_t split_1=DiffusionNet.size()-1;
- //блок 2
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(256,5,2,2,2,2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerTimeEmbedding<type_t>(DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("DownNet output tensor",false);
+ //блок 2
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(256,5,2,2,2,2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  //делаем разделение для переноса через U-модель
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerSplitter<type_t>(2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  uint32_t split_2=DiffusionNet.size()-1;
- //блок 3
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(512,5,2,2,2,2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerTimeEmbedding<type_t>(DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("DownNet output tensor",false);
+ //блок 3
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(512,5,2,2,2,2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  //делаем разделение для переноса через U-модель
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerSplitter<type_t>(2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  uint32_t split_3=DiffusionNet.size()-1;
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
+ DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("DownNet output tensor",false);
 
  //промежуточный слой
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(512,3,1,1,1,1,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
@@ -143,36 +140,42 @@ void CModelDiffusion<type_t>::CreateDiffusionNet(void)
  DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("DownNet output tensor",false);
 
  //объединяем блоки
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConcatecator<type_t>(DiffusionNet[DiffusionNet.size()-1].get(),DiffusionNet[split_3].get(),BATCH_SIZE)));
+ uint32_t concat_3=DiffusionNet.size()-1;
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerTimeEmbedding<type_t>(DiffusionNet[split_3].get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConcatecator<type_t>(DiffusionNet[concat_3].get(),DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("UpNet output tensor",false);
 
  //блок 4
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(512,3,1,1,1,1,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  //DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerTimeEmbedding<type_t>(DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("UpNet output tensor",false);
 
  //объединяем блоки
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConcatecator<type_t>(DiffusionNet[DiffusionNet.size()-1].get(),DiffusionNet[split_2].get(),BATCH_SIZE)));
+ uint32_t concat_2=DiffusionNet.size()-1;
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerTimeEmbedding<type_t>(DiffusionNet[split_2].get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConcatecator<type_t>(DiffusionNet[concat_2].get(),DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("UpNet output tensor",false);
  //блок 5
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(256,3,1,1,1,1,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  //DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerTimeEmbedding<type_t>(DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("UpNet output tensor",false);
 
  //объединяем блоки
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConcatecator<type_t>(DiffusionNet[DiffusionNet.size()-1].get(),DiffusionNet[split_1].get(),BATCH_SIZE)));
+ uint32_t concat_1=DiffusionNet.size()-1;
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerTimeEmbedding<type_t>(DiffusionNet[split_1].get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConcatecator<type_t>(DiffusionNet[concat_1].get(),DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("UpNet output tensor",false);
  //блок 6
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128,3,1,1,1,1,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  //DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
- DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerTimeEmbedding<type_t>(DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet[DiffusionNet.size()-1].get(),BATCH_SIZE)));
  DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor().Print("UpNet output tensor",false);
 
