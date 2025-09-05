@@ -145,7 +145,7 @@
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 
-1756810959 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
+1757068583 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
 	"../settings.h"
 	"../cpu/ctensormath.h"
 	"ctensor.cu.h"
@@ -351,7 +351,7 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1756747852 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodelmain.cu.h
+1757062048 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodelmain.cu.h
 	<string>
 	<vector>
 	<array>
@@ -375,6 +375,8 @@
 	"../../netlayer/cnetlayerupsampling.cu.h"
 	"../../netlayer/cnetlayeraveragepooling.cu.h"
 	"../../netlayer/cnetlayertimeembedding.cu.h"
+	"../../netlayer/cnetlayersplitter.cu.h"
+	"../../netlayer/cnetlayerconcatecator.cu.h"
 	"../tensor.cu.h"
 	"../../common/crandom.h"
 
@@ -2313,7 +2315,7 @@
 	<stdlib.h>
 	<math.h>
 
-1757054168 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_diffusion.cu.h
+1757069975 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_diffusion.cu.h
 	"cmodel_basicdiffusion.cu.h"
 
 1757013598 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicdiffusion.cu.h
@@ -2343,4 +2345,30 @@
 
 1756747156 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayertimeembedding.cu
 	"cnetlayertimeembedding.cu.h"
+
+1757068514 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayersplitter.cu.h
+	<stdio.h>
+	<fstream>
+	<vector>
+	<math.h>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/tensor.cu.h"
+	"neuron.cu.h"
+
+1757068830 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconcatecator.cu.h
+	<stdio.h>
+	<fstream>
+	<vector>
+	<math.h>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/tensor.cu.h"
+	"neuron.cu.h"
+
+1757061224 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconcatecator.cu
+	"cnetlayerconcatecator.cu.h"
+
+1757061391 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayersplitter.cu
+	"cnetlayersplitter.cu.h"
 

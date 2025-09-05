@@ -311,6 +311,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayerbatchnormalization.cu.h" />
+		<Unit filename="netlayer/cnetlayerconcatecator.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerconcatecator.cu.h" />
 		<Unit filename="netlayer/cnetlayerconvolution.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -346,6 +351,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayermaxpooling.cu.h" />
+		<Unit filename="netlayer/cnetlayersplitter.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayersplitter.cu.h" />
 		<Unit filename="netlayer/cnetlayertimeembedding.cu">
 			<Option compile="1" />
 			<Option link="1" />
