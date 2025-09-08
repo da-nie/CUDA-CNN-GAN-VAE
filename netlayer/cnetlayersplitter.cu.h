@@ -90,6 +90,9 @@ class CNetLayerSplitter:public INetLayer<type_t>
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
 
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
+
+  void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
+  void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -351,7 +354,7 @@ void CNetLayerSplitter<type_t>::SetOutputError(CTensor<type_t>& error)
  if (SetErrorCounter==0) cTensor_Delta=error;//первый раз просто приравниваем
  else//остальные ошибки складываем
  {
-  CTensorMath<type_t>::Add(cTensor_Delta,cTensor_Delta,error);//TODO: требуется ли осреднять?
+  CTensorMath<type_t>::Add(cTensor_Delta,cTensor_Delta,error);
  }
  SetErrorCounter++;
  SetErrorCounter%=OutputAmount;
@@ -375,5 +378,26 @@ void CNetLayerSplitter<type_t>::ClipWeight(type_t min,type_t max)
 template<class type_t>
 void CNetLayerSplitter<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
 {
+}
+
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность входного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerSplitter<type_t>::PrintInputTensorSize(const std::string &name)
+{
+ if (PrevLayerPtr!=NULL) PrevLayerPtr->GetOutputTensor().Print(name+" Splitter: input",false);
+}
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность выходного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerSplitter<type_t>::PrintOutputTensorSize(const std::string &name)
+{
+ GetOutputTensor().Print(name+" Splitter: output",false);
 }
 #endif

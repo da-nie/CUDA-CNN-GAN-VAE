@@ -223,7 +223,7 @@
 	"../tensor.cu.h"
 	"../../libjpeg/jpeglib.h"
 
-1756749182 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerlinear.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -232,9 +232,10 @@
 	"neuron.cu.h"
 	"../common/crandom.h"
 
-1756748949 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu.h
+1757162542 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/inetlayer.cu.h
 	<stdio.h>
 	<stdint.h>
+	<string>
 
 1745048730 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/tensor.cu.h
 	"ctensor.cu.h"
@@ -247,7 +248,7 @@
 	<stdio.h>
 	<stdint.h>
 
-1756749206 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerdropout.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -256,25 +257,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1756749233 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu.h
-	<stdio.h>
-	<fstream>
-	<vector>
-	"../common/idatastream.h"
-	"inetlayer.cu.h"
-	"../cuda/tensor.cu.h"
-	"neuron.cu.h"
-	"../common/crandom.h"
-
-1756749220 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu.h
-	<stdio.h>
-	<fstream>
-	"../common/idatastream.h"
-	"inetlayer.cu.h"
-	"../cuda/tensor.cu.h"
-	"neuron.cu.h"
-
-1756983432 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolution.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -284,7 +267,25 @@
 	"neuron.cu.h"
 	"../common/crandom.h"
 
-1756749158 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconvolutioninput.cu.h
+	<stdio.h>
+	<fstream>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/tensor.cu.h"
+	"neuron.cu.h"
+
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbackconvolution.cu.h
+	<stdio.h>
+	<fstream>
+	<vector>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/tensor.cu.h"
+	"neuron.cu.h"
+	"../common/crandom.h"
+
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxpooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -293,7 +294,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1756749271 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayeraveragepooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -302,7 +303,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1756749171 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayermaxdepooling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -311,7 +312,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1756749147 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerupsampling.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -351,7 +352,7 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1757062048 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodelmain.cu.h
+1757184384 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodelmain.cu.h
 	<string>
 	<vector>
 	<array>
@@ -376,11 +377,11 @@
 	"../../netlayer/cnetlayeraveragepooling.cu.h"
 	"../../netlayer/cnetlayertimeembedding.cu.h"
 	"../../netlayer/cnetlayersplitter.cu.h"
-	"../../netlayer/cnetlayerconcatecator.cu.h"
+	"../../netlayer/cnetlayerconcatenator.cu.h"
 	"../tensor.cu.h"
 	"../../common/crandom.h"
 
-1756749194 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerfunction.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -388,7 +389,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1756749245 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -2315,10 +2316,10 @@
 	<stdlib.h>
 	<math.h>
 
-1757075769 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_diffusion.cu.h
+1757184679 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_diffusion.cu.h
 	"cmodel_basicdiffusion.cu.h"
 
-1757013598 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicdiffusion.cu.h
+1757181364 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicdiffusion.cu.h
 	<string>
 	<vector>
 	<array>
@@ -2333,7 +2334,7 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1756913292 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayertimeembedding.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayertimeembedding.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -2346,7 +2347,7 @@
 1756747156 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayertimeembedding.cu
 	"cnetlayertimeembedding.cu.h"
 
-1757068514 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayersplitter.cu.h
+1757183675 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayersplitter.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -2356,7 +2357,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1757068830 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconcatecator.cu.h
+1757162511 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconcatecator.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -2371,4 +2372,17 @@
 
 1757061391 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayersplitter.cu
 	"cnetlayersplitter.cu.h"
+
+1757184410 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconcatenator.cu.h
+	<stdio.h>
+	<fstream>
+	<vector>
+	<math.h>
+	"../common/idatastream.h"
+	"inetlayer.cu.h"
+	"../cuda/tensor.cu.h"
+	"neuron.cu.h"
+
+1757184384 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerconcatenator.cu
+	"cnetlayerconcatenator.cu.h"
 

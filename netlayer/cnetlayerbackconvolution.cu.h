@@ -114,6 +114,9 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
+
+  void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
+  void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -553,6 +556,27 @@ void CNetLayerBackConvolution<type_t>::ClipWeight(type_t min,type_t max)
 template<class type_t>
 void CNetLayerBackConvolution<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
 {
+}
+
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность входного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerBackConvolution<type_t>::PrintInputTensorSize(const std::string &name)
+{
+ if (PrevLayerPtr!=NULL) PrevLayerPtr->GetOutputTensor().Print(name+" BackConvolution: input",false);
+}
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность выходного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerBackConvolution<type_t>::PrintOutputTensorSize(const std::string &name)
+{
+ GetOutputTensor().Print(name+" BackConvolution: output",false);
 }
 
 #endif

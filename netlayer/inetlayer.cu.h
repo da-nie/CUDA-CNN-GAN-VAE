@@ -10,6 +10,7 @@
 //****************************************************************************************************
 #include <stdio.h>
 #include <stdint.h>
+#include <string>
 
 //****************************************************************************************************
 //макроопределения
@@ -81,6 +82,8 @@ class INetLayer
   virtual void SetOutputError(CTensor<type_t>& error)=0;///<задать ошибку и расчитать дельту
   virtual void ClipWeight(type_t min,type_t max)=0;///<ограничить веса в диапазон
   virtual void SetTimeStep(uint32_t index,uint32_t time_step)=0;///<задать временной шаг
+  virtual void PrintInputTensorSize(const std::string &name)=0;///<вывести размерность входного тензора слоя
+  virtual void PrintOutputTensorSize(const std::string &name)=0;///<вывести размерность выходного тензора слоя
 
   void SetMark(bool state)///<установить или снять метку
   {

@@ -311,11 +311,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayerbatchnormalization.cu.h" />
-		<Unit filename="netlayer/cnetlayerconcatecator.cu">
+		<Unit filename="netlayer/cnetlayerconcatenator.cu">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
-		<Unit filename="netlayer/cnetlayerconcatecator.cu.h" />
+		<Unit filename="netlayer/cnetlayerconcatenator.cu.h" />
 		<Unit filename="netlayer/cnetlayerconvolution.cu">
 			<Option compile="1" />
 			<Option link="1" />

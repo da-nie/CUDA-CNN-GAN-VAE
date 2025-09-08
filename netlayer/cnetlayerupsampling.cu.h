@@ -46,7 +46,7 @@ class CNetLayerUpSampling:public INetLayer<type_t>
 
   uint32_t BatchSize;///<размер пакета для обучения
 
-  CTensor<type_t> cTensor_H;///<тензоры значений нейронов после функции активации
+  CTensor<type_t> cTensor_H;///<тензоры значений нейронов после применения слоя
 
   uint32_t UpSampling_X;///<коэффициент расширения по X
   uint32_t UpSampling_Y;///<коэффициент расширения по Y
@@ -89,6 +89,9 @@ class CNetLayerUpSampling:public INetLayer<type_t>
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
+
+  void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
+  void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -416,5 +419,24 @@ void CNetLayerUpSampling<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
 {
 }
 
-
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность входного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerUpSampling<type_t>::PrintInputTensorSize(const std::string &name)
+{
+ if (PrevLayerPtr!=NULL) PrevLayerPtr->GetOutputTensor().Print(name+" UpSampling: input",false);
+}
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность выходного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerUpSampling<type_t>::PrintOutputTensorSize(const std::string &name)
+{
+ GetOutputTensor().Print(name+" UpSampling: output",false);
+}
 #endif

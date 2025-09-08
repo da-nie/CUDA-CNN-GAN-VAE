@@ -34,7 +34,7 @@
 //!Слой объединения по Z
 //****************************************************************************************************
 template<class type_t>
-class CNetLayerConcatecator:public INetLayer<type_t>
+class CNetLayerConcatenator:public INetLayer<type_t>
 {
  public:
   //-перечисления---------------------------------------------------------------------------------------
@@ -67,10 +67,10 @@ class CNetLayerConcatecator:public INetLayer<type_t>
   CTensor<type_t> cTensor_PrevLayerBError;///<тензоры ошибки слоя B
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerConcatecator(INetLayer<type_t> *prev_layer_a_ptr=NULL,INetLayer<type_t> *prev_layer_b_ptr=NULL,uint32_t batch_size=1);
-  CNetLayerConcatecator(void);
+  CNetLayerConcatenator(INetLayer<type_t> *prev_layer_a_ptr=NULL,INetLayer<type_t> *prev_layer_b_ptr=NULL,uint32_t batch_size=1);
+  CNetLayerConcatenator(void);
   //-деструктор-----------------------------------------------------------------------------------------
-  ~CNetLayerConcatecator();
+  ~CNetLayerConcatenator();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(INetLayer<type_t> *prev_layer_a_ptr=NULL,INetLayer<type_t> *prev_layer_b_ptr=NULL,uint32_t batch_size=1);///<создать слой
@@ -97,6 +97,9 @@ class CNetLayerConcatecator:public INetLayer<type_t>
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
 
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
+
+  void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
+  void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -109,7 +112,7 @@ class CNetLayerConcatecator:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerConcatecator<type_t>::CNetLayerConcatecator(INetLayer<type_t> *prev_layer_a_ptr,INetLayer<type_t> *prev_layer_b_ptr,uint32_t batch_size)
+CNetLayerConcatenator<type_t>::CNetLayerConcatenator(INetLayer<type_t> *prev_layer_a_ptr,INetLayer<type_t> *prev_layer_b_ptr,uint32_t batch_size)
 {
  Create(prev_layer_a_ptr,prev_layer_b_ptr,batch_size);
 }
@@ -117,7 +120,7 @@ CNetLayerConcatecator<type_t>::CNetLayerConcatecator(INetLayer<type_t> *prev_lay
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerConcatecator<type_t>::CNetLayerConcatecator(void)
+CNetLayerConcatenator<type_t>::CNetLayerConcatenator(void)
 {
  Create();
 }
@@ -125,7 +128,7 @@ CNetLayerConcatecator<type_t>::CNetLayerConcatecator(void)
 //!деструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerConcatecator<type_t>::~CNetLayerConcatecator()
+CNetLayerConcatenator<type_t>::~CNetLayerConcatenator()
 {
 }
 
@@ -146,7 +149,7 @@ CNetLayerConcatecator<type_t>::~CNetLayerConcatecator()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::Create(INetLayer<type_t> *prev_layer_a_ptr,INetLayer<type_t> *prev_layer_b_ptr,uint32_t batch_size)
+void CNetLayerConcatenator<type_t>::Create(INetLayer<type_t> *prev_layer_a_ptr,INetLayer<type_t> *prev_layer_b_ptr,uint32_t batch_size)
 {
  PrevLayerAPtr=prev_layer_a_ptr;
  PrevLayerBPtr=prev_layer_b_ptr;
@@ -183,7 +186,7 @@ void CNetLayerConcatecator<type_t>::Create(INetLayer<type_t> *prev_layer_a_ptr,I
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::Reset(void)
+void CNetLayerConcatenator<type_t>::Reset(void)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -193,12 +196,12 @@ void CNetLayerConcatecator<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::SetOutput(CTensor<type_t> &output)
+void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerConcatecator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerConcatecator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerConcatecator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerConcatecator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  cTensor_H=output;
 }
 //----------------------------------------------------------------------------------------------------
@@ -208,19 +211,19 @@ void CNetLayerConcatecator<type_t>::SetOutput(CTensor<type_t> &output)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::GetOutput(CTensor<type_t> &output)
+void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerConcatecator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerConcatecator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerConcatecator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerConcatecator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  output=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::Forward(void)
+void CNetLayerConcatenator<type_t>::Forward(void)
 {
  CTensorMath<type_t>::ConcatecationZ(cTensor_H,PrevLayerAPtr->GetOutputTensor(),PrevLayerBPtr->GetOutputTensor());
 }
@@ -230,7 +233,7 @@ void CNetLayerConcatecator<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerConcatecator<type_t>::GetOutputTensor(void)
+CTensor<type_t>& CNetLayerConcatenator<type_t>::GetOutputTensor(void)
 {
  return(cTensor_H);
 }
@@ -241,7 +244,7 @@ CTensor<type_t>& CNetLayerConcatecator<type_t>::GetOutputTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
+void CNetLayerConcatenator<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
 {
  NextLayerPtr=next_layer_ptr;
 }
@@ -252,7 +255,7 @@ void CNetLayerConcatecator<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_laye
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerConcatecator<type_t>::Save(IDataStream *iDataStream_Ptr)
+bool CNetLayerConcatenator<type_t>::Save(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }
@@ -263,7 +266,7 @@ bool CNetLayerConcatecator<type_t>::Save(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerConcatecator<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
+bool CNetLayerConcatenator<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
  return(true);
 }
@@ -274,7 +277,7 @@ bool CNetLayerConcatecator<type_t>::Load(IDataStream *iDataStream_Ptr,bool check
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerConcatecator<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
+bool CNetLayerConcatenator<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }
@@ -285,7 +288,7 @@ bool CNetLayerConcatecator<type_t>::SaveTrainingParam(IDataStream *iDataStream_P
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerConcatecator<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
+bool CNetLayerConcatenator<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }
@@ -294,7 +297,7 @@ bool CNetLayerConcatecator<type_t>::LoadTrainingParam(IDataStream *iDataStream_P
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::TrainingStart(void)
+void CNetLayerConcatenator<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
@@ -306,7 +309,7 @@ void CNetLayerConcatecator<type_t>::TrainingStart(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::TrainingStop(void)
+void CNetLayerConcatenator<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
@@ -318,7 +321,7 @@ void CNetLayerConcatecator<type_t>::TrainingStop(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::TrainingBackward(bool create_delta_weight)
+void CNetLayerConcatenator<type_t>::TrainingBackward(bool create_delta_weight)
 {
  //задаём ошибки предыдущих слоёв
  PrevLayerAPtr->SetOutputError(cTensor_PrevLayerAError);
@@ -329,7 +332,7 @@ void CNetLayerConcatecator<type_t>::TrainingBackward(bool create_delta_weight)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::TrainingResetDeltaWeight(void)
+void CNetLayerConcatenator<type_t>::TrainingResetDeltaWeight(void)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -338,7 +341,7 @@ void CNetLayerConcatecator<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
+void CNetLayerConcatenator<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -347,7 +350,7 @@ void CNetLayerConcatecator<type_t>::TrainingUpdateWeight(double speed,double ite
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerConcatecator<type_t>::GetDeltaTensor(void)
+CTensor<type_t>& CNetLayerConcatenator<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
 }
@@ -357,7 +360,7 @@ CTensor<type_t>& CNetLayerConcatecator<type_t>::GetDeltaTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::SetOutputError(CTensor<type_t>& error)
+void CNetLayerConcatenator<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  cTensor_Delta=error;
  CTensorMath<type_t>::SplitZ(cTensor_PrevLayerAError,cTensor_PrevLayerBError,cTensor_Delta);
@@ -369,7 +372,7 @@ void CNetLayerConcatecator<type_t>::SetOutputError(CTensor<type_t>& error)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::ClipWeight(type_t min,type_t max)
+void CNetLayerConcatenator<type_t>::ClipWeight(type_t min,type_t max)
 {
 }
 
@@ -380,8 +383,30 @@ void CNetLayerConcatecator<type_t>::ClipWeight(type_t min,type_t max)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerConcatecator<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
+void CNetLayerConcatenator<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
 {
+}
+
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность входного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerConcatenator<type_t>::PrintInputTensorSize(const std::string &name)
+{
+ if (PrevLayerAPtr!=NULL) PrevLayerAPtr->GetOutputTensor().Print(name+" Concatenator: input A",false);
+ if (PrevLayerBPtr!=NULL) PrevLayerBPtr->GetOutputTensor().Print(name+" Concatenator: input B",false);
+}
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность выходного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerConcatenator<type_t>::PrintOutputTensorSize(const std::string &name)
+{
+ GetOutputTensor().Print(name+" Concatenator: output",false);
 }
 
 #endif
