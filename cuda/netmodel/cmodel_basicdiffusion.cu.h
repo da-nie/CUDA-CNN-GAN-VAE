@@ -170,7 +170,7 @@ CModelBasicDiffusion<type_t>::CModelBasicDiffusion(void)
 
  Iteration=0;
 
- TIME_COUNTER=20;
+ TIME_COUNTER=30;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -426,7 +426,7 @@ template<class type_t>
 void CModelBasicDiffusion<type_t>::SaveKitImage(void)
 {
  char str[STRING_BUFFER_SIZE];
- for(uint32_t n=0;n<BATCH_SIZE;n++)
+ for(uint32_t n=0;n<TrainingImage.size();n++)
  {
   sprintf(str,"Test/real%03i.tga",static_cast<int>(n));
   uint32_t t_index=TrainingImageIndex[n];
@@ -435,8 +435,8 @@ void CModelBasicDiffusion<type_t>::SaveKitImage(void)
   GetNoisyImageAndNoise(time_step,RealImage[r_index],NoisyImage,Noise);
   type_t *ptr=&NoisyImage[0];
   uint32_t size=NoisyImage.size();
-  //cTensor_Coder_Output.CopyItemToHost(ptr,size);
-  //SaveImage(cTensor_Coder_Output,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+  cTensor_Image.CopyItemLayerWToDevice(0,ptr,size);
+  SaveImage(cTensor_Image,str,0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
  }
 }
 
@@ -475,7 +475,7 @@ void CModelBasicDiffusion<type_t>::Training(void)
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();
    SaveTrainingParam();
-   SaveKitImage();
+   //SaveKitImage();
    SYSTEM::PutMessageToConsole("");
   }
 
@@ -483,6 +483,8 @@ void CModelBasicDiffusion<type_t>::Training(void)
   for(uint32_t batch=0;batch<BATCH_AMOUNT;batch++)
   {
    if (IsExit()==true) throw("Стоп");
+
+   if (batch%1000==0) SaveRandomImage();
 
    str="Итерация:";
    str+=std::to_string(static_cast<long double>(Iteration+1));
