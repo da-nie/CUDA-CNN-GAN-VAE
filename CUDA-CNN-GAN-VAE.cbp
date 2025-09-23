@@ -14,7 +14,7 @@
 				<Compiler>
 					<Add option="-std=c++11" />
 					<Add option="-ccbin=g++" />
-					<Add option="-gencode=arch=compute_60,code=sm_60" />
+					<Add option="-gencode=arch=compute_70,code=sm_70" />
 					<Add option="-I /usr/local/cuda/include" />
 					<Add option="-L /usr/local/cuda/lib64" />
 					<Add option="--fmad=true" />

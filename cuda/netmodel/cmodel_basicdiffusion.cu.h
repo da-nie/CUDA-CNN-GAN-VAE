@@ -49,10 +49,11 @@ class CModelBasicDiffusion:public CModelMain<type_t>
    {
     Beta.resize(time_counter);
     Alpha.resize(time_counter);
-    AlphaBar.resize(time_counter);
+    AlphaBar.resize(time_counter+1);
     //заполняем коэффициенты зашумления
+	/*
     float beta_start=0.01f;
-    float beta_end=0.3f;
+    float beta_end=0.02f;
     for(uint32_t i=0;i<time_counter;i++)
     {
      Beta[i]=beta_start+(beta_end-beta_start)*i/(time_counter-1);
@@ -60,6 +61,32 @@ class CModelBasicDiffusion:public CModelMain<type_t>
      if (i==0) AlphaBar[i]=Alpha[i];
           else AlphaBar[i]=AlphaBar[i-1]*Alpha[i];
     }
+	*/
+	//косинусное расписание
+	const float s=0.008f;
+	const float PI=3.141592653589793f;
+    for(uint32_t t=0;t<=time_counter;t++)
+    {
+     float k=static_cast<float>(t)/static_cast<float>(time_counter);
+     float value=cosf((k+s)/(1.0f+s)*PI*0.5f);
+	 AlphaBar[t]=value*value;
+	}
+	//нормализация
+	float alpha_0=AlphaBar[0];
+    for(uint32_t t=0;t<=time_counter;t++) AlphaBar[t]/=alpha_0;
+	//вычисление beta
+    for(uint32_t t=1;t<=time_counter;t++)
+	{
+     Beta[t-1]=1-AlphaBar[t]/AlphaBar[t-1];
+	 if (Beta[t-1]<0.001f) Beta[t-1]=0.001f;
+	 if (Beta[t-1]>0.999f) Beta[t-1]=0.999f;
+	}
+    for(uint32_t t=0;t<time_counter;t++)
+	{
+     Alpha[t]=1-Beta[t];
+     if (t==0) AlphaBar[t]=Alpha[t];
+          else AlphaBar[t]=AlphaBar[t-1]*Alpha[t];
+	}
    }
   };
   //параметры обучающих изображений
@@ -170,7 +197,7 @@ CModelBasicDiffusion<type_t>::CModelBasicDiffusion(void)
 
  Iteration=0;
 
- TIME_COUNTER=30;
+ TIME_COUNTER=64;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -426,12 +453,12 @@ template<class type_t>
 void CModelBasicDiffusion<type_t>::SaveKitImage(void)
 {
  char str[STRING_BUFFER_SIZE];
- for(uint32_t n=0;n<TrainingImage.size();n++)
+ for(uint32_t n=0;n<TIME_COUNTER;n++)
  {
-  sprintf(str,"Test/real%03i.tga",static_cast<int>(n));
-  uint32_t t_index=TrainingImageIndex[n];
+  sprintf(str,"Test/kit%03i.tga",static_cast<int>(n));
+  uint32_t t_index=0;
   uint32_t r_index=TrainingImage[t_index].RealImageIndex;
-  uint32_t time_step=TrainingImage[t_index].TimeStep;
+  uint32_t time_step=n;
   GetNoisyImageAndNoise(time_step,RealImage[r_index],NoisyImage,Noise);
   type_t *ptr=&NoisyImage[0];
   uint32_t size=NoisyImage.size();
@@ -457,6 +484,8 @@ void CModelBasicDiffusion<type_t>::Training(void)
 
  CCUDATimeSpent cCUDATimeSpent;
 
+ SaveKitImage();
+
  while(Iteration<max_iteration)
  {
   SYSTEM::PutMessageToConsole("----------");
@@ -475,7 +504,6 @@ void CModelBasicDiffusion<type_t>::Training(void)
    SYSTEM::PutMessageToConsole("Save net.");
    SaveNet();
    SaveTrainingParam();
-   //SaveKitImage();
    SYSTEM::PutMessageToConsole("");
   }
 
@@ -649,15 +677,15 @@ void CModelBasicDiffusion<type_t>::GetNoise(std::vector<type_t> &noise)
  uint32_t size=noise.size();
  double average=0;//(max+min)/2.0;
  double sigma=1;//(average-min)/3.0;
-/*
+
  for(uint32_t n=0;n<size;n++)
  {
   type_t value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,sigma));
   //есть вероятность (0.3%) что сгенерированное число выйдет за нужный нам диапазон
   while(value<min || value>max) value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,sigma));//если это произошло генерируем новое число.
   noise[n]=value;
- }*/
-
+ }
+/*
  //генератор случайных чисел
  std::random_device rd;
  std::mt19937 gen(rd());
@@ -669,7 +697,7 @@ void CModelBasicDiffusion<type_t>::GetNoise(std::vector<type_t> &noise)
   noise[i]=dist(gen);
   //while(noise[i]<min || noise[i]>max) noise[i]=dist(gen);
  }
-
+*/
 }
 
 //****************************************************************************************************
