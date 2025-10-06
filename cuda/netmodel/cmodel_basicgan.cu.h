@@ -115,6 +115,7 @@ class CModelBasicGAN:public CModelMain<type_t>
   virtual void TrainingNet(bool mnist);///<запуск обучения нейросети
   void TestTrainingGenerator(void);///<тест обучения генератора
   void TestTrainingGeneratorNet(bool mnist);///<запуск теста обучения генератора
+  void Inference(uint32_t size);///<выполнить генерацию
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -1071,6 +1072,49 @@ void CModelBasicGAN<type_t>::TestTrainingGeneratorNet(bool mnist)
  SaveNet();
 }
 
+//----------------------------------------------------------------------------------------------------
+//выполнить генерацию
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelBasicGAN<type_t>::Inference(uint32_t size)
+{
+ char str[STRING_BUFFER_SIZE];
+ SYSTEM::MakeDirectory("Inference");
+
+ CreateGenerator();
+ for(uint32_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->Reset();
+
+ FILE *file=fopen("gen_neuronet.net","rb");
+ if (file!=NULL)
+ {
+  fclose(file);
+  std::unique_ptr<IDataStream> iDataStream_Gen_Ptr(IDataStream::CreateNewDataStreamFile("gen_neuronet.net",false));
+  LoadNetLayers(iDataStream_Gen_Ptr.get(),GeneratorNet,false);
+  SYSTEM::PutMessageToConsole("Сеть генератора загружена.");
+ }
+ else throw("Ошибка загрузки сети генератора!");
+
+ uint32_t max_m=size/BATCH_SIZE;
+ if (max_m==0) max_m++;
+
+ for(uint32_t m=0;m<max_m;m++)
+ {
+  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
+  CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
+  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
+  //выполняем прямой проход по сети
+  for(uint32_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
+  CTensor<type_t> &cTensor_Generator_Output=GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor();
+  for(uint32_t n=0;n<BATCH_SIZE;n++)
+  {
+   uint32_t index=(n+m*BATCH_SIZE);
+   if (index>=size) break;
+   sprintf(str,"Inference/img%05i.tga",static_cast<int>(index));
+   SaveImage(cTensor_Generator_Output,str,n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+  }
+ }
+ SYSTEM::PutMessageToConsole("Генерация завершена.");
+}
 
 //****************************************************************************************************
 //открытые функции
@@ -1088,6 +1132,8 @@ void CModelBasicGAN<type_t>::Execute(void)
  //if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
  //TestTrainingGeneratorNet(true);
  TrainingNet(true);
+
+ //Inference(100);
 }
 
 #endif

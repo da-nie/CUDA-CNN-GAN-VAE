@@ -51,9 +51,9 @@ class CModelBasicDiffusion:public CModelMain<type_t>
     Alpha.resize(time_counter);
     AlphaBar.resize(time_counter+1);
     //заполняем коэффициенты зашумления
-	/*
+
     float beta_start=0.01f;
-    float beta_end=0.02f;
+    float beta_end=0.05f;
     for(uint32_t i=0;i<time_counter;i++)
     {
      Beta[i]=beta_start+(beta_end-beta_start)*i/(time_counter-1);
@@ -61,7 +61,7 @@ class CModelBasicDiffusion:public CModelMain<type_t>
      if (i==0) AlphaBar[i]=Alpha[i];
           else AlphaBar[i]=AlphaBar[i-1]*Alpha[i];
     }
-	*/
+	/*
 	//косинусное расписание
 	const float s=0.008f;
 	const float PI=3.141592653589793f;
@@ -86,7 +86,7 @@ class CModelBasicDiffusion:public CModelMain<type_t>
      Alpha[t]=1-Beta[t];
      if (t==0) AlphaBar[t]=Alpha[t];
           else AlphaBar[t]=AlphaBar[t-1]*Alpha[t];
-	}
+	}*/
    }
   };
   //параметры обучающих изображений
@@ -197,7 +197,7 @@ CModelBasicDiffusion<type_t>::CModelBasicDiffusion(void)
 
  Iteration=0;
 
- TIME_COUNTER=64;
+ TIME_COUNTER=100;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -677,7 +677,7 @@ void CModelBasicDiffusion<type_t>::GetNoise(std::vector<type_t> &noise)
  uint32_t size=noise.size();
  double average=0;//(max+min)/2.0;
  double sigma=1;//(average-min)/3.0;
-
+/*
  for(uint32_t n=0;n<size;n++)
  {
   type_t value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,sigma));
@@ -685,7 +685,7 @@ void CModelBasicDiffusion<type_t>::GetNoise(std::vector<type_t> &noise)
   while(value<min || value>max) value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,sigma));//если это произошло генерируем новое число.
   noise[n]=value;
  }
-/*
+*/
  //генератор случайных чисел
  std::random_device rd;
  std::mt19937 gen(rd());
@@ -697,7 +697,7 @@ void CModelBasicDiffusion<type_t>::GetNoise(std::vector<type_t> &noise)
   noise[i]=dist(gen);
   //while(noise[i]<min || noise[i]>max) noise[i]=dist(gen);
  }
-*/
+
 }
 
 //****************************************************************************************************

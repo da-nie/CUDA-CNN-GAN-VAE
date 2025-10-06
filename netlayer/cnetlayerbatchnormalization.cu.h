@@ -202,6 +202,9 @@ void CNetLayerBatchNormalization<type_t>::Create(type_t momentum,INetLayer<type_
  cTensor_Beta=CTensor<type_t>(1,cTensor_H_Array.GetSizeZ(),cTensor_H_Array.GetSizeY(),cTensor_H_Array.GetSizeX());
 
  cTensor_TmpA=CTensor<type_t>(1,cTensor_H_Array.GetSizeZ(),cTensor_H_Array.GetSizeY(),cTensor_H_Array.GetSizeX());
+ cTensor_TmpB=CTensor<type_t>(1,cTensor_H_Array.GetSizeZ(),cTensor_H_Array.GetSizeY(),cTensor_H_Array.GetSizeX());
+ cTensor_TmpC=CTensor<type_t>(1,cTensor_H_Array.GetSizeZ(),cTensor_H_Array.GetSizeY(),cTensor_H_Array.GetSizeX());
+
  cTensor_TmpA_H=CTensor<type_t>(BatchSize,cTensor_H_Array.GetSizeZ(),cTensor_H_Array.GetSizeY(),cTensor_H_Array.GetSizeX());
 
  //задаём предшествующему слою, что мы его последующий слой
@@ -440,9 +443,6 @@ void CNetLayerBatchNormalization<type_t>::TrainingStart(void)
 
  cTensor_PrevLayerError_Array=CTensor<type_t>(BatchSize,cTensor_H_Array.GetSizeZ(),cTensor_H_Array.GetSizeY(),cTensor_H_Array.GetSizeX());
 
- cTensor_TmpB=CTensor<type_t>(1,cTensor_H_Array.GetSizeZ(),cTensor_H_Array.GetSizeY(),cTensor_H_Array.GetSizeX());
- cTensor_TmpC=CTensor<type_t>(1,cTensor_H_Array.GetSizeZ(),cTensor_H_Array.GetSizeY(),cTensor_H_Array.GetSizeX());
-
  //для оптимизации Adam
  cTensor_MK=cTensor_dGamma;
  cTensor_VK=cTensor_dGamma;
@@ -465,8 +465,6 @@ void CNetLayerBatchNormalization<type_t>::TrainingStop(void)
 {
  cTensor_DXHAT_Array=CTensor<type_t>(1,1,1,1);
  cTensor_PrevLayerError_Array=CTensor<type_t>(1,1,1,1);
- cTensor_TmpB=CTensor<type_t>(1,1,1,1);
- cTensor_TmpC=CTensor<type_t>(1,1,1,1);
 
  cTensor_MK=CTensor<type_t>(1,1,1,1);
  cTensor_VK=CTensor<type_t>(1,1,1,1);

@@ -537,7 +537,7 @@ void CTensor<type_t>::Normalize(void)
  {
   for(uint32_t z=0;z<Size_Z;z++)
   {
-   type_t norma=GetNorma(z);
+   type_t norma=GetNorma(w,z);
    if (norma<CTENSOR_EPS) continue;
    for(uint32_t y=0;y<Size_Y;y++)
    {
