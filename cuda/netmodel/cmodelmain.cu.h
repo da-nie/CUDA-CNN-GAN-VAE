@@ -21,7 +21,9 @@
 #include "../../system/system.h"
 #include "../../common/tga.h"
 #include "../../common/ccolormodel.h"
+#include "../../common/cimage.h"
 #include "../ctimestamp.cu.h"
+
 
 #include "../../netlayer/cnetlayerfunction.cu.h"
 #include "../../netlayer/cnetlayerlinear.cu.h"
@@ -37,6 +39,7 @@
 #include "../../netlayer/cnetlayertimeembedding.cu.h"
 #include "../../netlayer/cnetlayersplitter.cu.h"
 #include "../../netlayer/cnetlayerconcatenator.cu.h"
+#include "../../netlayer/cnetlayervaecoderoutput.cu.h"
 
 #include "../tensor.cu.h"
 
@@ -251,107 +254,13 @@ bool CModelMain<type_t>::LoadImage(const std::string &path_name,uint32_t output_
   if (file_name[length-3]!='t' && file_name[length-3]!='T')  continue;
   if (file_name[length-2]!='g' && file_name[length-2]!='G') continue;
   if ((file_name[length-1]!='a' && file_name[length-1]!='A') && (file_name[length-1]!='i' && file_name[length-1]!='I')) continue;//для переименованных в tgi файлов
-  //отправляем файл на обработку  int32_t width;
-  int32_t height;
-  int32_t width;
+  //отправляем файл на обработку
   std::string name=path+"/"+file_name;
-  uint32_t *img_ptr=reinterpret_cast<uint32_t*>(LoadTGAFromFile(name.c_str(),width,height));//загрузить tga-файл
-  if (img_ptr==NULL) continue;
-  /*if (width!=IMAGE_WIDTH || height!=IMAGE_HEIGHT)
-  {
-   delete[](img_ptr);
-   continue;
-  }
-  */
-  //изображение
-  std::vector<type_t> NormalImage=std::vector<type_t>(output_image_depth*output_image_width*output_image_height);
-  //зеркальное по ширине изображение
-  std::vector<type_t> FlipImage=std::vector<type_t>(output_image_depth*output_image_width*output_image_height);
-
-  double dx=static_cast<double>(width)/static_cast<double>(output_image_width);
-  double dy=static_cast<double>(height)/static_cast<double>(output_image_height);
-
-  for(uint32_t y=0;y<output_image_height;y++)
-  {
-   for(uint32_t x=0;x<output_image_width;x++)
-   {
-    uint32_t xp=x*dx;
-    uint32_t yp=y*dy;
-
-    uint32_t offset=(xp+yp*width);
-    uint32_t color=img_ptr[offset];
-    float r=(color>>0)&0xff;
-    float g=(color>>8)&0xff;
-    float b=(color>>16)&0xff;
-
-    float gray=(r+g+b)/3.0f;
-    gray/=255.0;
-    gray*=2.0;
-    gray-=1.0;
-
-	float sl;
-	float sa;
-	float sb;
-
-    CColorModel::RGB2Lab(r,g,b,sl,sa,sb);
-
-    sl*=2.0;
-    sl-=1.0;
-
-	r/=255.0;
-	g/=255.0;
-	b/=255.0;
-    //приведём к диапазону [-1,1]
-
-	r*=2.0;
-	r-=1.0;
-
-	g*=2.0;
-	g-=1.0;
-
-    b*=2.0;
-	b-=1.0;
-
-    if (output_image_depth==1)
-	{
-	 NormalImage[x+y*output_image_width]=gray;
-	 FlipImage[(output_image_width-x-1)+y*output_image_width]=gray;
-	}
-    if (output_image_depth==3)
-	{
-     r=sl;
-     g=sa;
-     b=sb;
-
-     if (r<-1) r=-1;
-     if (g<-1) g=-1;
-     if (b<-1) b=-1;
-
-     if (r>1) r=1;
-     if (g>1) g=1;
-     if (b>1) b=1;
-
-	 NormalImage[x+y*output_image_width+0*output_image_width*output_image_height]=r;
-	 NormalImage[x+y*output_image_width+1*output_image_width*output_image_height]=g;
-	 NormalImage[x+y*output_image_width+2*output_image_width*output_image_height]=b;
-
-	 FlipImage[(output_image_width-x-1)+y*output_image_width+0*output_image_width*output_image_height]=r;
-	 FlipImage[(output_image_width-x-1)+y*output_image_width+1*output_image_width*output_image_height]=g;
-	 FlipImage[(output_image_width-x-1)+y*output_image_width+2*output_image_width*output_image_height]=b;
-	}
-   }
-  }
-
+  std::vector<type_t> NormalImage;
+  if (CImage<type_t>::LoadImage(name,output_image_width,output_image_height,output_image_depth,NormalImage)==false) continue;
   image.push_back(NormalImage);
   index.push_back(current_index);
   current_index++;
-/*
-  RealImage.push_back(FlipImage);
-  RealImageIndex.push_back(index);
-  index++;
-  */
-
-  delete[](img_ptr);
  }
  char str[STRING_BUFFER_SIZE];
  sprintf(str,"Загружено реальных изображений:%i",static_cast<int>(current_index));
@@ -369,30 +278,8 @@ bool CModelMain<type_t>::CreateResamplingImage(uint32_t input_image_width,uint32
  uint32_t size=image_input.size();
  for(uint32_t n=0;n<size;n++)
  {
-  //изображение
-  std::vector<type_t> image=std::vector<type_t>(output_image_depth*output_image_width*output_image_height);
-
-  const type_t *img_ptr=&image_input[n][0];
-
-  double dx=static_cast<double>(input_image_width)/static_cast<double>(output_image_width);
-  double dy=static_cast<double>(input_image_height)/static_cast<double>(output_image_height);
-
-  for(uint32_t y=0;y<output_image_height;y++)
-  {
-   for(uint32_t x=0;x<output_image_width;x++)
-   {
-    uint32_t xp=x*dx;
-    uint32_t yp=y*dy;
-    for(uint32_t z=0;z<output_image_depth;z++)
-    {
-     uint32_t offset=xp+yp*input_image_width+z*input_image_width*input_image_height;
-     type_t color=img_ptr[offset];
-
-	 image[x+y*output_image_width+z*output_image_width*output_image_height]=color;
-	}
-   }
-  }
-
+  std::vector<type_t> image;
+  CImage<type_t>::CreateResamplingImage(input_image_width,input_image_height,input_image_depth,image_input[n],output_image_width,output_image_height,output_image_depth,image);
   image_output.push_back(image);
  }
  return(true);
@@ -495,100 +382,7 @@ void CModelMain<type_t>::ExchangeImageIndex(std::vector<uint32_t> &index)
 template<class type_t>
 void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &name,uint32_t w,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth)
 {
- std::vector<uint32_t> image(output_image_width*output_image_height);
- type_t *ptr=cTensor.GetColumnPtr(w,0,0);
- for(uint32_t y=0;y<output_image_height;y++)
- {
-  for(uint32_t x=0;x<output_image_width;x++)
-  {
-   float r=0;
-   float g=0;
-   float b=0;
-
-   float ir=0;
-   float ig=0;
-   float ib=0;
-
-   if (output_image_depth==3)
-   {
-    ir=ptr[x+y*output_image_width+(output_image_height*output_image_width)*0];
-    ig=ptr[x+y*output_image_width+(output_image_height*output_image_width)*1];
-    ib=ptr[x+y*output_image_width+(output_image_height*output_image_width)*2];
-
-    //восстановление из RGB
-    {
-     r=ir;
-     g=ig;
-     b=ib;
-
-     r+=1.0;
-     r/=2.0;
-
-     g+=1.0;
-     g/=2.0;
-
-     b+=1.0;
-     b/=2.0;
-
-     r*=255.0;
-     g*=255.0;
-     b*=255.0;
-    }
-
-    //восстановление из Lab
-    {
-     float sl=ir;
-     float sa=ig;
-     float sb=ib;
-
-	 sl+=1.0;
-	 sl/=2.0;
-
-	 CColorModel::Lab2RGB(sl,sa,sb,r,g,b);
-    }
-
-
-    if (r<0) r=0;
-    if (r>255) r=255;
-
-    if (g<0) g=0;
-    if (g>255) g=255;
-
-    if (b<0) b=0;
-    if (b>255) b=255;
-
-   }
-   if (output_image_depth==1)
-   {
-    double gray=ptr[x+y*output_image_width+(output_image_height*output_image_width)*0];
-    gray+=1.0;
-    gray/=2.0;
-
-    if (gray<0) gray=0;
-    if (gray>1) gray=1;
-    gray*=255.0;
-
-	r=gray;
-	g=gray;
-	b=gray;
-   }
-   uint32_t offset=x+y*output_image_width;
-   uint8_t rc=static_cast<uint8_t>(r);
-   uint8_t gc=static_cast<uint8_t>(g);
-   uint8_t bc=static_cast<uint8_t>(b);
-
-   uint32_t color=0xff;
-   color<<=8;
-   color|=bc;
-   color<<=8;
-   color|=gc;
-   color<<=8;
-   color|=rc;
-
-   image[offset]=color;
-  }
- }
- SaveTGA(name.c_str(),output_image_width,output_image_height,reinterpret_cast<uint8_t*>(&image[0]));
+ CImage<type_t>::SaveImage(cTensor,name,w,output_image_width,output_image_height,output_image_depth);
 }
 
 //****************************************************************************************************

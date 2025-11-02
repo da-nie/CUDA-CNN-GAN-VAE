@@ -165,8 +165,12 @@ CNetLayerBackConvolution<type_t>::~CNetLayerBackConvolution()
 /*!создать слой
 \param[in] kernel_size Размер одного ядра свёртки
 \param[in] kernel_depth Глубина одного ядра свёртки
-\param[in] neuron_function Функция активации нейронов
+\param[in] stride_x Шаг по X
+\param[in] stride_y Шаг по Y
+\param[in] padding_x Дополнение по X
+\param[in] padding_y Дополнение по Y
 \param[in] prev_layer_ptr Указатель на класс предшествующего слоя (NULL-слой входной)
+\param[in] batch_size Количество элементов минипакета
 \return Ничего не возвращается
 */
 //----------------------------------------------------------------------------------------------------

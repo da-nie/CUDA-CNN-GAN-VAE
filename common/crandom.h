@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
+#include <random>
 
 //****************************************************************************************************
 //макроопределения
@@ -51,6 +52,7 @@ class CRandom
   static type_t GetRandValue(type_t max_value);///<случайное число
   static double GetGaussRandValue(double MO,double sko);///<генератор случайных чисел с нормальным распределением
   static void SetRandomNormal(CTensor<type_t> &cTensor,double min=-1,double max=1);///<заполнить тензор случайными числами с нормальным распределением
+  static void SetRandomNormalForMeanAndVar(CTensor<type_t> &cTensor,double mean=0,double var=1);///<заполнить тензор случайными числами с нормальным распределением
   static void SetRandom(CTensor<type_t> &cTensor,double min=-1,double max=1);///<заполнить тензор случайными числами с равномерным распределением
   static double GetPDF(double x,double mean,double sigma);///<получить плотность нормального распределения
  private:
@@ -90,7 +92,12 @@ CRandom<type_t>::~CRandom()
 template<class type_t>
 type_t CRandom<type_t>::GetRandValue(type_t max_value)
 {
- return((static_cast<type_t>(rand())*max_value)/static_cast<type_t>(RAND_MAX));
+ static std::random_device rd;
+ static std::mt19937 gen(rd());
+ std::uniform_real_distribution<type_t> dist(0,max_value);
+ return(dist(gen));
+
+ //return((static_cast<type_t>(rand())*max_value)/static_cast<type_t>(RAND_MAX));
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -135,6 +142,33 @@ void CRandom<type_t>::SetRandomNormal(CTensor<type_t> &cTensor,double min,double
  cTensor.SetHostOnChange();
 }
 
+//----------------------------------------------------------------------------------------------------
+//заполнить тензор случайными числами с нормальным распределением
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CRandom<type_t>::SetRandomNormalForMeanAndVar(CTensor<type_t> &cTensor,double mean,double var)
+{
+ static std::random_device rd;
+
+ for(uint32_t w=0;w<cTensor.GetSizeW();w++)
+ {
+  std::mt19937 gen(rd());
+  std::normal_distribution<type_t> dist(mean,var);
+
+  for(uint32_t x=0;x<cTensor.GetSizeX();x++)
+  {
+   for(uint32_t y=0;y<cTensor.GetSizeY();y++)
+   {
+    for(uint32_t z=0;z<cTensor.GetSizeZ();z++)
+    {
+     type_t value=static_cast<type_t>(dist(gen));
+     cTensor.SetElement(w,z,y,x,value);
+	}
+   }
+  }
+ }
+ cTensor.SetHostOnChange();
+}
 
 //----------------------------------------------------------------------------------------------------
 //заполнить тензор случайными числами с равномерным распределением

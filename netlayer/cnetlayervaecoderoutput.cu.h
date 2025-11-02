@@ -1,8 +1,8 @@
-#ifndef C_NET_LAYER_SPLITTER_H
-#define C_NET_LAYER_SPLITTER_H
+#ifndef C_NET_LAYER_VAE_CODER_OUTPUT_H
+#define C_NET_LAYER_VAE_CODER_OUTPUT_H
 
 //****************************************************************************************************
-//\file Слой разделения
+//\file Слой выхода кодера генеративного автоэнкодера
 //****************************************************************************************************
 
 //****************************************************************************************************
@@ -17,6 +17,7 @@
 #include "inetlayer.cu.h"
 #include "../cuda/tensor.cu.h"
 #include "neuron.cu.h"
+#include "../common/crandom.h"
 
 //****************************************************************************************************
 //макроопределения
@@ -31,10 +32,10 @@
 //****************************************************************************************************
 
 //****************************************************************************************************
-//!Слой разделения
+//! Слой выхода кодера генеративного автоэнкодера
 //****************************************************************************************************
 template<class type_t>
-class CNetLayerSplitter:public INetLayer<type_t>
+class CNetLayerVAECoderOutput:public INetLayer<type_t>
 {
  public:
   //-перечисления---------------------------------------------------------------------------------------
@@ -42,31 +43,36 @@ class CNetLayerSplitter:public INetLayer<type_t>
   //-константы------------------------------------------------------------------------------------------
  private:
   //-переменные-----------------------------------------------------------------------------------------
-  INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
+  INetLayer<type_t> *PrevLayerMuPtr;///<указатель на предшествующий слой Мю (либо NULL)
+  INetLayer<type_t> *PrevLayerLogVarPtr;///<указатель на предшествующий слой логарифм дисперсии (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
   uint32_t BatchSize;///<размер пакета для обучения
 
   CTensor<type_t> cTensor_H;///<выходной тензор значений нейронов
+  CTensor<type_t> cTensor_Epsilon;///<тензор шума
 
   uint32_t InputSize_X;///<размер входного тензора по X
   uint32_t InputSize_Y;///<размер входного тензора по Y
   uint32_t InputSize_Z;///<размер входного тензора по Z
 
-  uint32_t OutputAmount;///<количество выходов
-  uint32_t SetErrorCounter;///<счётчик заданных ошибок слоя
+  uint32_t OutputSize_X;///<размер выходного тензора по X
+  uint32_t OutputSize_Y;///<размер выходного тензора по Y
+  uint32_t OutputSize_Z;///<размер выходного тензора по Z
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
+  CTensor<type_t> cTensor_PrevLayerMuError;///<тензоры ошибки слоя Мю
+  CTensor<type_t> cTensor_PrevLayerLogVarError;///<тензоры ошибки слоя логарифм дисперсии
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerSplitter(uint32_t output_amount=1,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
-  CNetLayerSplitter(void);
+  CNetLayerVAECoderOutput(INetLayer<type_t> *prev_layer_mu_ptr=NULL,INetLayer<type_t> *prev_layer_log_var_ptr=NULL,uint32_t batch_size=1);
+  CNetLayerVAECoderOutput(void);
   //-деструктор-----------------------------------------------------------------------------------------
-  ~CNetLayerSplitter();
+  ~CNetLayerVAECoderOutput();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(uint32_t output_amount=1,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
+  void Create(INetLayer<type_t> *prev_layer_mu_ptr=NULL,INetLayer<type_t> *prev_layer_log_var_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -105,15 +111,15 @@ class CNetLayerSplitter:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerSplitter<type_t>::CNetLayerSplitter(uint32_t output_amount,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
+CNetLayerVAECoderOutput<type_t>::CNetLayerVAECoderOutput(INetLayer<type_t> *prev_layer_mu_ptr,INetLayer<type_t> *prev_layer_log_var_ptr,uint32_t batch_size)
 {
- Create(output_amount,prev_layer_ptr,batch_size);
+ Create(prev_layer_mu_ptr,prev_layer_log_var_ptr,batch_size);
 }
 //----------------------------------------------------------------------------------------------------
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerSplitter<type_t>::CNetLayerSplitter(void)
+CNetLayerVAECoderOutput<type_t>::CNetLayerVAECoderOutput(void)
 {
  Create();
 }
@@ -121,7 +127,7 @@ CNetLayerSplitter<type_t>::CNetLayerSplitter(void)
 //!деструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerSplitter<type_t>::~CNetLayerSplitter()
+CNetLayerVAECoderOutput<type_t>::~CNetLayerVAECoderOutput()
 {
 }
 
@@ -135,52 +141,49 @@ CNetLayerSplitter<type_t>::~CNetLayerSplitter()
 
 //----------------------------------------------------------------------------------------------------
 /*!создать слой
-\param[in] output_amount Количество выходов разветвления
-\param[in] prev_layer_ptr Указатель на класс предшествующего слоя (NULL-слой входной)
+\param[in] prev_layer_mu_ptr Указатель на класс предшествующего слоя Мю (NULL-слой входной)
+\param[in] prev_layer_log_var_ptr Указатель на класс предшествующего слоя логарифм дисперсии (NULL-слой входной)
 \param[in] batch_size Количество элементов минипакета
 \return Ничего не возвращается
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::Create(uint32_t output_amount,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
+void CNetLayerVAECoderOutput<type_t>::Create(INetLayer<type_t> *prev_layer_mu_ptr,INetLayer<type_t> *prev_layer_log_var_ptr,uint32_t batch_size)
 {
- PrevLayerPtr=prev_layer_ptr;
+ PrevLayerMuPtr=prev_layer_mu_ptr;
+ PrevLayerLogVarPtr=prev_layer_log_var_ptr;
  NextLayerPtr=NULL;
 
  BatchSize=batch_size;
- OutputAmount=output_amount;
 
- if (OutputAmount==0) throw("Слой разделения не может иметь нулевое количество выходов!");
-
- if (prev_layer_ptr==NULL) throw("Слой разделения не может быть входным!");//слой без предшествующего считается входным
-
- //размер входного тензора
- uint32_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- uint32_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- uint32_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
- //размер выходного тензора
- uint32_t output_x=input_x;
- uint32_t output_y=input_y;
- uint32_t output_z=input_z;
+ if (prev_layer_mu_ptr==NULL) throw("Слой выхода кодера VAE не может быть входным!");//слой без предшествующего считается входным
+ if (prev_layer_log_var_ptr==NULL) throw("Слой выхода кодера VAE не может быть входным!");//слой без предшествующего считается входным
 
  //запомним размеры входного тензора, чтобы потом всегда к ним приводить
- InputSize_X=input_x;
- InputSize_Y=input_y;
- InputSize_Z=input_z;
+ InputSize_X=PrevLayerMuPtr->GetOutputTensor().GetSizeX();
+ InputSize_Y=PrevLayerMuPtr->GetOutputTensor().GetSizeY();
+ InputSize_Z=PrevLayerMuPtr->GetOutputTensor().GetSizeZ();
+
+ if (InputSize_X!=PrevLayerLogVarPtr->GetOutputTensor().GetSizeX() || InputSize_Y!=PrevLayerLogVarPtr->GetOutputTensor().GetSizeY() || InputSize_Z!=PrevLayerLogVarPtr->GetOutputTensor().GetSizeZ()) throw("Слои Мю и логарифм дисперсии должны иметь одинаковую размерность по X, Y и Z!");
+
+ //размер выходного тензора
+ OutputSize_X=InputSize_X;
+ OutputSize_Y=InputSize_Y;
+ OutputSize_Z=InputSize_Z;
 
  //создаём выходные тензоры
- cTensor_H=CTensor<type_t>(BatchSize,output_z,output_y,output_x);
+ cTensor_H=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y,OutputSize_X);
+ cTensor_Epsilon=CTensor<type_t>(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
  //задаём предшествующему слою, что мы его последующий слой
- prev_layer_ptr->SetNextLayerPtr(this);
-
- SetErrorCounter=0;
+ prev_layer_mu_ptr->SetNextLayerPtr(this);
+ prev_layer_log_var_ptr->SetNextLayerPtr(this);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить инициализацию слоя
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::Reset(void)
+void CNetLayerVAECoderOutput<type_t>::Reset(void)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -190,12 +193,12 @@ void CNetLayerSplitter<type_t>::Reset(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::SetOutput(CTensor<type_t> &output)
+void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerSplitter<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerSplitter<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerSplitter<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerSplitter<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  cTensor_H=output;
 }
 //----------------------------------------------------------------------------------------------------
@@ -205,21 +208,57 @@ void CNetLayerSplitter<type_t>::SetOutput(CTensor<type_t> &output)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output)
+void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  output=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::Forward(void)
+void CNetLayerVAECoderOutput<type_t>::Forward(void)
 {
- cTensor_H=PrevLayerPtr->GetOutputTensor();
+ type_t mean=0;
+ type_t stddev=1;
+
+ //генератор случайных чисел
+ static std::random_device rd;
+
+ type_t kl_loss=0;//расстояние Кульбака-Лейбнера
+
+ for(uint32_t w=0;w<PrevLayerMuPtr->GetOutputTensor().GetSizeW();w++)
+ {
+  std::mt19937 gen(rd());
+  std::normal_distribution<type_t> dist(mean,stddev);
+
+  for(uint32_t z=0;z<PrevLayerMuPtr->GetOutputTensor().GetSizeZ();z++)
+  {
+   for(uint32_t y=0;y<PrevLayerMuPtr->GetOutputTensor().GetSizeY();y++)
+   {
+    for(uint32_t x=0;x<PrevLayerMuPtr->GetOutputTensor().GetSizeX();x++)
+    {
+     type_t mu=PrevLayerMuPtr->GetOutputTensor().GetElement(w,z,y,x);
+     type_t log_var=PrevLayerLogVarPtr->GetOutputTensor().GetElement(w,z,y,x);
+     type_t e=exp(log_var/2.0);
+     type_t epsilon=dist(gen);
+     cTensor_Epsilon.SetElement(w,z,y,x,epsilon);
+     type_t out=mu+e*epsilon;
+     cTensor_H.SetElement(w,z,y,x,out);
+     //считаем расстояние Кульбака-Лейбнера
+     kl_loss+=1+log_var-mu*mu-exp(log_var);
+    }
+   }
+  }
+ }
+
+ kl_loss*=-0.5;
+ kl_loss/=PrevLayerMuPtr->GetOutputTensor().GetSizeW();
+ printf("KL loss:%f\r\n",kl_loss);
+
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -227,7 +266,7 @@ void CNetLayerSplitter<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerSplitter<type_t>::GetOutputTensor(void)
+CTensor<type_t>& CNetLayerVAECoderOutput<type_t>::GetOutputTensor(void)
 {
  return(cTensor_H);
 }
@@ -238,7 +277,7 @@ CTensor<type_t>& CNetLayerSplitter<type_t>::GetOutputTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
+void CNetLayerVAECoderOutput<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
 {
  NextLayerPtr=next_layer_ptr;
 }
@@ -249,7 +288,7 @@ void CNetLayerSplitter<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_pt
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerSplitter<type_t>::Save(IDataStream *iDataStream_Ptr)
+bool CNetLayerVAECoderOutput<type_t>::Save(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }
@@ -260,7 +299,7 @@ bool CNetLayerSplitter<type_t>::Save(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerSplitter<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
+bool CNetLayerVAECoderOutput<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
  return(true);
 }
@@ -271,7 +310,7 @@ bool CNetLayerSplitter<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_siz
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerSplitter<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
+bool CNetLayerVAECoderOutput<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }
@@ -282,7 +321,7 @@ bool CNetLayerSplitter<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerSplitter<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
+bool CNetLayerVAECoderOutput<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }
@@ -291,37 +330,42 @@ bool CNetLayerSplitter<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::TrainingStart(void)
+void CNetLayerVAECoderOutput<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
+ cTensor_PrevLayerMuError=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y,OutputSize_X);
+ cTensor_PrevLayerLogVarError=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y,OutputSize_X);
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::TrainingStop(void)
+void CNetLayerVAECoderOutput<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
+ cTensor_PrevLayerMuError=CTensor<type_t>(1,1,1,1);
+ cTensor_PrevLayerLogVarError=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::TrainingBackward(bool create_delta_weight)
+void CNetLayerVAECoderOutput<type_t>::TrainingBackward(bool create_delta_weight)
 {
- //задаём ошибку предыдущего слоя
- PrevLayerPtr->SetOutputError(cTensor_Delta);
+ //задаём ошибки предыдущих слоёв
+ PrevLayerMuPtr->SetOutputError(cTensor_PrevLayerMuError);
+ PrevLayerLogVarPtr->SetOutputError(cTensor_PrevLayerLogVarError);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::TrainingResetDeltaWeight(void)
+void CNetLayerVAECoderOutput<type_t>::TrainingResetDeltaWeight(void)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -330,7 +374,7 @@ void CNetLayerSplitter<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
+void CNetLayerVAECoderOutput<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -339,7 +383,7 @@ void CNetLayerSplitter<type_t>::TrainingUpdateWeight(double speed,double iterati
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerSplitter<type_t>::GetDeltaTensor(void)
+CTensor<type_t>& CNetLayerVAECoderOutput<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
 }
@@ -349,15 +393,41 @@ CTensor<type_t>& CNetLayerSplitter<type_t>::GetDeltaTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::SetOutputError(CTensor<type_t>& error)
+void CNetLayerVAECoderOutput<type_t>::SetOutputError(CTensor<type_t>& error)
 {
- if (SetErrorCounter==0) cTensor_Delta=error;//первый раз просто приравниваем
- else//остальные ошибки складываем
+ cTensor_Delta=error;
+ type_t k=1.0/(cTensor_PrevLayerLogVarError.GetSizeX()*cTensor_PrevLayerLogVarError.GetSizeY()*cTensor_PrevLayerLogVarError.GetSizeZ());
+
+ for(uint32_t w=0;w<cTensor_PrevLayerLogVarError.GetSizeW();w++)
  {
-  CTensorMath<type_t>::Add(cTensor_Delta,cTensor_Delta,error);
+  for(uint32_t z=0;z<cTensor_PrevLayerLogVarError.GetSizeZ();z++)
+  {
+   for(uint32_t y=0;y<cTensor_PrevLayerLogVarError.GetSizeY();y++)
+   {
+    for(uint32_t x=0;x<cTensor_PrevLayerLogVarError.GetSizeX();x++)
+    {
+     type_t epsilon=cTensor_Epsilon.GetElement(w,z,y,x);
+     //считаем ошибку для слоя логарифма дисперсии
+     type_t log_var_delta=cTensor_Delta.GetElement(w,z,y,x);
+     type_t log_var=PrevLayerLogVarPtr->GetOutputTensor().GetElement(w,z,y,x);
+     type_t log_var_diff=1.0/2.0*epsilon*exp(log_var/2.0);//производная функции построения выхода слоя по log_var
+     //по этим данным получаем ошибку на входе слоя
+     type_t log_var_delta_out=log_var_delta*log_var_diff;
+     log_var_delta_out+=-1.0/2.0*(1-exp(log_var))*k;//добавляем ошибку по расстоянию Кульбака-Лейбнера
+     cTensor_PrevLayerLogVarError.SetElement(w,z,y,x,log_var_delta_out);
+
+     //считаем ошибку для слоя среднего
+     type_t mu=PrevLayerMuPtr->GetOutputTensor().GetElement(w,z,y,x);
+     type_t mu_delta=cTensor_Delta.GetElement(w,z,y,x);
+     type_t mu_diff=1;//производная функции построения выхода слоя по mu
+     //по этим данным получаем ошибку на входе слоя
+     type_t mu_delta_out=mu_delta*mu_diff;
+     mu_delta_out+=-1.0/2.0*(0-2*mu)*k;//добавляем ошибку по расстоянию Кульбака-Лейбнера
+     cTensor_PrevLayerMuError.SetElement(w,z,y,x,mu_delta_out);
+    }
+   }
+  }
  }
- SetErrorCounter++;
- SetErrorCounter%=OutputAmount;
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон
@@ -366,9 +436,10 @@ void CNetLayerSplitter<type_t>::SetOutputError(CTensor<type_t>& error)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::ClipWeight(type_t min,type_t max)
+void CNetLayerVAECoderOutput<type_t>::ClipWeight(type_t min,type_t max)
 {
 }
+
 //----------------------------------------------------------------------------------------------------
 /*!задать временной шаг
 \param[in] index Индекс элемента пакета
@@ -376,7 +447,7 @@ void CNetLayerSplitter<type_t>::ClipWeight(type_t min,type_t max)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
+void CNetLayerVAECoderOutput<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
 {
 }
 
@@ -386,9 +457,10 @@ void CNetLayerSplitter<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::PrintInputTensorSize(const std::string &name)
+void CNetLayerVAECoderOutput<type_t>::PrintInputTensorSize(const std::string &name)
 {
- if (PrevLayerPtr!=NULL) PrevLayerPtr->GetOutputTensor().Print(name+" Splitter: input",false);
+ if (PrevLayerMuPtr!=NULL) PrevLayerMuPtr->GetOutputTensor().Print(name+" VAECoderOutput: input Mu",false);
+ if (PrevLayerLogVarPtr!=NULL) PrevLayerLogVarPtr->GetOutputTensor().Print(name+" VAECoderOutput: input LogVar",false);
 }
 //----------------------------------------------------------------------------------------------------
 /*!вывести размерность выходного тензора слоя
@@ -396,8 +468,9 @@ void CNetLayerSplitter<type_t>::PrintInputTensorSize(const std::string &name)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::PrintOutputTensorSize(const std::string &name)
+void CNetLayerVAECoderOutput<type_t>::PrintOutputTensorSize(const std::string &name)
 {
- GetOutputTensor().Print(name+" Splitter: output",false);
+ GetOutputTensor().Print(name+" VAECoderOutput: output",false);
 }
+
 #endif

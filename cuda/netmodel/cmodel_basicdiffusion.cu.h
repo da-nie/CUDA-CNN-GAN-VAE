@@ -676,20 +676,20 @@ void CModelBasicDiffusion<type_t>::GetNoise(std::vector<type_t> &noise)
  double min=-1;
  uint32_t size=noise.size();
  double average=0;//(max+min)/2.0;
- double sigma=1;//(average-min)/3.0;
+ double log_var=1;//(average-min)/3.0;
 /*
  for(uint32_t n=0;n<size;n++)
  {
-  type_t value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,sigma));
+  type_t value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,log_var));
   //есть вероятность (0.3%) что сгенерированное число выйдет за нужный нам диапазон
-  while(value<min || value>max) value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,sigma));//если это произошло генерируем новое число.
+  while(value<min || value>max) value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,log_var));//если это произошло генерируем новое число.
   noise[n]=value;
  }
 */
  //генератор случайных чисел
- std::random_device rd;
+ static std::random_device rd;
  std::mt19937 gen(rd());
- std::normal_distribution<type_t> dist(average,sigma);
+ std::normal_distribution<type_t> dist(average,log_var);
 
  //генерируем шум
  for(uint32_t i=0;i<noise.size();i++)

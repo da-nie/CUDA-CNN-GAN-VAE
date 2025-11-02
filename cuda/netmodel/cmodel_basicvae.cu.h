@@ -249,24 +249,16 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
  }
  {
   CTimeStamp cTimeStamp("Вычисление ошибки:");
-  CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(),CoderNet[0]->GetOutputTensor());
+  CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(),CoderNet[0]->GetOutputTensor(),2,2);
  }
+
  {
   CTimeStamp cTimeStamp("Задание ошибки:");
   DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
  }
 
- for(uint32_t b=0;b<BATCH_SIZE;b++)
+ for(uint32_t w=0;w<BATCH_SIZE;w++)
  {
-/*
-  char str[255];
-  sprintf(str,"Test/input-%i.tga",b);
-  SaveImage(CoderNet[0]->GetOutputTensor(b),str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
-  sprintf(str,"Test/output-%i.tga",b);
-  SaveImage(DecoderNet[DecoderNet.size()-1]->GetOutputTensor(b),str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
-  sprintf(str,"Test/error-%i.tga",b);
-  SaveImage(cTensor_Error,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
-*/
   //считаем ошибку
   double error=0;
   for(uint32_t x=0;x<cTensor_Error.GetSizeX();x++)
@@ -275,7 +267,7 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
    {
     for(uint32_t z=0;z<cTensor_Error.GetSizeZ();z++)
     {
-     type_t c=cTensor_Error.GetElement(b,z,y,x);
+     type_t c=cTensor_Error.GetElement(w,z,y,x);
      error+=c*c;
     }
    }
@@ -302,13 +294,14 @@ void CModelBasicVAE<type_t>::SaveRandomImage(void)
 {
  CTensor<type_t> cTensor_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
  if (IsExit()==true) throw("Стоп");
-/*
- CRandom<type_t>::SetRandomNormal(cTensor_Input,0,1);
+
+ CRandom<type_t>::SetRandomNormalForMeanAndVar(cTensor_Input,0,1);
+
  CoderNet[CoderNet.size()-1]->SetOutput(cTensor_Input);//входной вектор
- */
+ //CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Out",true);
 
  //выполняем прямой проход по сети
- for(uint32_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
+ //for(uint32_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
  //выполняем прямой проход по сети
  for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
  //получаем ответ сети
@@ -317,8 +310,9 @@ void CModelBasicVAE<type_t>::SaveRandomImage(void)
  static uint32_t counter=0;
  for(uint32_t n=0;n<BATCH_SIZE;n++)
  {
+  counter=0;
   sprintf(str,"Test/test%05i-%03i.tga",static_cast<int>(counter),static_cast<int>(n));
-  //SaveImage(cTensor,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+  SaveImage(cTensor_Image,str,n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   if (n==0) SaveImage(cTensor_Image,"Test/test-current.tga",n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
  }
  counter++;
@@ -510,13 +504,18 @@ void CModelBasicVAE<type_t>::TrainingNet(bool mnist)
 template<class type_t>
 void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
 {
- static CTensor<type_t> cTensor_Error=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+ static CTensor<type_t> cTensor_Error=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
 
  //учим первому изображению
- CTensor<type_t> cTensor_Etalon=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
- uint32_t size=RealImage[0].size();
- type_t *ptr=&RealImage[0][0];
- cTensor_Etalon.CopyItemToDevice(ptr,size);
+ CTensor<type_t> cTensor_Etalon=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+ for(uint32_t n=0;n<BATCH_SIZE;n++)
+ {
+  uint32_t img=RealImageIndex[n%BATCH_SIZE];
+  img=0;
+  uint32_t size=RealImage[img].size();
+  type_t *ptr=&RealImage[img][0];
+  cTensor_Etalon.CopyItemLayerWToDevice(n,ptr,size);
+ }
 
  char str_b[STRING_BUFFER_SIZE];
 
@@ -549,7 +548,7 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
    {
     CTimeStamp cTimeStamp("Задание изображения:");
     //кодер подключён к изображению
-    CoderNet[0]->SetOutput(b,cTensor_Etalon);
+    CoderNet[0]->SetOutput(cTensor_Etalon);
    }
   }
   //вычисляем сеть кодировщика
@@ -564,28 +563,27 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
    CTimeStamp cTimeStamp("Вычисление декодировщика:");
    for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
   }
+  //вычисляем ошибку
+  {
+   CTimeStamp cTimeStamp("Вычисление ошибки:");
+   CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(),CoderNet[0]->GetOutputTensor());
+  }
+  //задаём ошибку
+  {
+   CTimeStamp cTimeStamp("Задание ошибки:");
+   DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
+  }
 
   double cost=0;
   for(uint32_t b=0;b<BATCH_SIZE;b++)
   {
-   {
-    CTimeStamp cTimeStamp("Вычисление ошибки:");
-    CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(b),CoderNet[0]->GetOutputTensor(b));
-
-
-
-   }
-   {
-    CTimeStamp cTimeStamp("Задание ошибки:");
-    DecoderNet[DecoderNet.size()-1]->SetOutputError(b,cTensor_Error);
-   }
    for(uint32_t x=0;x<cTensor_Error.GetSizeX();x++)
    {
     for(uint32_t y=0;y<cTensor_Error.GetSizeY();y++)
     {
      for(uint32_t z=0;z<cTensor_Error.GetSizeZ();z++)
      {
-      type_t c=cTensor_Error.GetElement(z,y,x);
+      type_t c=cTensor_Error.GetElement(b,z,y,x);
       cost+=c*c;
      }
     }
@@ -627,8 +625,8 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
   if (Iteration%ITERATION_OF_SAVE_IMAGE==0)
   {
    SYSTEM::PutMessageToConsole("Save image.");
-   SaveImage(DecoderNet[DecoderNet.size()-1]->GetOutputTensor(0),"Test/test-current.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
-   SaveImage(cTensor_Etalon,"Test/etalon.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+   SaveImage(DecoderNet[DecoderNet.size()-1]->GetOutputTensor(),"Test/test-current.tga",0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+   SaveImage(cTensor_Etalon,"Test/etalon.tga",0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   }
 
   Iteration++;
@@ -646,7 +644,7 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoderNet(bool mnist)
 
  ITERATION_OF_SAVE_IMAGE=100;
  ITERATION_OF_SAVE_NET=100;
- BATCH_SIZE=1;
+ BATCH_SIZE=16;
 
  //загружаем изображения
  //if (LoadMNISTImage("mnist.bin",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH,RealImage,RealImageIndex)==false)

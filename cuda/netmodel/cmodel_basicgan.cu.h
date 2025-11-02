@@ -743,6 +743,8 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
     double disc_cost=0;
     double gen_cost=0;
     double middle_answer=0;
+    for(uint32_t s=0;s<1;s++)
+    {
 
     for(uint32_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingResetDeltaWeight();
     TrainingDiscriminatorFake(disc_cost);
@@ -759,7 +761,6 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
 
     for(uint32_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->TrainingResetDeltaWeight();
     TrainingDiscriminatorReal(batch,disc_cost);
-
     //корректируем веса дискриминатора
     {
      CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
@@ -768,6 +769,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
       DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1,1);
       //DiscriminatorNet[n]->ClipWeight(-clip,clip);
      }
+    }
     }
 
     for(uint32_t s=0;s<1;s++)
@@ -817,25 +819,28 @@ void CModelBasicGAN<type_t>::TrainingNet(bool mnist)
  cTensor_Discriminator_Error=CTensor<type_t>(BATCH_SIZE,1,1,1);
  cTensor_Generator_Output=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
 
+ SYSTEM::PutMessageToConsole("Создаём сеть генератора");
  CreateGenerator();
+ SYSTEM::PutMessageToConsole("Создаём сеть дискриминатора");
  CreateDiscriminator();
-
+ SYSTEM::PutMessageToConsole("Инициализация сети генератора");
  for(uint32_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->Reset();
+ SYSTEM::PutMessageToConsole("Инициализация сети дискриминатора");
  for(uint32_t n=0;n<DiscriminatorNet.size();n++) DiscriminatorNet[n]->Reset();
+ SYSTEM::PutMessageToConsole("Загружаем сети");
  LoadNet();
-
  //включаем обучение
  for(uint32_t n=0;n<GeneratorNet.size();n++)
  {
-  GeneratorNet[n]->TrainingModeAdam(0.5,0.9);
+  GeneratorNet[n]->TrainingModeAdam(0.1,0.5);
   GeneratorNet[n]->TrainingStart();
  }
  for(uint32_t n=0;n<DiscriminatorNet.size();n++)
  {
-  DiscriminatorNet[n]->TrainingModeAdam(0.5,0.9);
+  DiscriminatorNet[n]->TrainingModeAdam(0.1,0.5);
   DiscriminatorNet[n]->TrainingStart();
  }
-
+SYSTEM::PutMessageToConsole("Загружаем изображения");
  //загружаем изображения
  //if (LoadMNISTImage("mnist.bin",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH,RealImage,RealImageIndex)==false)
  if (LoadImage("RealImage",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH,RealImage,RealImageIndex)==false)
@@ -862,6 +867,7 @@ void CModelBasicGAN<type_t>::TrainingNet(bool mnist)
  SYSTEM::PutMessageToConsole(str);
 
  //загружаем параметры обучения
+ SYSTEM::PutMessageToConsole("Загружаем параметры обучения");
  LoadTrainingParam();
  //запускаем обучение
  //Training();
@@ -892,11 +898,15 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
  static CTensor<type_t> cTensor_Generator_Error=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
 
- //учим первому изображению
- CTensor<type_t> cTensor_Generator_Etalon=CTensor<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
- uint32_t size=RealImage[0].size();
- type_t *ptr=&RealImage[0][0];
- cTensor_Generator_Etalon.CopyItemToDevice(ptr,size);
+ //учим первомым изображениям
+ CTensor<type_t> cTensor_Generator_Etalon=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
+ for(size_t n=0;n<BATCH_SIZE;n++)
+ {
+  uint32_t index=RealImageIndex[n];
+  uint32_t size=RealImage[index].size();
+  type_t *ptr=&RealImage[index][0];
+  cTensor_Generator_Etalon.CopyItemLayerWToDevice(n,ptr,size);
+ }
 
  char str_b[STRING_BUFFER_SIZE];
 
@@ -923,15 +933,13 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   {
    SYSTEM::PutMessageToConsole("Save image.");
    //SaveRandomImage();
-   for(uint32_t n=0;n<BATCH_SIZE;n++)
-   {
-    CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
-    GeneratorNet[0]->SetOutput(n,cTensor_Generator_Input);//входной вектор
-   }
+   CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
+   GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
+
    //выполняем прямой проход по сети
    for(uint32_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
-   SaveImage(GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(0),"Test/test-current.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
-   SaveImage(cTensor_Generator_Etalon,"Test/etalon.tga",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+   SaveImage(GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(),"Test/test-current.tga",0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+   SaveImage(cTensor_Generator_Etalon,"Test/etalon.tga",0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
    SaveKitImage();
    SYSTEM::PutMessageToConsole("");
   }
@@ -943,11 +951,9 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   //обучаем генератор
   double gen_cost=0;
   for(uint32_t n=0;n<GeneratorNet.size();n++) GeneratorNet[n]->TrainingResetDeltaWeight();
-  for(uint32_t n=0;n<BATCH_SIZE;n++)
-  {
-   CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
-   GeneratorNet[0]->SetOutput(n,cTensor_Generator_Input);//входной вектор
-  }
+  CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
+  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
+
   //выполняем прямой проход по сети генератора
   {
    CTimeStamp cTimeStamp("Вычисление генератора:");
@@ -956,13 +962,13 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   //вычисляем ошибку
   {
    CTimeStamp cTimeStamp("Расчёт ошибки генератора:");
+   CTensorMath<type_t>::Sub(cTensor_Generator_Error,GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(),cTensor_Generator_Etalon);
+   GeneratorNet[GeneratorNet.size()-1]->SetOutputError(cTensor_Generator_Error);
+   cTensor_Generator_Error.CopyFromDevice();
+
+   type_t *ptr=cTensor_Generator_Error.GetColumnPtr(0,0,0);
    for(uint32_t n=0;n<BATCH_SIZE;n++)
    {
-    CTensorMath<type_t>::Sub(cTensor_Generator_Error,GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(n),cTensor_Generator_Etalon);
-    GeneratorNet[GeneratorNet.size()-1]->SetOutputError(n,cTensor_Generator_Error);
-    cTensor_Generator_Error.CopyFromDevice();
-
-    type_t *ptr=cTensor_Generator_Error.GetColumnPtr(0,0);
     for(uint32_t z=0;z<cTensor_Generator_Error.GetSizeZ();z++)
     {
      for(uint32_t y=0;y<cTensor_Generator_Error.GetSizeY();y++)
@@ -1009,6 +1015,7 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
 
 
 
+
 //----------------------------------------------------------------------------------------------------
 //запуск теста обучения генератора
 //----------------------------------------------------------------------------------------------------
@@ -1020,7 +1027,7 @@ void CModelBasicGAN<type_t>::TestTrainingGeneratorNet(bool mnist)
 
  ITERATION_OF_SAVE_IMAGE=100;
  ITERATION_OF_SAVE_NET=100;
- BATCH_SIZE=1;
+ BATCH_SIZE=16;
 
  //загружаем изображения
  //if (LoadMNISTImage("mnist.bin",IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH,RealImage,RealImageIndex)==false)
@@ -1030,8 +1037,50 @@ void CModelBasicGAN<type_t>::TestTrainingGeneratorNet(bool mnist)
   return;
  }
  SYSTEM::PutMessage("Образы изображений загружены.");
- //дополняем набор до кратного размеру пакета
+ //делаем отражённые по горизонтали изображения
  uint32_t image_amount=RealImage.size();
+ RealImage.resize(image_amount*2);
+ RealImageIndex.resize(image_amount*2);
+ /*
+ SYSTEM::PutMessage("Создаём отражённые по горизонтали изображения.");
+
+ for(uint32_t n=0;n<image_amount;n++)
+ {
+  RealImageIndex[n+image_amount]=image_amount+n;
+  const type_t *input_ptr=&(RealImage[n][0]);
+  RealImage[n+image_amount]=RealImage[n];
+  type_t *output_ptr=&(RealImage[n+image_amount][0]);
+
+  for(int32_t z=0;z<IMAGE_DEPTH;z++)
+  {
+   for(int32_t y=0;y<IMAGE_HEIGHT;y++)
+   {
+    int32_t iy=y;
+    iy+=0;//смещение (не используем пока)
+    while (iy<0) iy+=IMAGE_HEIGHT;
+    iy%=IMAGE_HEIGHT;
+
+    uint32_t in_offset=(iy*IMAGE_WIDTH+z*IMAGE_WIDTH*IMAGE_HEIGHT);
+    for(int32_t x=0;x<IMAGE_WIDTH;x++,output_ptr++)
+    {
+     int32_t ix=x;
+     if (true) ix=(IMAGE_WIDTH-ix-1);//используем отражение по горизонтали
+     ix+=0;//смещение (не используем пока)
+     while (ix<0) ix+=IMAGE_WIDTH;
+     ix%=IMAGE_WIDTH;
+
+     uint32_t in_offset_l=ix+in_offset;
+
+     type_t value=input_ptr[in_offset_l];
+     *output_ptr=value;
+    }
+   }
+  }
+ }
+ SYSTEM::PutMessage("Отражённые изображения созданы.");
+*/
+ //дополняем набор до кратного размеру пакета
+ image_amount=RealImage.size();
  BATCH_AMOUNT=image_amount/BATCH_SIZE;
  if (BATCH_AMOUNT==0) BATCH_AMOUNT=1;
  if (image_amount%BATCH_SIZE!=0)
