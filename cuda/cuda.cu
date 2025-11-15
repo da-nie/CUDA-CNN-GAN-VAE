@@ -8,6 +8,7 @@
 #include "handle_error.cu.h"
 //#include "netmodel/cmodel_sorter.cu.h"
 #include "netmodel/cmodel_gan.cu.h"
+#include "netmodel/cmodel_test.cu.h"
 //#include "netmodel/cmodel_srgan.cu.h"
 #include "netmodel/cmodel_vae.cu.h"
 #include "netmodel/cmodel_diffusion.cu.h"
@@ -96,6 +97,10 @@ struct cudaDeviceProp
 
  CModelVAE<float> cModelVAE;
  cModelVAE.Execute();
+
+ //CModelTest<double> cModelTest;
+ //cModelTest.Execute();
+
 /*
  CModelSR_GAN<float> cModelSR_GAN;
  cModelSR_GAN.Execute();

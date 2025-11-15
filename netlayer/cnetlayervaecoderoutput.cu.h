@@ -396,7 +396,7 @@ template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  cTensor_Delta=error;
- type_t k=1.0/(cTensor_PrevLayerLogVarError.GetSizeX()*cTensor_PrevLayerLogVarError.GetSizeY()*cTensor_PrevLayerLogVarError.GetSizeZ());
+ type_t k=0.001;//*1.0/(cTensor_PrevLayerLogVarError.GetSizeX()*cTensor_PrevLayerLogVarError.GetSizeY()*cTensor_PrevLayerLogVarError.GetSizeZ());
 
  for(uint32_t w=0;w<cTensor_PrevLayerLogVarError.GetSizeW();w++)
  {

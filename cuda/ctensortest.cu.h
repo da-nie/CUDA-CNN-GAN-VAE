@@ -840,6 +840,31 @@ bool CTensorTest<type_t>::Test(void)
  if (TestCreateDeltaWeightAndBiasWithStepAndPadding()==false) return(false);
  if (TestCreateDeltaWeightAndBias()==false) return(false);
  if (TestBackwardConvolutionWithStepAndPadding()==false) return(false);
+
+ //тест функции суммирования
+ SYSTEM::PutMessageToConsole("Тест суммы элементов тензора по X и Y.");
+ for(uint32_t size=1;size<512;size+=32)
+ {
+  CTensor<type_t> cTensor_Input(8,16,size,size);
+  cTensor_Input.Fill(1);
+  CTensor<type_t> cTensor_Output(8,16,1,1);
+  CTensorMath<type_t>::SummXY(cTensor_Output,cTensor_Input);
+  uint32_t summ=size*size;
+  bool error=false;
+  for(uint32_t w=0;w<cTensor_Output.GetSizeW();w++)
+  {
+   for(uint32_t z=0;z<cTensor_Output.GetSizeZ();z++)
+   {
+    type_t v0=cTensor_Output.GetElement(w,z,0,0);
+    if ((uint32_t)(v0)!=summ)
+    {
+     printf("W:%i Z:%i %f!=%i\r\n",w,z,v0,summ);
+     error=true;
+    }
+   }
+  }
+  if (error==true) return(false);
+ }
  return(true);
 }
 

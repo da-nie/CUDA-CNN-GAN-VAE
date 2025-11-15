@@ -1325,32 +1325,29 @@ void CTensorMath<type_t>::AddBias(CTensor<type_t> &cTensor_Working,const CTensor
 //функция CUDA для вычисления суммы элементов по X и Y для каждого Z
 //----------------------------------------------------------------------------------------------------
 template<class type_t,uint32_t blockSize>
-__global__ void CUDASummXYTensorFunction(int32_t size,STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
+__global__ void CUDASummXYTensorFunction(uint32_t size,STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
- uint32_t z=Mod(blockIdx.z,tensor_output.GetSizeZ());
  uint32_t w_in=Mod(blockIdx.y,tensor_input.GetSizeW());
  uint32_t w_out=Mod(blockIdx.y,tensor_output.GetSizeW());
+ uint32_t z=Mod(blockIdx.z,tensor_output.GetSizeZ());
+
+ volatile __shared__ type_t sdata[blockSize];
 
  uint32_t tid=threadIdx.x;
- uint32_t i=blockDim.x*2*blockIdx.x+threadIdx.x;
- uint32_t gridSize=blockSize*2*gridDim.x;
-
- __shared__ type_t sdata[blockSize];
- sdata[tid]=0;
+ uint32_t gridSize=blockSize*gridDim.x;
+ uint32_t i=blockIdx.x*blockSize+tid;
 
  type_t *d_xin=tensor_input.GetTensorDataPtr(w_in,z);
+ type_t *d_xout=tensor_output.GetTensorDataPtr(w_out,z);
 
- while (i<size)
+ sdata[tid]=0;
+
+ while(i<size)
  {
-  if (i+blockDim.x<size) sdata[tid]+=d_xin[i]+d_xin[i+blockDim.x];
-  else
-  {
-   if (i<size) sdata[tid]+=d_xin[i];
-  }
+  sdata[tid]+=d_xin[i];
   i+=gridSize;
  }
  __syncthreads();
-
  if (blockSize>=512)
  {
   if (tid<256) sdata[tid]+=sdata[tid+256];
@@ -1366,29 +1363,19 @@ __global__ void CUDASummXYTensorFunction(int32_t size,STensorKernel<type_t> tens
   if (tid<64) sdata[tid]+=sdata[tid+64];
  }
  __syncthreads();
-
  if (tid<32)
  {
   if (blockSize>=64) sdata[tid]+=sdata[tid+32];
-  __syncthreads();
   if (blockSize>=32) sdata[tid]+=sdata[tid+16];
-  __syncthreads();
   if (blockSize>=16) sdata[tid]+=sdata[tid+8];
-  __syncthreads();
-  if (blockSize>=8) sdata[tid]+=sdata[tid+4];
-  __syncthreads();
-  if (blockSize>=4) sdata[tid]+=sdata[tid+2];
-  __syncthreads();
-  if (blockSize>=2) sdata[tid]+=sdata[tid+1];
-  __syncthreads();
+  if (blockSize>=8)  sdata[tid]+=sdata[tid+4];
+  if (blockSize>=4)  sdata[tid]+=sdata[tid+2];
+  if (blockSize>=2)  sdata[tid]+=sdata[tid+1];
  }
-
  if (tid==0)
  {
-  d_xin[blockIdx.x]=sdata[0];
-  if (blockIdx.x==0) *(tensor_output.GetTensorDataPtr(w_out,z))=sdata[0];
+  if (blockIdx.x<size) d_xout[blockIdx.x]=sdata[0];
  }
-
  __syncthreads();
 }
 
@@ -1399,13 +1386,11 @@ __global__ void CUDASummXYTensorFunction(int32_t size,STensorKernel<type_t> tens
 template<class type_t>
 void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input)
 {
- const int32_t B_SIZE=6;
- const int32_t BLOCK_SIZE=1<<B_SIZE;
-
  if (cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
   throw "CTensor::SummXY: Размерности тензоров не совпадают!";
  }
+
  cTensor_Input.CopyToDevice();
 
  uint32_t input_x=cTensor_Input.GetSizeX();
@@ -1415,23 +1400,45 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
 
  cTensor_Input.ReinterpretSize(input_w,input_z,1,input_y*input_x);
 
+ CTensor<type_t> cTensor_InputCopy(cTensor_Input.Size_W,cTensor_Input.Size_Z,cTensor_Input.Size_Y,cTensor_Input.Size_X);
+
  int32_t amount=input_y*input_x;
 
  STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+ STensorKernel<type_t> sTensorKernel_InputCopy(cTensor_InputCopy);
  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
 
- int32_t size=amount;
- while (size>1)
- {
-  dim3 block((size+BLOCK_SIZE-1)/BLOCK_SIZE,cTensor_Output.GetSizeW(),cTensor_Output.GetSizeZ());
-  dim3 thread(BLOCK_SIZE);
+ uint32_t size=amount;
+ const uint32_t grid_Size=256;
+ const uint32_t block_Size=128;
 
-  CUDASummXYTensorFunction<type_t,BLOCK_SIZE><<<block,thread>>>(size,sTensorKernel_Output,sTensorKernel_Input);
+ {
+  dim3 block(grid_Size,cTensor_Input.GetSizeW(),cTensor_Input.GetSizeZ());
+  dim3 thread(block_Size);
+  CUDASummXYTensorFunction<type_t,block_Size><<<block,thread>>>(size,sTensorKernel_InputCopy,sTensorKernel_Input);
+  cudaDeviceSynchronize();
   HANDLE_ERROR(cudaGetLastError());
   HANDLE_ERROR(cudaDeviceSynchronize());
-  size=(size+BLOCK_SIZE-1)>>B_SIZE;
  }
- cTensor_Output.SetDeviceOnChange();
+ {
+  dim3 block(1,cTensor_Input.GetSizeW(),cTensor_Input.GetSizeZ());
+  dim3 thread(block_Size);
+  if (size>grid_Size) size=grid_Size;
+  CUDASummXYTensorFunction<type_t,block_Size><<<block,thread>>>(size,sTensorKernel_Input,sTensorKernel_InputCopy);
+  cudaDeviceSynchronize();
+  HANDLE_ERROR(cudaGetLastError());
+  HANDLE_ERROR(cudaDeviceSynchronize());
+ }
+
+ cTensor_Input.SetDeviceOnChange();
+ for(size_t w=0;w<cTensor_Input.GetSizeW();w++)
+ {
+  for(size_t z=0;z<cTensor_Input.GetSizeZ();z++)
+  {
+   type_t value=cTensor_Input.GetElement(w,z,0,0);
+   cTensor_Output.SetElement(w,z,0,0,value);
+  }
+ }
  cTensor_Input.ReinterpretSize(input_w,input_z,input_y,input_x);
 }
 //----------------------------------------------------------------------------------------------------
@@ -1492,8 +1499,8 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
  uint32_t m_max=tensor_left.Size_X/(CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE);
  if (tensor_left.Size_X%(CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE)) m_max++;
 
- __shared__ type_t As[CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE][CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE];
- __shared__ type_t Bs[CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE][CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE];
+ volatile __shared__ type_t As[CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE][CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE];
+ volatile __shared__ type_t Bs[CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE][CTensorMath<type_t>::TENSOR_MUL_TILE_BLOCK_SIZE*CTensorMath<type_t>::TENSOR_MUL_TILE_SIZE_SCALE];
 
  for(uint32_t m=0;m<m_max;m++)
  {
@@ -1680,8 +1687,8 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
 
 
  // Local memory to fit a tile of A and B
- __shared__ type_t a_sub[TENSOR_OPERATION_TILE_SIZE_K][TENSOR_OPERATION_TILE_SIZE_Y];
- __shared__ type_t b_sub[TENSOR_OPERATION_TILE_SIZE_X][TENSOR_OPERATION_TILE_SIZE_K+2];
+ volatile __shared__ type_t a_sub[TENSOR_OPERATION_TILE_SIZE_K][TENSOR_OPERATION_TILE_SIZE_Y];
+ volatile __shared__ type_t b_sub[TENSOR_OPERATION_TILE_SIZE_X][TENSOR_OPERATION_TILE_SIZE_K+2];
 
  // Allocate register space
  type_t a_reg;

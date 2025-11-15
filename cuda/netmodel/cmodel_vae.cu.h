@@ -78,12 +78,12 @@ CModelVAE<type_t>::CModelVAE(void)
  NOISE_LAYER_SIDE_Z=1;
  NOISE_LAYER_SIZE=NOISE_LAYER_SIDE_X*NOISE_LAYER_SIDE_Y*NOISE_LAYER_SIDE_Z;
 
- SPEED=0.0001;
+ SPEED=0.0005;
 
- BATCH_SIZE=64;
+ BATCH_SIZE=32;
 
  ITERATION_OF_SAVE_IMAGE=1;
- ITERATION_OF_SAVE_NET=10;
+ ITERATION_OF_SAVE_NET=1;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор

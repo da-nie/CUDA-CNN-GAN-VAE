@@ -490,6 +490,7 @@ void CNetLayerConvolution<type_t>::TrainingBackward(bool create_delta_weight)
   CTensorMath<type_t>::Fill(cTensor_dBias_Batch,0);
 
   CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel_Batch,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_dBias_Batch,PrevLayerPtr->GetOutputTensor(),cTensor_Delta,Stride_X,Stride_Y,Padding_X,Padding_Y);
+  //тензор Delta испорчен этой операцией
 
   CTensorMath<type_t>::AddSumW(cTensor_dKernel,cTensor_dKernel,cTensor_dKernel_Batch);
   CTensorMath<type_t>::AddSumW(cTensor_dBias,cTensor_dBias,cTensor_dBias_Batch);

@@ -482,6 +482,7 @@ template<class type_t>
 void CNetLayerLinear<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  cTensor_Delta=error;
+ //cTensor_Delta.Print("Delta");
 }
 
 //----------------------------------------------------------------------------------------------------
