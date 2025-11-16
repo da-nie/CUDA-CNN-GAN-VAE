@@ -1321,6 +1321,88 @@ void CTensorMath<type_t>::AddBias(CTensor<type_t> &cTensor_Working,const CTensor
  cTensor_Working.SetDeviceOnChange();
 }
 
+
+
+
+
+
+
+
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для вычисления суммы элементов по X и Y для каждого Z
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorSummXYTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
+{
+ uint32_t w_in=Mod(blockIdx.x,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(blockIdx.x,tensor_output.GetSizeW());
+ uint32_t z=Mod(blockIdx.y,tensor_output.GetSizeZ());
+
+ //суммируем по X и Y
+ type_t summ=0;
+
+ type_t *d_xin=tensor_input.GetTensorDataPtr(w_in,z);
+ type_t *d_xout=tensor_output.GetTensorDataPtr(w_out,z);
+
+ for(uint32_t y=0;y<tensor_input.GetSizeY();y++)
+ {
+  for(uint32_t x=0;x<tensor_input.GetSizeX();x++,d_xin++) summ+=*d_xin;
+ }
+ *d_xout=summ;
+}
+
+//----------------------------------------------------------------------------------------------------
+//вычислить сумму элементов по X и Y для каждого Z
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input)
+{
+ if (cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::SummXY: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ //запускаем процесс
+ dim3 thread(1,1,1);
+
+ dim3 blocks(cTensor_Input.Size_W,cTensor_Input.Size_Z);
+
+/*
+ dim3 thread(CTensorMath<type_t>::TILE_BLOCK_SIZE,CTensorMath<type_t>::TILE_BLOCK_SIZE);
+
+ uint32_t block_z=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_z++;
+ uint32_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ uint32_t block_x=cTensor_Output.Size_Z*cTensor_Output.Size_W;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATensorSummXYTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+*/
+ CUDATensorSummXYTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+
+
+
+
+/*
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для вычисления суммы элементов по X и Y для каждого Z
 //----------------------------------------------------------------------------------------------------
@@ -1441,6 +1523,7 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
  }
  cTensor_Input.ReinterpretSize(input_w,input_z,input_y,input_x);
 }
+*/
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для умножения тензоров
 //----------------------------------------------------------------------------------------------------

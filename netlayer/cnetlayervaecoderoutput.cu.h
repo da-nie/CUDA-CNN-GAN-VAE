@@ -255,10 +255,11 @@ void CNetLayerVAECoderOutput<type_t>::Forward(void)
   }
  }
 
+ static char str[255];
  kl_loss*=-0.5;
  kl_loss/=PrevLayerMuPtr->GetOutputTensor().GetSizeW();
- printf("KL loss:%f\r\n",kl_loss);
-
+ sprintf(str,"KL loss:%f",kl_loss);
+ SYSTEM::PutMessageToConsole(str);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -396,7 +397,7 @@ template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  cTensor_Delta=error;
- type_t k=0.001;//*1.0/(cTensor_PrevLayerLogVarError.GetSizeX()*cTensor_PrevLayerLogVarError.GetSizeY()*cTensor_PrevLayerLogVarError.GetSizeZ());
+ type_t k=0.0001;//*1.0/(cTensor_PrevLayerLogVarError.GetSizeX()*cTensor_PrevLayerLogVarError.GetSizeY()*cTensor_PrevLayerLogVarError.GetSizeZ());
 
  for(uint32_t w=0;w<cTensor_PrevLayerLogVarError.GetSizeW();w++)
  {

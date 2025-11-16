@@ -1206,7 +1206,6 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
  cTensor_dBias.CopyToDevice();//так как мы прибавляем поправки к уже имеющимся, обязательно нужно перенести данные на устройство
  CTensor<type_t> dB=cTensor_dBias;
  CTensorMath<type_t>::SummXY(dB,cTensor_Delta);
- //тензор Delta будет испорчен суммированием
 
  CTensorMath<type_t>::Add(cTensor_dBias,cTensor_dBias,dB,1,1);
 }

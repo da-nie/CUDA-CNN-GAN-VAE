@@ -218,7 +218,7 @@ void CModelTest<type_t>::CreateDecoder(void)
  DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(32,3,1,1,1,1,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- //DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
+ DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
@@ -365,6 +365,8 @@ void CModelTest<type_t>::Test(double &cost1,double &cost2)
   CTimeStamp cTimeStamp("Обучение декодировщика:");
   for(uint32_t m=0,n=DecoderNet.size()-1;m<DecoderNet.size();m++,n--) DecoderNet[n]->TrainingBackward();
  }
+
+ //CoderNet[CoderNet.size()-1]->GetDeltaTensor().Print("Delta");
  //выполняем вычисление весов кодировщика
  {
   CTimeStamp cTimeStamp("Обучение кодировщика:");
