@@ -354,6 +354,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayermaxpooling.cu.h" />
+		<Unit filename="netlayer/cnetlayersoftmax.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayersoftmax.cu.h" />
 		<Unit filename="netlayer/cnetlayersplitter.cu">
 			<Option compile="1" />
 			<Option link="1" />

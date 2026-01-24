@@ -32,6 +32,11 @@
 #include "../../netlayer/cnetlayermaxdepooling.cu.h"
 #include "../../netlayer/cnetlayerupsampling.cu.h"
 #include "../../netlayer/cnetlayeraveragepooling.cu.h"
+#include "../../netlayer/cnetlayertimeembedding.cu.h"
+#include "../../netlayer/cnetlayersplitter.cu.h"
+#include "../../netlayer/cnetlayerconcatenator.cu.h"
+#include "../../netlayer/cnetlayervaecoderoutput.cu.h"
+#include "../../netlayer/cnetlayersoftmax.cu.h"
 
 #include "../tensor.cu.h"
 #include "../../libjpeg/jpeglib.h"
@@ -85,6 +90,7 @@ class CModelSorter
    bool FlipHorizontal;///<требуется ли отражение по горизонтали (имеет высший приоритет)
    int32_t OffsetX;///<смещение по X
    int32_t OffsetY;///<смещение по Y
+   float BrightScale;///<масштабирование яркости
 
    SImageSettings(void)///<конструктор
    {
@@ -92,6 +98,7 @@ class CModelSorter
     FlipHorizontal=false;
     OffsetX=0;
     OffsetY=0;
+    BrightScale=1;
    }
   };
 
@@ -160,10 +167,10 @@ class CModelSorter
 template<class type_t>
 CModelSorter<type_t>::CModelSorter(void)
 {
- IMAGE_WIDTH=224/2;
- IMAGE_HEIGHT=224/2;
+ IMAGE_WIDTH=128;
+ IMAGE_HEIGHT=128;
  IMAGE_DEPTH=3;
- BATCH_SIZE=100;
+ BATCH_SIZE=256;
 
  GROUP_SIZE=10;
 
@@ -196,29 +203,27 @@ void CModelSorter<type_t>::CreateSorter(void)
 
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolutionInput<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH,BATCH_SIZE)));
 
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(96/2,11,4,4,0,0,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(96/4,11,4,4,0,0,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- //SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
+
 // SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
 
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128/2,5,1,1,0,0,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128/4,5,1,1,0,0,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- //SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
 
  //SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
 
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(192/2,3,1,1,0,0,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(192/4,3,1,1,0,0,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- //SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
+
  //SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
 
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(128/2,3,2,2,0,0,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(256/4,3,2,2,0,0,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  //SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
 
 /* SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(16,3,2,2,2,2,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
@@ -249,17 +254,16 @@ void CModelSorter<type_t>::CreateSorter(void)
  SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  */
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(2048/2,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(2048/8,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
 
- SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
+ SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(256/8,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
 
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(GROUP_SIZE,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
- SorterNet[SorterNet.size()-1]->GetOutputTensor().Print("Sorter Output tensor",false);
+
+ //SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerSoftMax<type_t>(SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
 
 /*
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolutionInput<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH,BATCH_SIZE)));
@@ -304,6 +308,13 @@ void CModelSorter<type_t>::CreateSorter(void)
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(GROUP_SIZE,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  SorterNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,SorterNet[SorterNet.size()-1].get(),BATCH_SIZE)));
  */
+
+
+  for(size_t n=0;n<SorterNet.size();n++)
+ {
+  SorterNet[n].get()->PrintInputTensorSize("SorterNet");
+  SorterNet[n].get()->PrintOutputTensorSize("SorterNet");
+ }
 }
 
 
@@ -458,18 +469,23 @@ bool CModelSorter<type_t>::LoadTrainingImage(void)
   SImageSettings sImageSettings_New=TrainingImageSettings[n];
   for(uint32_t fh=0;fh<1;fh++)//отражение по горизонтали
   {
-   for(int32_t dx=-32;dx<32;dx+=16)//смещения по горизонтали
+   for(int32_t dx=-32;dx<32;dx+=4)//смещения по горизонтали
    {
-    for(int32_t dy=-32;dy<32;dy+=16)//смещения по вертикали
+    for(int32_t dy=-32;dy<32;dy+=4)//смещения по вертикали
     {
      if (dx==0 && dy==0 && fh==0) continue;
 
      //отражение по горизонтали
-     sImageSettings_New.FlipHorizontal=false;
-     if (fh!=0) sImageSettings_New.FlipHorizontal=true;
-     sImageSettings_New.OffsetX=dx;
-     sImageSettings_New.OffsetY=dy;
-     TrainingImageSettings.push_back(sImageSettings_New);
+     //for(float s=0;s<=2;s++)
+     {
+      float scale=1;//0.5+s*0.25;
+      sImageSettings_New.BrightScale=scale;
+      sImageSettings_New.FlipHorizontal=false;
+      if (fh!=0) sImageSettings_New.FlipHorizontal=true;
+      sImageSettings_New.OffsetX=dx;
+      sImageSettings_New.OffsetY=dy;
+      TrainingImageSettings.push_back(sImageSettings_New);
+     }
     }
    }
   }
@@ -688,6 +704,7 @@ void CModelSorter<type_t>::GetImage(const SImageSettings &sImageSettings,const s
  image.resize(IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH);
  const type_t *input_ptr=&storage_image[sImageSettings.StorageImageIndex].Image[0];
  type_t *output_ptr=&image[0];
+ float scale=sImageSettings.BrightScale;
  for(int32_t z=0;z<IMAGE_DEPTH;z++)
  {
   for(int32_t y=0;y<IMAGE_HEIGHT;y++)
@@ -708,7 +725,7 @@ void CModelSorter<type_t>::GetImage(const SImageSettings &sImageSettings,const s
 
     uint32_t in_offset_l=ix+in_offset;
 
-    type_t value=input_ptr[in_offset_l];
+    type_t value=input_ptr[in_offset_l]*scale;
     *output_ptr=value;
    }
   }
@@ -732,13 +749,12 @@ void CModelSorter<type_t>::TrainingSorter(uint32_t mini_batch_index,double &cost
   uint32_t index=b+mini_batch_index*BATCH_SIZE;
   uint32_t image_index=TrainingImageSettingsIndex[index];
   SImageSettings &sImageSettings=TrainingImageSettings[image_index];
-  uint32_t group=TrainingImageStorage[sImageSettings.StorageImageIndex].Group;
   //подаём на вход сортировщика изображение
   {
    CTimeStamp cTimeStamp("Задание изображения:");
 
    GetImage(sImageSettings,TrainingImageStorage,image);
-   SorterNet[0]->GetOutputTensor(b).CopyItemToDevice(&image[0],image.size());
+   SorterNet[0]->GetOutputTensor().CopyItemLayerWToDevice(b,&image[0],image.size());
   }
  }
  //вычисляем сеть
@@ -746,18 +762,18 @@ void CModelSorter<type_t>::TrainingSorter(uint32_t mini_batch_index,double &cost
   CTimeStamp cTimeStamp("Вычисление сортировщика:");
   for(uint32_t layer=0;layer<SorterNet.size();layer++) SorterNet[layer]->Forward();
  }
+ //вычисляем ошибку последнего слоя
+ {
+  CTimeStamp cTimeStamp("Получение ответа сортировщика:");
+  SorterNet[SorterNet.size()-1]->GetOutput(cTensor_Sorter_Output);
+ }
+
  for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
   uint32_t index=b+mini_batch_index*BATCH_SIZE;
   uint32_t image_index=TrainingImageSettingsIndex[index];
   SImageSettings &sImageSettings=TrainingImageSettings[image_index];
   uint32_t group=TrainingImageStorage[sImageSettings.StorageImageIndex].Group;
-
-  //вычисляем ошибку последнего слоя
-  {
-   CTimeStamp cTimeStamp("Получение ответа сортировщика:");
-   SorterNet[SorterNet.size()-1]->GetOutput(b,cTensor_Sorter_Output);
-  }
   {
    CTimeStamp cTimeStamp("Вычисление ошибки:");
    //std::string answer_str;
@@ -765,27 +781,28 @@ void CModelSorter<type_t>::TrainingSorter(uint32_t mini_batch_index,double &cost
    {
     type_t necessities=0;
     if (n==group) necessities=1;
-    type_t answer=cTensor_Sorter_Output.GetElement(0,n,0);
+    type_t answer=cTensor_Sorter_Output.GetElement(b,0,n,0);
 	type_t error=(answer-necessities);
-	cTensor_Sorter_Output.SetElement(0,n,0,error);
-	error=fabs(error);
-	if (local_cost<error) local_cost=error;
+	cTensor_Sorter_Output.SetElement(b,0,n,0,error);
+	error=error*error;
+	local_cost+=error;
 	//sprintf(str,"%.2f[%.2f] ",answer,necessities);
 	//answer_str+=str;
    }
    //SYSTEM::PutMessageToConsole(answer_str);
   }
-  {
-   CTimeStamp cTimeStamp("Задание ошибки:");
-   //задаём ошибку сортировщику
-   SorterNet[SorterNet.size()-1]->SetOutputError(b,cTensor_Sorter_Output);
-  }
+ }
+ {
+  CTimeStamp cTimeStamp("Задание ошибки:");
+  //задаём ошибку сортировщику
+  SorterNet[SorterNet.size()-1]->SetOutputError(cTensor_Sorter_Output);
  }
  //выполняем вычисление весов
  {
   CTimeStamp cTimeStamp("Обучение сортировщика:");
   for(uint32_t m=0,n=SorterNet.size()-1;m<SorterNet.size();m++,n--) SorterNet[n]->TrainingBackward();
  }
+ local_cost/=static_cast<double>(BATCH_SIZE);
  if (local_cost>cost) cost=local_cost;
 }
 
@@ -1051,6 +1068,7 @@ void CModelSorter<type_t>::Training(void)
    SaveTrainingParam("["+str+"] "+TRAINING_PARAM_FILE_NAME);
    SYSTEM::PutMessageToConsole("");
   }
+  if (acc>90) break;
 
   str="Точность:";
   str+=std::to_string(static_cast<long double>(acc));
@@ -1077,6 +1095,8 @@ void CModelSorter<type_t>::Training(void)
    str+=std::to_string(static_cast<long double>(batch+1));
    str+=" из ";
    str+=std::to_string(static_cast<long double>(BATCH_AMOUNT));
+   str+=" начальная точность:";
+   str+=std::to_string(static_cast<long double>(acc));
    SYSTEM::PutMessageToConsole(str);
 
    long double begin_time=SYSTEM::GetSecondCounter();
@@ -1090,7 +1110,7 @@ void CModelSorter<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов сортировщика:");
     for(uint32_t n=0;n<SorterNet.size();n++)
     {
-     SorterNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+     SorterNet[n]->TrainingUpdateWeight(speed,Iteration+1,BATCH_SIZE);
     }
    }
    if (cost>full_cost) full_cost=cost;
@@ -1120,7 +1140,7 @@ void CModelSorter<type_t>::Training(void)
   fclose(file);
 
 
-  if (full_cost<END_COST) break;
+  //if (full_cost<END_COST) break;
   Iteration++;
  }
 }
@@ -1133,7 +1153,7 @@ void CModelSorter<type_t>::TrainingNet(void)
 {
  char str[STRING_BUFFER_SIZE];
 
- cTensor_Sorter_Output=CTensor<type_t>(1,GROUP_SIZE,1);
+ cTensor_Sorter_Output=CTensor<type_t>(BATCH_SIZE,1,GROUP_SIZE,1);
  CreateSorter();
  for(uint32_t n=0;n<SorterNet.size();n++) SorterNet[n]->Reset();
  //включаем обучение
@@ -1201,7 +1221,7 @@ void CModelSorter<type_t>::Sorting(void)
 {
  char str[STRING_BUFFER_SIZE];
 
- cTensor_Sorter_Output=CTensor<type_t>(1,GROUP_SIZE,1);
+ cTensor_Sorter_Output=CTensor<type_t>(BATCH_SIZE,1,GROUP_SIZE,1);
  CreateSorter();
  for(uint32_t n=0;n<SorterNet.size();n++)
  {
@@ -1367,24 +1387,24 @@ double CModelSorter<type_t>::Check(void)
    SImageSettings &sImageSettings=CheckImageSettings[index%image_amount];
    uint32_t group=CheckImageStorage[sImageSettings.StorageImageIndex].Group;
    GetImage(sImageSettings,CheckImageStorage,image);
-   SorterNet[0]->GetOutputTensor(b).CopyItemToDevice(&image[0],image.size());
+   SorterNet[0]->GetOutputTensor().CopyItemLayerWToDevice(b,&image[0],image.size());
   }
   //вычисляем сеть
   for(uint32_t layer=0;layer<SorterNet.size();layer++) SorterNet[layer]->Forward();
   //получаем результат
+  SorterNet[SorterNet.size()-1]->GetOutput(cTensor_Sorter_Output);
+  //смотрим ошибки
   for(uint32_t b=0;b<BATCH_SIZE;b++,check_index++)
   {
    if (check_index>=image_amount) break;
    SImageSettings &sImageSettings=CheckImageSettings[check_index%image_amount];
    uint32_t group=CheckImageStorage[sImageSettings.StorageImageIndex].Group;
-
-   SorterNet[SorterNet.size()-1]->GetOutput(b,cTensor_Sorter_Output);
    //определяем, куда сеть классифицирует этот результат
    uint32_t answer_group=0;
-   type_t max_answer=cTensor_Sorter_Output.GetElement(0,0,0);
+   type_t max_answer=cTensor_Sorter_Output.GetElement(b,0,0,0);
    for(uint32_t m=0;m<cTensor_Sorter_Output.GetSizeY();m++)
    {
-    type_t answer=cTensor_Sorter_Output.GetElement(0,m,0);
+    type_t answer=cTensor_Sorter_Output.GetElement(b,0,m,0);
     if (answer>max_answer)
     {
      answer_group=m;

@@ -81,7 +81,6 @@ class CTensorApplyFunc
   static void ApplyLeakyReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию Leaky ReLU
   static void ApplyLinear(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить линейную функцию
   static void ApplyTangence(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию гиперболический тангенс
-   //static void ApplySoftMax(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию softmax
 
   static void ApplyDifferentialSigmoid(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию  производной от сигмоида
   static void ApplyDifferentialReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию производной от ReLU
@@ -89,7 +88,6 @@ class CTensorApplyFunc
   static void ApplyDifferentialLeakyReLU(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию производной от Leaky ReLU
   static void ApplyDifferentialLinear(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить производную линейной функций
   static void ApplyDifferentialTangence(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию производной от гиперболического тангенса
-   //static void ApplyDifferentialSoftMax(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<применить функцию производной от softmax
 
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
@@ -584,56 +582,6 @@ __host__ void CTensorApplyFunc<type_t>::ApplyTangence(CTensor<type_t> &cTensor_O
 
  cTensor_Output.SetDeviceOnChange();
 }
-/*
-//----------------------------------------------------------------------------------------------------
-///!функция CUDA для SoftMax
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-__global__ void CUDATensorApplySoftMaxFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
-{
- uint32_t blockCol=blockIdx.z;
- uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.x%tensor_output.GetSizeZ();
- uint32_t w_in=(blockIdx.x/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
- uint32_t w_out=(blockIdx.x/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
- //координаты элементов блока в выходном тензоре
- uint32_t x=threadIdx.x;
- uint32_t y=threadIdx.y;
- //получаем подтензоры
- uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
- uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
-
- if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
-
- uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
-
- *b_ptr=CTensorApplyFunc<type_t>::SoftMax(*a_ptr);
-
- __syncthreads();
-}
-//----------------------------------------------------------------------------------------------------
-///!применить функцию softmax
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-__host__ void CTensorApplyFunc<type_t>::ApplySoftMax(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
-{
- cTensor_Input.CopyToDevice();
-
- STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
- STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
-
- dim3 thread;
- dim3 blocks;
- BlockInitFunction(thread,blocks,cTensor_Output,cTensor_Input);
- CUDATensorApplySoftMaxFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
- HANDLE_ERROR(cudaGetLastError());
- HANDLE_ERROR(cudaDeviceSynchronize());
-
- cTensor_Output.SetDeviceOnChange();
-}
-*/
 
 //----------------------------------------------------------------------------------------------------
 ///!функция CUDA для производной сигмоида
@@ -921,55 +869,6 @@ __host__ void CTensorApplyFunc<type_t>::ApplyDifferentialTangence(CTensor<type_t
 
  cTensor_Output.SetDeviceOnChange();
 }
-/*
-//----------------------------------------------------------------------------------------------------
-///!функция CUDA для производной SoftMax
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-__global__ void CUDATensorApplyDifferentialSoftMaxFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
-{
- uint32_t blockCol=blockIdx.z;
- uint32_t blockRow=blockIdx.y;
- uint32_t z=blockIdx.x%tensor_output.GetSizeZ();
- uint32_t w_in=(blockIdx.x/tensor_output.GetSizeZ())%tensor_input.GetSizeW();
- uint32_t w_out=(blockIdx.x/tensor_output.GetSizeZ())%tensor_output.GetSizeW();
- //координаты элементов блока в выходном тензоре
- uint32_t x=threadIdx.x;
- uint32_t y=threadIdx.y;
- //получаем подтензоры
- uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
- uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
-
- if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
-
- uint32_t offset=xp+yp*tensor_output.GetSizeX();
- type_t *a_ptr=tensor_input.GetTensorDataPtr(w_in,z)+offset;
- type_t *b_ptr=tensor_output.GetTensorDataPtr(w_out,z)+offset;
-
- *b_ptr=CTensorApplyFunc<type_t>::dSoftMax(*a_ptr);
-
- __syncthreads();
-}
-//----------------------------------------------------------------------------------------------------
-///!применить функцию производной от softmax
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-__host__ void CTensorApplyFunc<type_t>::ApplyDifferentialSoftMax(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
-{
- cTensor_Input.CopyToDevice();
- STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
- STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
-
- dim3 thread;
- dim3 blocks;
- BlockInitFunction(thread,blocks,cTensor_Output,cTensor_Input);
- CUDATensorApplyDifferentialSoftMaxFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
- HANDLE_ERROR(cudaGetLastError());
- HANDLE_ERROR(cudaDeviceSynchronize());
-
- cTensor_Output.SetDeviceOnChange();
-}
-*/
 
 #endif
 

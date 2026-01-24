@@ -51,17 +51,17 @@ class CModelBasicDiffusion:public CModelMain<type_t>
     Alpha.resize(time_counter);
     AlphaBar.resize(time_counter+1);
     //заполняем коэффициенты зашумления
-
+   /*
     float beta_start=0.01f;
-    float beta_end=0.05f;
+    float beta_end=0.3f;
     for(uint32_t i=0;i<time_counter;i++)
     {
      Beta[i]=beta_start+(beta_end-beta_start)*i/(time_counter-1);
      Alpha[i]=1-Beta[i];
      if (i==0) AlphaBar[i]=Alpha[i];
           else AlphaBar[i]=AlphaBar[i-1]*Alpha[i];
-    }
-	/*
+    }*/
+
 	//косинусное расписание
 	const float s=0.008f;
 	const float PI=3.141592653589793f;
@@ -86,7 +86,7 @@ class CModelBasicDiffusion:public CModelMain<type_t>
      Alpha[t]=1-Beta[t];
      if (t==0) AlphaBar[t]=Alpha[t];
           else AlphaBar[t]=AlphaBar[t-1]*Alpha[t];
-	}*/
+	}
    }
   };
   //параметры обучающих изображений
@@ -197,7 +197,7 @@ CModelBasicDiffusion<type_t>::CModelBasicDiffusion(void)
 
  Iteration=0;
 
- TIME_COUNTER=100;
+ TIME_COUNTER=30;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор
@@ -316,9 +316,12 @@ void CModelBasicDiffusion<type_t>::TrainingDiffusionNet(uint32_t mini_batch_inde
  {
   CTimeStamp cTimeStamp("Вычисление ошибки:");
   CTensorMath<type_t>::Sub(cTensor_Error,DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor(),cTensor_Image);
-  //cTensor_Image=cTensor_Error;
-  //CTensorMath<type_t>::Pow2(cTensor_Error,cTensor_Error,1);
  }
+ {
+  CTimeStamp cTimeStamp("Задание ошибки:");
+  DiffusionNet[DiffusionNet.size()-1]->SetOutputError(cTensor_Error);
+ }
+
 /*
  //сохранение ошибки
  {
@@ -334,9 +337,19 @@ void CModelBasicDiffusion<type_t>::TrainingDiffusionNet(uint32_t mini_batch_inde
  }
  */
 
+ //считаем ошибку
+ CTensorMath<type_t>::Pow2(cTensor_Error,cTensor_Error,1);
+ static CTensor<type_t> cTensor_Loss(cTensor_Error.GetSizeW(),cTensor_Error.GetSizeZ(),1,1);
+ CTensorMath<type_t>::SummXY(cTensor_Loss,cTensor_Error);
+
  double error=0;
  for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
+  for(uint32_t z=0;z<cTensor_Error.GetSizeZ();z++)
+  {
+   error+=cTensor_Loss.GetElement(b,z,0,0);
+  }
+ }
 /*
   char str[255];
   sprintf(str,"Test/input-%i.tga",b);
@@ -345,29 +358,8 @@ void CModelBasicDiffusion<type_t>::TrainingDiffusionNet(uint32_t mini_batch_inde
   SaveImage(DecoderNet[DecoderNet.size()-1]->GetOutputTensor(b),str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   sprintf(str,"Test/error-%i.tga",b);
   SaveImage(cTensor_Error,str,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);*/
-
-  //считаем ошибку
-  for(uint32_t x=0;x<cTensor_Error.GetSizeX();x++)
-  {
-   for(uint32_t y=0;y<cTensor_Error.GetSizeY();y++)
-   {
-    for(uint32_t z=0;z<cTensor_Error.GetSizeZ();z++)
-    {
-     type_t c=cTensor_Error.GetElement(b,z,y,x);
-     error+=c*c;
-    }
-   }
-  }
- }
  error/=static_cast<double>(BATCH_SIZE);
  if (error>cost) cost=error;
-
-
- {
-  CTimeStamp cTimeStamp("Задание ошибки:");
-  //CTensorMath<type_t>::TensorItemProduction(cTensor_Error,cTensor_Error,cTensor_Image);
-  DiffusionNet[DiffusionNet.size()-1]->SetOutputError(cTensor_Error);
- }
 
  //выполняем вычисление весов
  {

@@ -357,8 +357,14 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFake(double &disc_cost)
    fake_output=cTensor_Discriminator_Output.GetElement(b,0,0,0);
    //double disc_fake_error=-SafeLog(1.0-fake_output);//прямая метка
    //double disc_fake_error=(fake_output-0);//прямая метка
+
+   double disc_fake_error=1;
+   if (fake_output<=-1) disc_fake_error=0;
+
+/*
    double disc_fake_error=1+fake_output;
    if (disc_fake_error<0) disc_fake_error=0;
+   */
 
    if (b==0)
    {
@@ -420,9 +426,14 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorReal(uint32_t mini_batch_index
   real_output=cTensor_Discriminator_Output.GetElement(b,0,0,0);
   //double disc_real_error=SafeLog(real_output);//прямая метка
 //   double disc_real_error=(real_output-1);//прямая метка
+
+ double disc_real_error=-1;
+ if (real_output>=1) disc_real_error=0;
+
+/*
   double disc_real_error=1-real_output;//прямая метка
   if (disc_real_error<0) disc_real_error=0;
-  disc_real_error=-disc_real_error;
+  disc_real_error=-disc_real_error;*/
 
   if (b==0)
   {
@@ -485,9 +496,14 @@ void CModelBasicGAN<type_t>::TrainingGenerator(double &cost,double &middle_answe
    CTimeStamp cTimeStamp("Расчёт ошибки дискриминатора:");
    fake_output=cTensor_Discriminator_Output.GetElement(b,0,0,0);
    //double disc_error=SafeLog(fake_output);//прямая метка
-   double disc_error=-fake_output;//прямая метка
 
+   double disc_error=-1;
+   /*
+   double disc_error=-fake_output;//прямая метка
    disc_error=-disc_error;
+   */
+
+
 
    if (b==0)
    {
@@ -832,12 +848,12 @@ void CModelBasicGAN<type_t>::TrainingNet(bool mnist)
  //включаем обучение
  for(uint32_t n=0;n<GeneratorNet.size();n++)
  {
-  GeneratorNet[n]->TrainingModeAdam(0.1,0.5);
+  GeneratorNet[n]->TrainingModeAdam(0.5,0.9);
   GeneratorNet[n]->TrainingStart();
  }
  for(uint32_t n=0;n<DiscriminatorNet.size();n++)
  {
-  DiscriminatorNet[n]->TrainingModeAdam(0.1,0.5);
+  DiscriminatorNet[n]->TrainingModeAdam(0.5,0.9);
   DiscriminatorNet[n]->TrainingStart();
  }
 SYSTEM::PutMessageToConsole("Загружаем изображения");

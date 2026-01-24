@@ -40,6 +40,7 @@
 #include "../../netlayer/cnetlayersplitter.cu.h"
 #include "../../netlayer/cnetlayerconcatenator.cu.h"
 #include "../../netlayer/cnetlayervaecoderoutput.cu.h"
+#include "../../netlayer/cnetlayersoftmax.cu.h"
 
 #include "../tensor.cu.h"
 
