@@ -167,15 +167,15 @@ class CModelSorter
 template<class type_t>
 CModelSorter<type_t>::CModelSorter(void)
 {
- IMAGE_WIDTH=128;
- IMAGE_HEIGHT=128;
+ IMAGE_WIDTH=64;
+ IMAGE_HEIGHT=64;
  IMAGE_DEPTH=3;
  BATCH_SIZE=256;
 
  GROUP_SIZE=10;
 
  SPEED=0.0001;
- END_COST=0.1;
+ END_COST=0.001;
 
  ITERATION_OF_SAVE_NET=1;
 
