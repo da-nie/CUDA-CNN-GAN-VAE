@@ -25,6 +25,7 @@
 
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
+#include <curand_kernel.h>
 
 #include "../common/idatastream.h"
 #include "../system/system.h"

@@ -108,6 +108,8 @@ class CTensorMath
   static void Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,uint32_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration);///<выполнить алгоритм Adam к весовому тензору
 
   static void SetTimeStep(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<uint32_t> &cTensor_TimeStep);///<добавить к тензору временной шаг
+
+  static void CreateDropOutMatrix(CTensor<type_t> &cTensor_Output,type_t drop_out);///<создать матрицу исключения
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -160,6 +162,7 @@ struct STensorKernel
  __forceinline__ __host__ __device__ void SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
   if (x>=Size_X || y>=Size_Y || z>=Size_Z || w>=Size_W) return;
+
   TensorData_Ptr[w*StrideW+z*StrideZ+y*StrideX+x]=value;
  }
 
@@ -450,9 +453,10 @@ __global__ void CUDATensorConcatecationZFunction(STensorKernel<type_t> tensor_ou
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in_a=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input_a.GetSizeW());
- uint32_t w_in_b=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input_b.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in_a=Mod(w,tensor_input_a.GetSizeW());
+ uint32_t w_in_b=Mod(w,tensor_input_b.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -517,9 +521,10 @@ __global__ void CUDATensorSplitZFunction(STensorKernel<type_t> tensor_output_a,S
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_input.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_input.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out_a=Mod((blockIdx.x/tensor_input.GetSizeZ()),tensor_output_a.GetSizeW());
- uint32_t w_out_b=Mod((blockIdx.x/tensor_input.GetSizeZ()),tensor_output_b.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_input.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out_a=Mod(w,tensor_output_a.GetSizeW());
+ uint32_t w_out_b=Mod(w,tensor_output_b.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -647,8 +652,9 @@ __global__ void CUDATensorInvTensorFunction(STensorKernel<type_t> tensor_output,
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -711,9 +717,10 @@ __global__ void CUDATensorDivTensorFunction(STensorKernel<type_t> tensor_output,
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_left=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_left.GetSizeW());
- uint32_t w_right=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_right.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_left=Mod(w,tensor_left.GetSizeW());
+ uint32_t w_right=Mod(w,tensor_right.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -779,9 +786,10 @@ __global__ void CUDATensorAddTensorFunction(STensorKernel<type_t> tensor_output,
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_left=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_left.GetSizeW());
- uint32_t w_right=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_right.GetSizeW());
- uint32_t w_output=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_left=Mod(w,tensor_left.GetSizeW());
+ uint32_t w_right=Mod(w,tensor_right.GetSizeW());
+ uint32_t w_output=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -928,8 +936,9 @@ __global__ void CUDATensorAddValueTensorFunction(STensorKernel<type_t> tensor_ou
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -1068,8 +1077,9 @@ __global__ void CUDATensorSetTensorFunction(STensorKernel<type_t> tensor_output,
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -1136,8 +1146,9 @@ __global__ void CUDATensorPow2TensorFunction(STensorKernel<type_t> tensor_output
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -1201,8 +1212,9 @@ __global__ void CUDATensorSQRTTensorFunction(STensorKernel<type_t> tensor_output
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -1265,8 +1277,9 @@ __global__ void CUDATensorAddBiasFunction(STensorKernel<type_t> tensor_working,S
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_working.GetSizeZ());
- uint32_t w_bias=Mod((blockIdx.x/tensor_working.GetSizeZ()),tensor_bias.GetSizeW());
- uint32_t w_working=Mod((blockIdx.x/tensor_working.GetSizeZ()),tensor_working.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_working.GetSizeZ();
+ uint32_t w_bias=Mod(w,tensor_bias.GetSizeW());
+ uint32_t w_working=Mod(w,tensor_working.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -1646,6 +1659,7 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  {
   throw "CTensor::MulAbstract: Размерности тензоров не совпадают!";
  }
+
  //копируем данные с устройство
  cTensor_Left.CopyToDevice();
  cTensor_Right.CopyToDevice();
@@ -1927,8 +1941,9 @@ __global__ void CUDATensorMulValueFunction(STensorKernel<type_t> tensor_output,S
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -2058,9 +2073,10 @@ __global__ void CUDATensorItemProductionFunction(STensorKernel<type_t> tensor_ou
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_left=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_left.GetSizeW());
- uint32_t w_right=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_right.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_left=Mod(w,tensor_left.GetSizeW());
+ uint32_t w_right=Mod(w,tensor_right.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -2139,8 +2155,9 @@ __global__ void CUDAUpSamplingTensor(STensorKernel<type_t> tensor_output,STensor
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -2218,8 +2235,9 @@ __global__ void CUDADownSamplingTensor(STensorKernel<type_t> tensor_output,STens
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -2298,8 +2316,9 @@ __global__ void CUDAMaxPoolingTensor(STensorKernel<type_t> tensor_output,STensor
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -2395,9 +2414,10 @@ __global__ void CUDAMaxPoolingTensorBackward(STensorKernel<type_t> tensor_output
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
  uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
- uint32_t w_out=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
- uint32_t w_in=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_input.GetSizeW());
- uint32_t w_pos=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_position.GetSizeW());
+ uint32_t w=blockIdx.x/tensor_output.GetSizeZ();
+ uint32_t w_out=Mod(w,tensor_output.GetSizeW());
+ uint32_t w_in=Mod(w,tensor_input.GetSizeW());
+ uint32_t w_pos=Mod(w,tensor_position.GetSizeW());
  //координаты элементов блока в выходном тензоре
  uint32_t x=threadIdx.x;
  uint32_t y=threadIdx.y;
@@ -2685,6 +2705,102 @@ void CTensorMath<type_t>::SetTimeStep(CTensor<type_t> &cTensor_Output,const CTen
  CUDASetTimeStep<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,sTensorKernel_TimeStep);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для настройки генератора случайный чисел
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDARandomSetting(STensorKernel<type_t> tensor_output,curandState *state,uint32_t seed)
+{
+ uint32_t blockCol=blockIdx.z;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
+ uint32_t w=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ //координаты элементов блока в выходном тензоре
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
+ //получаем подтензоры
+ uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
+
+ if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
+
+ uint32_t pos=(xp+yp*tensor_output.Size_X+z*tensor_output.Size_X*tensor_output.Size_Y)+w*tensor_output.Size_X*tensor_output.Size_Y*tensor_output.Size_Z;
+ curand_init(seed,pos,0,&state[pos]);//TODO: очень медленная функция!
+}
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для заполнения матрицы исключения
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDADropOut(STensorKernel<type_t> tensor_output,curandState *state,float drop_out)
+{
+ uint32_t blockCol=blockIdx.z;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=Mod(blockIdx.x,tensor_output.GetSizeZ());
+ uint32_t w=Mod((blockIdx.x/tensor_output.GetSizeZ()),tensor_output.GetSizeW());
+ //координаты элементов блока в выходном тензоре
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
+ //получаем подтензоры
+ uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
+
+ if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
+
+ uint32_t pos=(xp+yp*tensor_output.Size_X+z*tensor_output.Size_X*tensor_output.Size_Y)+w*tensor_output.Size_X*tensor_output.Size_Y*tensor_output.Size_Z;
+ curandState localState=state[pos];
+ type_t random=curand_uniform(&localState);
+ state[pos]=localState;
+
+ type_t mult=static_cast<type_t>(1.0/(1.0-drop_out));
+ if (random>=drop_out) tensor_output.SetElement(w,z,yp,xp,mult);
+                  else tensor_output.SetElement(w,z,yp,xp,0);
+}
+//----------------------------------------------------------------------------------------------------
+//!создать матрицу исключения
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::CreateDropOutMatrix(CTensor<type_t> &cTensor_Output,type_t drop_out)
+{
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TILE_BLOCK_SIZE,CTensorMath<type_t>::TILE_BLOCK_SIZE);
+
+ uint32_t block_z=cTensor_Output.Size_X/thread.x;
+ if (cTensor_Output.Size_X%thread.x) block_z++;
+ uint32_t block_y=cTensor_Output.Size_Y/thread.y;
+ if (cTensor_Output.Size_Y%thread.y) block_y++;
+ uint32_t block_x=cTensor_Output.Size_Z*cTensor_Output.Size_W;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+
+ printf("Begin\r\n");
+ curandState* devStates;
+ uint32_t amount=cTensor_Output.GetSizeW()*cTensor_Output.GetSizeZ()*cTensor_Output.GetSizeY()*cTensor_Output.GetSizeX();
+ cudaMalloc(&devStates,amount*sizeof(curandState));
+
+ printf("Set\r\n");
+
+ CUDARandomSetting<type_t><<<blocks,thread>>>(sTensorKernel_Output,devStates,time(NULL));
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+ printf("Create\r\n");
+
+ CUDADropOut<type_t><<<blocks,thread>>>(sTensorKernel_Output,devStates,drop_out);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ printf("Free\r\n");
+
+ cudaFree(devStates);
 
  cTensor_Output.SetDeviceOnChange();
 }

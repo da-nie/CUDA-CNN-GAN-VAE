@@ -377,7 +377,7 @@ CTensor<type_t>& CNetLayerSoftMax<type_t>::GetDeltaTensor(void)
 template<class type_t>
 void CNetLayerSoftMax<type_t>::SetOutputError(CTensor<type_t>& error)
 {
-CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
+ CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
  uint32_t input_x=input.GetSizeX();
  uint32_t input_y=input.GetSizeY();
@@ -386,7 +386,7 @@ CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
  for(size_t w=0;w<input_w;w++)
  {
-  type_t S=0;
+  type_t summ=0;
 
   for(size_t z=0;z<input_z;z++)
   {
@@ -394,23 +394,44 @@ CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
    {
     for(size_t x=0;x<input_x;x++)
     {
-     type_t s=cTensor_H.GetElement(w,z,y,x);
-     type_t a=error.GetElement(w,z,y,x);
-     S+=s*a;
+     type_t e=input.GetElement(w,z,y,x);
+     summ+=exp(e);
     }
    }
   }
 
+
   for(size_t z=0;z<input_z;z++)
   {
    for(size_t y=0;y<input_y;y++)
    {
     for(size_t x=0;x<input_x;x++)
     {
-     type_t s=cTensor_H.GetElement(w,z,y,x);
-     type_t c=error.GetElement(w,z,y,x)-S;
-     c*=s;
-     cTensor_Delta.SetElement(w,z,y,x,c);
+     //выход предшествующего слоя
+     type_t ezc=exp(input.GetElement(w,z,y,x));
+
+     type_t delta=0;
+     //выход softmax
+     for(size_t zs=0;zs<input_z;zs++)
+     {
+      for(size_t ys=0;ys<input_y;ys++)
+      {
+       for(size_t xs=0;xs<input_x;xs++)
+       {
+        if (x==xs && y==ys && z==zs) continue;
+
+        type_t ezk=exp(input.GetElement(w,zs,ys,xs));
+        type_t c=error.GetElement(w,zs,ys,xs);
+        type_t d=-ezc*ezk/(summ*summ);
+        delta+=d*c;
+       }
+      }
+     }
+
+     type_t d=ezc*(summ-ezc)/(summ*summ);
+     type_t c=error.GetElement(w,z,y,x);
+     delta+=d*c;
+     cTensor_Delta.SetElement(w,z,y,x,delta);
     }
    }
   }

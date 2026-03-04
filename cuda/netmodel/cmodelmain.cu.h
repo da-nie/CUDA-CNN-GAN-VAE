@@ -368,7 +368,7 @@ void CModelMain<type_t>::ExchangeImageIndex(std::vector<uint32_t> &index)
  for(uint32_t n=0;n<image_amount;n++)
  {
   uint32_t index_1=n;
-  uint32_t index_2=static_cast<uint32_t>((rand()*static_cast<double>(image_amount*10))/static_cast<double>(RAND_MAX));
+  uint32_t index_2=static_cast<uint32_t>(CRandom<type_t>::GetRandValue(image_amount*2));
   index_2%=image_amount;
 
   uint32_t tmp=index[index_1];

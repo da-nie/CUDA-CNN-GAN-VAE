@@ -191,6 +191,8 @@ void CNetLayerDropOut<type_t>::Forward(void)
 {
  if (Training==false) return;
  //создаём матрицу исключения
+ //CTensorMath<type_t>::CreateDropOutMatrix(cTensor_H_DropOut,DropOut);//очень медленно выходит
+ //создаём матрицу исключения
  CTensorMath<type_t>::Fill(cTensor_H_DropOut,0);
  type_t mult=static_cast<type_t>(1.0/(1.0-DropOut));
  uint32_t size_x=cTensor_H_DropOut.GetSizeX();
@@ -208,9 +210,11 @@ void CNetLayerDropOut<type_t>::Forward(void)
     }
    }
   }
-  //умножаем входной тензор на тензор исключения поэлементно
-  CTensorMath<type_t>::TensorItemProduction(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_H_DropOut);
  }
+
+ //умножаем входной тензор на тензор исключения поэлементно
+ CTensorMath<type_t>::TensorItemProduction(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_H_DropOut);
+
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
