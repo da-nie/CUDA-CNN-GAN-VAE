@@ -86,8 +86,8 @@ struct cudaDeviceProp
  if (CTensorTest<float>::Test()==false) throw("Класс тензоров провалил тестирование!");
 
 
- CModelSorter<float> cModelSorter;
- cModelSorter.Execute();
+ //CModelSorter<float> cModelSorter;
+ //cModelSorter.Execute();
 
  //CModelGAN<float> cModelGAN;
  //cModelGAN.Execute();
@@ -95,8 +95,8 @@ struct cudaDeviceProp
  //CModelDiffusion<float> cModelDiffusion;
  //cModelDiffusion.Execute();
 
- //CModelVAE<float> cModelVAE;
- //cModelVAE.Execute();
+ CModelVAE<float> cModelVAE;
+ cModelVAE.Execute();
 
  //CModelTest<double> cModelTest;
  //cModelTest.Execute();

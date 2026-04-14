@@ -292,6 +292,9 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
 template<class type_t>
 void CModelBasicVAE<type_t>::SaveRandomImage(void)
 {
+ char str[STRING_BUFFER_SIZE];
+ static uint32_t counter=0;
+
  CTensor<type_t> cTensor_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
  if (IsExit()==true) throw("Стоп");
 
@@ -306,8 +309,6 @@ void CModelBasicVAE<type_t>::SaveRandomImage(void)
  for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
  //получаем ответ сети
  cTensor_Image=DecoderNet[DecoderNet.size()-1]->GetOutputTensor();
- char str[STRING_BUFFER_SIZE];
- static uint32_t counter=0;
  for(uint32_t n=0;n<BATCH_SIZE;n++)
  {
   counter=0;
@@ -315,6 +316,31 @@ void CModelBasicVAE<type_t>::SaveRandomImage(void)
   SaveImage(cTensor_Image,str,n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   if (n==0) SaveImage(cTensor_Image,"Test/test-current.tga",n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
  }
+
+ //записываем оригинальные картинки
+ for(uint32_t b=0;b<BATCH_SIZE;b++)
+ {
+  //задаём изображение для кодировщика
+  {
+   //кодер подключён к изображению
+   uint32_t img=RealImageIndex[b];
+   uint32_t size=RealImage[img].size();
+   type_t *ptr=&RealImage[img][0];
+   CoderNet[0]->GetOutputTensor().CopyItemLayerWToDevice(b,ptr,size);
+  }
+ }
+ for(uint32_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
+ //выполняем прямой проход по сети
+ for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
+ cTensor_Image=DecoderNet[DecoderNet.size()-1]->GetOutputTensor();
+ for(uint32_t n=0;n<BATCH_SIZE;n++)
+ {
+  counter=0;
+  sprintf(str,"Test/image%05i-%03i.tga",static_cast<int>(counter),static_cast<int>(n));
+  SaveImage(cTensor_Image,str,n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+  if (n==0) SaveImage(cTensor_Image,"Test/test-current.tga",n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+ }
+
  counter++;
 }
 //----------------------------------------------------------------------------------------------------
@@ -400,7 +426,7 @@ void CModelBasicVAE<type_t>::Training(void)
      CTimeStamp cTimeStamp("Обновление весов кодировщика:");
      for(uint32_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
     }
-    //корректируем веса генератора
+    //корректируем веса декодировщика
     {
      CTimeStamp cTimeStamp("Обновление весов декодировщика:");
      for(uint32_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
