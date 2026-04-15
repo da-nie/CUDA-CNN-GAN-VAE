@@ -139,30 +139,23 @@ void CModelVAE<type_t>::CreateCoder_1(void)
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  //CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  //CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
- CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor",false);
 
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64/k,5,2,2,2,2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  //CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
- CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor",false);
 
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64/k,5,2,2,2,2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  //CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
- CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor",false);
 
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64/k,5,2,2,2,2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  //CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
- CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor",false);
 
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64/k,5,2,2,2,2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  //CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
- CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor",false);
 
- CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE*2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
- CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor",false);
  /*
  //делаем разделение для переноса на два вектора
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerSplitter<type_t>(2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
@@ -174,8 +167,14 @@ void CModelVAE<type_t>::CreateCoder_1(void)
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,CoderNet[log_var_layer].get(),BATCH_SIZE)));
  */
  //выходной слой кодера VAE
- CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerVAECoderOutput<type_t>(CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
- CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor final",false);
+ CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerVAECoderOutput<type_t>(NOISE_LAYER_SIZE,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
+
+ for(size_t n=0;n<CoderNet.size();n++)
+ {
+  CoderNet[n].get()->PrintInputTensorSize("Coder");
+  CoderNet[n].get()->PrintOutputTensorSize("Coder");
+ }
+
 }
 //----------------------------------------------------------------------------------------------------
 //создать сеть декодировщика
@@ -191,57 +190,50 @@ void CModelVAE<type_t>::CreateDecoder_1(void)
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(512*4*4,CoderNet[convert].get(),BATCH_SIZE)));
  //DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  convert=DecoderNet.size()-1;
  DecoderNet[convert]->GetOutputTensor().ReinterpretSize(BATCH_SIZE,512,4,4);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64/k,3,1,1,1,1,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  //DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64/k,3,1,1,1,1,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  //DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64/k,3,1,1,1,1,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  //DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(64/k,3,1,1,1,1,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  //DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerUpSampling<type_t>(2,2,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(32/k,3,1,1,1,1,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  //DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerBatchNormalization<type_t>(0.9,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor",false);
 
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerConvolution<type_t>(IMAGE_DEPTH,3,1,1,1,1,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
  DecoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DecoderNet[DecoderNet.size()-1].get(),BATCH_SIZE)));
 
- DecoderNet[DecoderNet.size()-1]->GetOutputTensor().Print("Decoder output tensor final",false);
-
  DecoderNet[convert]->GetOutputTensor().RestoreSize();
+
+ for(size_t n=0;n<DecoderNet.size();n++)
+ {
+  DecoderNet[n].get()->PrintInputTensorSize("Decoder");
+  DecoderNet[n].get()->PrintOutputTensorSize("Decoder");
+ }
 }
 
 //****************************************************************************************************
