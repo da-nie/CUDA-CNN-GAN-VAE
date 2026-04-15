@@ -43,8 +43,7 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
   //-константы------------------------------------------------------------------------------------------
  private:
   //-переменные-----------------------------------------------------------------------------------------
-  INetLayer<type_t> *PrevLayerMuPtr;///<указатель на предшествующий слой Мю (либо NULL)
-  INetLayer<type_t> *PrevLayerLogVarPtr;///<указатель на предшествующий слой логарифм дисперсии (либо NULL)
+  INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
   uint32_t BatchSize;///<размер пакета для обучения
@@ -62,17 +61,16 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
-  CTensor<type_t> cTensor_PrevLayerMuError;///<тензоры ошибки слоя Мю
-  CTensor<type_t> cTensor_PrevLayerLogVarError;///<тензоры ошибки слоя логарифм дисперсии
+  CTensor<type_t> cTensor_PrevLayerError;///<тензоры ошибки слоя
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerVAECoderOutput(INetLayer<type_t> *prev_layer_mu_ptr=NULL,INetLayer<type_t> *prev_layer_log_var_ptr=NULL,uint32_t batch_size=1);
+  CNetLayerVAECoderOutput(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
   CNetLayerVAECoderOutput(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerVAECoderOutput();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(INetLayer<type_t> *prev_layer_mu_ptr=NULL,INetLayer<type_t> *prev_layer_log_var_ptr=NULL,uint32_t batch_size=1);///<создать слой
+  void Create(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -111,9 +109,9 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerVAECoderOutput<type_t>::CNetLayerVAECoderOutput(INetLayer<type_t> *prev_layer_mu_ptr,INetLayer<type_t> *prev_layer_log_var_ptr,uint32_t batch_size)
+CNetLayerVAECoderOutput<type_t>::CNetLayerVAECoderOutput(INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
- Create(prev_layer_mu_ptr,prev_layer_log_var_ptr,batch_size);
+ Create(prev_layer_ptr,batch_size);
 }
 //----------------------------------------------------------------------------------------------------
 //!конструктор
@@ -141,42 +139,36 @@ CNetLayerVAECoderOutput<type_t>::~CNetLayerVAECoderOutput()
 
 //----------------------------------------------------------------------------------------------------
 /*!создать слой
-\param[in] prev_layer_mu_ptr Указатель на класс предшествующего слоя Мю (NULL-слой входной)
-\param[in] prev_layer_log_var_ptr Указатель на класс предшествующего слоя логарифм дисперсии (NULL-слой входной)
+\param[in] prev_layer_ptr Указатель на класс предшествующего слоя
 \param[in] batch_size Количество элементов минипакета
 \return Ничего не возвращается
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::Create(INetLayer<type_t> *prev_layer_mu_ptr,INetLayer<type_t> *prev_layer_log_var_ptr,uint32_t batch_size)
+void CNetLayerVAECoderOutput<type_t>::Create(INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
- PrevLayerMuPtr=prev_layer_mu_ptr;
- PrevLayerLogVarPtr=prev_layer_log_var_ptr;
+ PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
 
  BatchSize=batch_size;
 
- if (prev_layer_mu_ptr==NULL) throw("Слой выхода кодера VAE не может быть входным!");//слой без предшествующего считается входным
- if (prev_layer_log_var_ptr==NULL) throw("Слой выхода кодера VAE не может быть входным!");//слой без предшествующего считается входным
+ if (prev_layer_ptr==NULL) throw("Слой выхода кодера VAE не может быть входным!");//слой без предшествующего считается входным
 
  //запомним размеры входного тензора, чтобы потом всегда к ним приводить
- InputSize_X=PrevLayerMuPtr->GetOutputTensor().GetSizeX();
- InputSize_Y=PrevLayerMuPtr->GetOutputTensor().GetSizeY();
- InputSize_Z=PrevLayerMuPtr->GetOutputTensor().GetSizeZ();
-
- if (InputSize_X!=PrevLayerLogVarPtr->GetOutputTensor().GetSizeX() || InputSize_Y!=PrevLayerLogVarPtr->GetOutputTensor().GetSizeY() || InputSize_Z!=PrevLayerLogVarPtr->GetOutputTensor().GetSizeZ()) throw("Слои Мю и логарифм дисперсии должны иметь одинаковую размерность по X, Y и Z!");
+ InputSize_X=PrevLayerPtr->GetOutputTensor().GetSizeX();
+ InputSize_Y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ InputSize_Z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
 
  //размер выходного тензора
  OutputSize_X=InputSize_X;
- OutputSize_Y=InputSize_Y;
+ OutputSize_Y=InputSize_Y/2;
  OutputSize_Z=InputSize_Z;
 
  //создаём выходные тензоры
  cTensor_H=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y,OutputSize_X);
- cTensor_Epsilon=CTensor<type_t>(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
+ cTensor_Epsilon=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y,OutputSize_X);
  //задаём предшествующему слою, что мы его последующий слой
- prev_layer_mu_ptr->SetNextLayerPtr(this);
- prev_layer_log_var_ptr->SetNextLayerPtr(this);
+ prev_layer_ptr->SetNextLayerPtr(this);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить инициализацию слоя
@@ -230,19 +222,21 @@ void CNetLayerVAECoderOutput<type_t>::Forward(void)
 
  type_t kl_loss=0;//расстояние Кульбака-Лейбнера
 
- for(uint32_t w=0;w<PrevLayerMuPtr->GetOutputTensor().GetSizeW();w++)
+ uint32_t center_y=OutputSize_Y;
+
+ for(uint32_t w=0;w<PrevLayerPtr->GetOutputTensor().GetSizeW();w++)
  {
   std::mt19937 gen(rd());
   std::normal_distribution<type_t> dist(mean,stddev);
 
-  for(uint32_t z=0;z<PrevLayerMuPtr->GetOutputTensor().GetSizeZ();z++)
+  for(uint32_t z=0;z<OutputSize_Z;z++)
   {
-   for(uint32_t y=0;y<PrevLayerMuPtr->GetOutputTensor().GetSizeY();y++)
+   for(uint32_t y=0;y<OutputSize_Y;y++)
    {
-    for(uint32_t x=0;x<PrevLayerMuPtr->GetOutputTensor().GetSizeX();x++)
+    for(uint32_t x=0;x<OutputSize_X;x++)
     {
-     type_t mu=PrevLayerMuPtr->GetOutputTensor().GetElement(w,z,y,x);
-     type_t log_var=PrevLayerLogVarPtr->GetOutputTensor().GetElement(w,z,y,x);
+     type_t mu=PrevLayerPtr->GetOutputTensor().GetElement(w,z,y+center_y,x);
+     type_t log_var=PrevLayerPtr->GetOutputTensor().GetElement(w,z,y,x);
      type_t e=exp(log_var/2.0);
      type_t epsilon=dist(gen);
      cTensor_Epsilon.SetElement(w,z,y,x,epsilon);
@@ -257,7 +251,7 @@ void CNetLayerVAECoderOutput<type_t>::Forward(void)
 
  static char str[255];
  kl_loss*=-0.5;
- kl_loss/=PrevLayerMuPtr->GetOutputTensor().GetSizeW();
+ kl_loss/=PrevLayerPtr->GetOutputTensor().GetSizeW();
  sprintf(str,"KL loss:%f",kl_loss);
  SYSTEM::PutMessageToConsole(str);
 }
@@ -335,8 +329,7 @@ void CNetLayerVAECoderOutput<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
- cTensor_PrevLayerMuError=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y,OutputSize_X);
- cTensor_PrevLayerLogVarError=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y,OutputSize_X);
+ cTensor_PrevLayerError=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y*2,OutputSize_X);
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -347,8 +340,7 @@ void CNetLayerVAECoderOutput<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerMuError=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerLogVarError=CTensor<type_t>(1,1,1,1);
+ cTensor_PrevLayerError=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -358,8 +350,7 @@ template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::TrainingBackward(bool create_delta_weight)
 {
  //задаём ошибки предыдущих слоёв
- PrevLayerMuPtr->SetOutputError(cTensor_PrevLayerMuError);
- PrevLayerLogVarPtr->SetOutputError(cTensor_PrevLayerLogVarError);
+ PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -399,32 +390,34 @@ void CNetLayerVAECoderOutput<type_t>::SetOutputError(CTensor<type_t>& error)
  cTensor_Delta=error;
  type_t k=0.0001;//*1.0/(cTensor_PrevLayerLogVarError.GetSizeX()*cTensor_PrevLayerLogVarError.GetSizeY()*cTensor_PrevLayerLogVarError.GetSizeZ());
 
- for(uint32_t w=0;w<cTensor_PrevLayerLogVarError.GetSizeW();w++)
+ uint32_t center_y=OutputSize_Y;
+
+ for(uint32_t w=0;w<cTensor_PrevLayerError.GetSizeW();w++)
  {
-  for(uint32_t z=0;z<cTensor_PrevLayerLogVarError.GetSizeZ();z++)
+  for(uint32_t z=0;z<OutputSize_Z;z++)
   {
-   for(uint32_t y=0;y<cTensor_PrevLayerLogVarError.GetSizeY();y++)
+   for(uint32_t y=0;y<OutputSize_Y;y++)
    {
-    for(uint32_t x=0;x<cTensor_PrevLayerLogVarError.GetSizeX();x++)
+    for(uint32_t x=0;x<OutputSize_X;x++)
     {
      type_t epsilon=cTensor_Epsilon.GetElement(w,z,y,x);
      //считаем ошибку для слоя логарифма дисперсии
      type_t log_var_delta=cTensor_Delta.GetElement(w,z,y,x);
-     type_t log_var=PrevLayerLogVarPtr->GetOutputTensor().GetElement(w,z,y,x);
+     type_t log_var=PrevLayerPtr->GetOutputTensor().GetElement(w,z,y,x);
      type_t log_var_diff=1.0/2.0*epsilon*exp(log_var/2.0);//производная функции построения выхода слоя по log_var
      //по этим данным получаем ошибку на входе слоя
      type_t log_var_delta_out=log_var_delta*log_var_diff;
      log_var_delta_out+=-1.0/2.0*(1-exp(log_var))*k;//добавляем ошибку по расстоянию Кульбака-Лейбнера
-     cTensor_PrevLayerLogVarError.SetElement(w,z,y,x,log_var_delta_out);
+     cTensor_PrevLayerError.SetElement(w,z,y,x,log_var_delta_out);
 
      //считаем ошибку для слоя среднего
-     type_t mu=PrevLayerMuPtr->GetOutputTensor().GetElement(w,z,y,x);
+     type_t mu=PrevLayerPtr->GetOutputTensor().GetElement(w,z,y+center_y,x);
      type_t mu_delta=cTensor_Delta.GetElement(w,z,y,x);
      type_t mu_diff=1;//производная функции построения выхода слоя по mu
      //по этим данным получаем ошибку на входе слоя
      type_t mu_delta_out=mu_delta*mu_diff;
      mu_delta_out+=-1.0/2.0*(0-2*mu)*k;//добавляем ошибку по расстоянию Кульбака-Лейбнера
-     cTensor_PrevLayerMuError.SetElement(w,z,y,x,mu_delta_out);
+     cTensor_PrevLayerError.SetElement(w,z,y+center_y,x,mu_delta_out);
     }
    }
   }
@@ -460,8 +453,7 @@ void CNetLayerVAECoderOutput<type_t>::SetTimeStep(uint32_t index,uint32_t time_s
 template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::PrintInputTensorSize(const std::string &name)
 {
- if (PrevLayerMuPtr!=NULL) PrevLayerMuPtr->GetOutputTensor().Print(name+" VAECoderOutput: input Mu",false);
- if (PrevLayerLogVarPtr!=NULL) PrevLayerLogVarPtr->GetOutputTensor().Print(name+" VAECoderOutput: input LogVar",false);
+ if (PrevLayerPtr!=NULL) PrevLayerPtr->GetOutputTensor().Print(name+" VAECoderOutput: input ",false);
 }
 //----------------------------------------------------------------------------------------------------
 /*!вывести размерность выходного тензора слоя

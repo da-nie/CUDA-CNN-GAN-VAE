@@ -161,7 +161,10 @@ void CModelVAE<type_t>::CreateCoder_1(void)
  //CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerDropOut<type_t>(0.2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor",false);
 
- //делаем разделение для переноса
+ CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE*2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
+ CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor",false);
+ /*
+ //делаем разделение для переноса на два вектора
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerSplitter<type_t>(2,CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  uint32_t log_var_layer=CoderNet.size()-1;
  //слой мю
@@ -169,8 +172,9 @@ void CModelVAE<type_t>::CreateCoder_1(void)
  uint32_t mu_layer=CoderNet.size()-1;
  //слой log_var
  CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,CoderNet[log_var_layer].get(),BATCH_SIZE)));
- //объединяем на выходном слое кодера VAE
- CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerVAECoderOutput<type_t>(CoderNet[mu_layer].get(),CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
+ */
+ //выходной слой кодера VAE
+ CoderNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerVAECoderOutput<type_t>(CoderNet[CoderNet.size()-1].get(),BATCH_SIZE)));
  CoderNet[CoderNet.size()-1]->GetOutputTensor().Print("Coder output tensor final",false);
 }
 //----------------------------------------------------------------------------------------------------
