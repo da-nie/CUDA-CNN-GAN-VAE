@@ -1656,21 +1656,20 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
 #define WMMA_N 16
 #define WMMA_K 16
 
-#define TILE_M 2
+#define TILE_M 4 // Увеличено с 2 до 4
 #define TILE_N 2
 #define TILE_K 2
 
-#define BLOCK_ROWS (TILE_M * WMMA_M) // 32
+#define BLOCK_ROWS (TILE_M * WMMA_M) // 64
 #define BLOCK_COLS (TILE_N * WMMA_N) // 32
 #define BLOCK_DEPTH (TILE_K * WMMA_K) // 32
 
 //----------------------------------------------------------------------------------------------------
-// Функция CUDA для умножения тензоров (Оптимизированная под 4 варпа)
+// Функция CUDA: 8 варпов на блок = полная загрузка TC V100
 //----------------------------------------------------------------------------------------------------
 template<class type_t, class kernel_output_t, class kernel_left_t, class kernel_right_t>
 __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_output_t tensor_output, kernel_left_t tensor_left, kernel_right_t tensor_right)
 {
-    // координата Z
     uint32_t out_z = Mod(blockIdx.z, tensor_output.GetSizeZ());
 
     uint32_t w_out = blockIdx.z / tensor_output.GetSizeZ();
@@ -1686,26 +1685,27 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
     tensor_right.SelectZ(out_z);
     tensor_output.SelectZ(out_z);
 
-    // Строго выровненные массивы
-    __shared__ half sh_A[BLOCK_ROWS][BLOCK_DEPTH];
-    __shared__ half sh_B[BLOCK_DEPTH][BLOCK_COLS];
+    // Shared Memory под тайл 64x32
+    __shared__ half sh_A[BLOCK_ROWS][BLOCK_DEPTH]; // 64x32 = 4096 байт
+    __shared__ half sh_B[BLOCK_DEPTH][BLOCK_COLS]; // 32x32 = 2048 байт
 
-    // Плоский выровненный массив для результата (удобнее и быстрее для store_matrix_sync)
-    __shared__ float sh_out[BLOCK_ROWS * BLOCK_COLS];
+    // Плоский буфер для результатов (64x32 = 2048 элементов)
+    __shared__ float sh_out[BLOCK_ROWS * BLOCK_COLS]; // 8192 байт
+    // Итого ~14 КБ на блок. V100 выдерживает до 96 КБ на SM.
 
     int block_row = blockIdx.y * BLOCK_ROWS;
     int block_col = blockIdx.x * BLOCK_COLS;
 
     int tx = threadIdx.x; // 0..15
-    int ty = threadIdx.y; // 0..7
-    int tid = ty * 16 + tx; // 0..127
+    int ty = threadIdx.y; // 0..15
+    int tid = ty * 16 + tx; // 0..255
 
-    // Идентифицируем варп (всего 4 варпа) и назначаем каждому свой тайл 16x16
+    // Идентифицируем варп (от 0 до 7) и назначаем зону ответственности
     int warp_id = tid / 32;
-    int mi = warp_id / TILE_N; // 0 или 1
-    int ni = warp_id % TILE_N; // 0 или 1
+    int mi = warp_id / TILE_N; // 0, 1, 2, 3
+    int ni = warp_id % TILE_N; // 0, 1
 
-    // Фрагменты теперь локальны для каждого варпа (компилятор положит их в регистры)
+    // Фрагменты строго локальны для варпа
     nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, nvcuda::wmma::row_major> a_frag[TILE_K];
     nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, nvcuda::wmma::row_major> b_frag[TILE_K];
     nvcuda::wmma::fragment<nvcuda::wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, float> acc_frag;
@@ -1718,38 +1718,39 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
 
     for (int k_step = 0; k_step < padded_K; k_step += BLOCK_DEPTH)
     {
-        // --- ЗАГРУЗКА В SHARED MEMORY (128 потоков, каждый грузит по 8 элементов) ---
+        // --- ЗАГРУЗКА В SHARED MEMORY (256 потоков) ---
+
+        // Загрузка sh_A (64 строк, 32 столбца)
+        // ty (0..15) умножаем на 4 -> получаем 64 строки
+        // tx (0..15) умножаем на 2 -> получаем 32 столбца
         #pragma unroll
         for (int i = 0; i < 4; i++)
         {
             int r = ty * 4 + i;
-            int c_base = tx * 2; // 16 потоков * 2 = 32 колонки
+            int c_base = tx * 2;
 
-            // Загрузка матрицы A
-            if (block_row + r < padded_M) {
-                for (int k = 0; k < 2; k++) {
-                    int c = c_base + k;
-                    sh_A[r][c] = (k_step + c < padded_K) ? __float2half(tensor_left.GetElement(block_row + r, k_step + c)) : __float2half(0.0f);
-                }
-            } else {
-                sh_A[r][c_base] = __float2half(0.0f);
-                sh_A[r][c_base + 1] = __float2half(0.0f);
-            }
-
-            // Загрузка матрицы B
-            if (k_step + r < padded_K) {
-                for (int k = 0; k < 2; k++) {
-                    int c = c_base + k;
-                    sh_B[r][c] = (block_col + c < padded_N) ? __float2half(tensor_right.GetElement(k_step + r, block_col + c)) : __float2half(0.0f);
-                }
-            } else {
-                sh_B[r][c_base] = __float2half(0.0f);
-                sh_B[r][c_base + 1] = __float2half(0.0f);
-            }
+            // Убираем break, используем маски через тернарник
+            bool r_valid = (block_row + r < padded_M);
+            sh_A[r][c_base]     = (r_valid && (k_step + c_base < padded_K))     ? __float2half(tensor_left.GetElement(block_row + r, k_step + c_base))     : __float2half(0.0f);
+            sh_A[r][c_base + 1] = (r_valid && (k_step + c_base + 1 < padded_K)) ? __float2half(tensor_left.GetElement(block_row + r, k_step + c_base + 1)) : __float2half(0.0f);
         }
+
+        // Загрузка sh_B (32 строки, 32 столбца)
+        // ty (0..15) умножаем на 2 -> получаем 32 строки
+        #pragma unroll
+        for (int i = 0; i < 2; i++)
+        {
+            int r = ty * 2 + i;
+            int c_base = tx * 2;
+
+            bool r_valid = (k_step + r < padded_K);
+            sh_B[r][c_base]     = (r_valid && (block_col + c_base < padded_N))     ? __float2half(tensor_right.GetElement(k_step + r, block_col + c_base))     : __float2half(0.0f);
+            sh_B[r][c_base + 1] = (r_valid && (block_col + c_base + 1 < padded_N)) ? __float2half(tensor_right.GetElement(k_step + r, block_col + c_base + 1)) : __float2half(0.0f);
+        }
+
         __syncthreads();
 
-        // --- ВЫЧИСЛЕНИЯ (Каждый варп обрабатывает свой кусок параллельно) ---
+        // --- ВЫЧИСЛЕНИЯ (8 варпов бьют одновременно по 8 тензорным ядрам) ---
         #pragma unroll
         for (int ki = 0; ki < TILE_K; ki++)
         {
@@ -1761,12 +1762,12 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
     }
 
     // --- ЗАПИСЬ РЕЗУЛЬТАТА ---
-    // Каждый варп пишет свой 16x16 тайл в общую Shared Memory (без пересечений, синхронизация не нужна)
+    // Каждый варп пишет в свою уникальную зону sh_out (без пересечений)
     nvcuda::wmma::store_matrix_sync(&sh_out[(mi * WMMA_M) * BLOCK_COLS + ni * WMMA_N], acc_frag, BLOCK_COLS, nvcuda::wmma::mem_row_major);
 
-    // Плоский цикл записи: 128 потоков записывают 1024 элемента (каждый по 8 элементов)
-    // Это работает намного быстрее вложенных циклов с if-break
-    for (int idx = tid; idx < BLOCK_ROWS * BLOCK_COLS; idx += 128)
+    // Конвейерная запись из Shared Memory в Global Memory
+    // 256 потоков пишут 2048 элементов (каждый по 8 элементов)
+    for (int idx = tid; idx < BLOCK_ROWS * BLOCK_COLS; idx += 256)
     {
         int cy = block_row + (idx / BLOCK_COLS);
         int cx = block_col + (idx % BLOCK_COLS);
@@ -1776,7 +1777,6 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
         }
     }
 }
-
 //#endif
 
 //----------------------------------------------------------------------------------------------------
@@ -1802,9 +1802,9 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  uint32_t block_z=sTensorKernel_Output.Size_Z*sTensorKernel_Output.Size_W;
  if (block_z==0) block_z=1;
 
- dim3 thread(16, 8, 1);
+ dim3 thread(16, 16, 1); // 256 потоков
 
- dim3 blocks((sTensorKernel_Output.Size_X + BLOCK_COLS - 1) / BLOCK_COLS,(sTensorKernel_Output.Size_Y + BLOCK_ROWS - 1) / BLOCK_ROWS,block_z);
+ dim3 blocks((sTensorKernel_Output.Size_X + BLOCK_COLS - 1) / BLOCK_COLS,(sTensorKernel_Output.Size_Y + BLOCK_ROWS - 1) / BLOCK_ROWS, block_z);
 
  CUDATensorMulTensorFunctionForTensorCoreGenerationOne<type_t,kernel_output_t,kernel_left_t,kernel_right_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right);
 
