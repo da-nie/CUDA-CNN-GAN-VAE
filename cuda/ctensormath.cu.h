@@ -1651,7 +1651,7 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
 }
 #endif
 
-//#ifdef USE_TENSOR_CORE_GENERATION_ONE
+#ifdef USE_TENSOR_CORE_GENERATION_ONE
 #define WMMA_M 16
 #define WMMA_N 16
 #define WMMA_K 16
@@ -1665,7 +1665,7 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
 #define BLOCK_DEPTH (TILE_K * WMMA_K) // 32
 
 //----------------------------------------------------------------------------------------------------
-// Функция CUDA: 8 варпов, аппаратный col_major для V100, безопасная запись
+// Функция CUDA: Безопасная запись + Аппаратный col_major
 //----------------------------------------------------------------------------------------------------
 template<class type_t, class kernel_output_t, class kernel_left_t, class kernel_right_t>
 __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_output_t tensor_output, kernel_left_t tensor_left, kernel_right_t tensor_right)
@@ -1684,12 +1684,11 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
     tensor_right.SelectZ(out_z);
     tensor_output.SelectZ(out_z);
 
-    // Shared Memory под тайл 64x32
     __shared__ half sh_A[BLOCK_ROWS][BLOCK_DEPTH];
-    // Транспонированная B: здесь храним 32x32, чтобы аппаратно загрузить как col_major
-    __shared__ half sh_B_T[BLOCK_COLS][BLOCK_DEPTH];
-    // Безопасный буфер под результат (64x32 = 2048 элементов)
-    __shared__ float sh_out[BLOCK_ROWS * BLOCK_COLS];
+    __shared__ half sh_B_T[BLOCK_COLS][BLOCK_DEPTH]; // Транспонированная B под col_major
+
+    // 3D массив гарантирует, что ни один варп не выйдет за границы своих 256 элементов!
+    __shared__ float sh_out[TILE_M][TILE_N][WMMA_M * WMMA_N];
 
     int block_row = blockIdx.y * BLOCK_ROWS;
     int block_col = blockIdx.x * BLOCK_COLS;
@@ -1698,14 +1697,11 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
     int ty = threadIdx.y;
     int tid = ty * 16 + tx;
 
-    // Идентифицируем варп (от 0 до 7)
     int warp_id = tid / 32;
-    int mi = warp_id / TILE_N; // 0, 1, 2, 3
-    int ni = warp_id % TILE_N; // 0, 1
+    int mi = warp_id / TILE_N; // 0..3
+    int ni = warp_id % TILE_N; // 0..1
 
-    // Фрагменты строго локальны для варпа
     nvcuda::wmma::fragment<nvcuda::wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, nvcuda::wmma::row_major> a_frag[TILE_K];
-    // АППАРАТНОЕ УСКОРЕНИЕ V100: Декларируем B как col_major
     nvcuda::wmma::fragment<nvcuda::wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, nvcuda::wmma::col_major> b_frag[TILE_K];
     nvcuda::wmma::fragment<nvcuda::wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, float> acc_frag;
 
@@ -1717,7 +1713,7 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
 
     for (int k_step = 0; k_step < padded_K; k_step += BLOCK_DEPTH)
     {
-        // --- ЗАГРУЗКА A (Row Major) ---
+        // --- Чтение A (Слепое чтение, полагаемся на паддинг CTensor) ---
         #pragma unroll
         for (int i = 0; i < 4; i++) {
             int r = ty * 4 + i;
@@ -1726,8 +1722,7 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
             sh_A[r][c_base + 1] = __float2half(tensor_left.GetElement(block_row + r, k_step + c_base + 1));
         }
 
-        // --- ЗАГРУЗКА B С ТРАНСПОНИРОВАНИЕМ ---
-        // Убираем проверки границ (как было в вашем оригинальном коде, полагаемся на паддинг матриц)
+        // --- Чтение B с транспонированием на лету ---
         #pragma unroll
         for (int i = 0; i < 2; i++) {
             int r_orig = ty * 2 + i;
@@ -1736,42 +1731,48 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
             half val0 = __float2half(tensor_right.GetElement(k_step + r_orig, block_col + c_orig));
             half val1 = __float2half(tensor_right.GetElement(k_step + r_orig, block_col + c_orig + 1));
 
-            // Меняем индексы местами: записываем как матрицу 32x32
             sh_B_T[c_orig][r_orig]     = val0;
             sh_B_T[c_orig + 1][r_orig] = val1;
         }
 
         __syncthreads();
 
-        // --- ВЫЧИСЛЕНИЯ (8 варпов бьют по 8 тензорным ядрам V100) ---
+        // --- Вычисления ---
         #pragma unroll
         for (int ki = 0; ki < TILE_K; ki++)
         {
             nvcuda::wmma::load_matrix_sync(a_frag[ki], &sh_A[mi * WMMA_M][ki * WMMA_K], BLOCK_DEPTH);
-            // Загружаем из транспонированной памяти (hardware path на V100 для col_major)
             nvcuda::wmma::load_matrix_sync(b_frag[ki], &sh_B_T[ni * WMMA_N][ki * WMMA_K], BLOCK_COLS);
             nvcuda::wmma::mma_sync(acc_frag, a_frag[ki], b_frag[ki], acc_frag);
         }
         __syncthreads();
     }
 
-    // --- БЕЗОПАСНАЯ ЗАПИСЬ РЕЗУЛЬТАТА ---
-    // Записываем 16x16 фрагмент каждого варпа в безопасный Shared Memory буфер
-    nvcuda::wmma::store_matrix_sync(&sh_out[(mi * WMMA_M) * BLOCK_COLS + ni * WMMA_N], acc_frag, BLOCK_COLS, nvcuda::wmma::mem_row_major);
+    // --- Абсолютно безопасная запись в 3D буфер ---
+    nvcuda::wmma::store_matrix_sync(sh_out[mi][ni], acc_frag, WMMA_N, nvcuda::wmma::mem_row_major);
 
-    // Конвейерная запись из Shared Memory в Global Memory
-    // 256 потоков записывают 2048 элементов (каждый по 8 элементов)
+    // --- Конвейерная запись в Global Memory ---
     for (int idx = tid; idx < BLOCK_ROWS * BLOCK_COLS; idx += 256)
     {
         int cy = block_row + (idx / BLOCK_COLS);
         int cx = block_col + (idx % BLOCK_COLS);
 
         if (cy < padded_M && cx < padded_N) {
-            tensor_output.SetElement(cy, cx, sh_out[idx]);
+            // Вычисляем правильные 3D индексы для чтения из sh_out
+            int r = idx / BLOCK_COLS;
+            int c = idx % BLOCK_COLS;
+            int local_mi = r / WMMA_M;
+            int local_ni = c / WMMA_N;
+            int local_r = r % WMMA_M;
+            int local_c = c % WMMA_N;
+
+            tensor_output.SetElement(cy, cx, sh_out[local_mi][local_ni][local_r * WMMA_N + local_c]);
         }
     }
 }
-//#endif
+#endif
+
+//https://chat.z.ai/c/3bcfeab3-f415-454f-893d-7dc49e3c0c4d
 
 //----------------------------------------------------------------------------------------------------
 //умножить тензоры
@@ -1790,8 +1791,7 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  cTensor_Left.CopyToDevice();
  cTensor_Right.CopyToDevice();
 
- //#ifdef USE_TENSOR_CORE_GENERATION_ONE
-
+ #ifdef USE_TENSOR_CORE_GENERATION_ONE
  // Запуск ядра
  uint32_t block_z=sTensorKernel_Output.Size_Z*sTensorKernel_Output.Size_W;
  if (block_z==0) block_z=1;
@@ -1805,7 +1805,7 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
- //#endif
+ #endif
 
 
  #ifndef USE_TENSOR_CORE_GENERATION_ONE

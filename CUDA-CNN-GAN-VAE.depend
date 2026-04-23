@@ -127,7 +127,7 @@
 	"../system/system.h"
 	"ccudadevicevector.cu.h"
 
-1776774083 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/settings.h
+1776970480 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/settings.h
 
 1755591366 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudadevicevector.cu.h
 	<stdio.h>
@@ -146,7 +146,7 @@
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 
-1776969671 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
+1776971065 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
 	"../settings.h"
 	"../cpu/ctensormath.h"
 	"ctensor.cu.h"
