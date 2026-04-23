@@ -9,7 +9,6 @@
 
 #endif
 
-
 #ifndef USE_CPU
 
 //****************************************************************************************************
@@ -20,6 +19,8 @@
 //подключаемые библиотеки
 //****************************************************************************************************
 #include "ctensor.cu.h"
+#include <cuda_fp16.h>
+#include <mma.h>
 
 //****************************************************************************************************
 //макроопределения
@@ -299,7 +300,7 @@ struct STensorTransponseKernel
   TensorData_Ptr[w*StrideW+z*StrideZ+x*StrideX+y]=value;
  }
 
- __host__ __device__ uint32_t GeTransponsetSizeX(void)
+ __host__ __device__ uint32_t GetSizeX(void)
  {
   return(Size_X);
  }
@@ -1537,6 +1538,8 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
  cTensor_Input.ReinterpretSize(input_w,input_z,input_y,input_x);
 }
 */
+
+#ifndef USE_TENSOR_CORE_GENERATION_ONE
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для умножения тензоров
 //----------------------------------------------------------------------------------------------------
@@ -1646,6 +1649,144 @@ __global__ void CUDATensorMulTensorFunction(kernel_output_t tensor_output,kernel
  }
  __syncthreads();
 }
+#endif
+
+//#ifdef USE_TENSOR_CORE_GENERATION_ONE
+//конфигурация тайлов
+#define WMMA_M 16
+#define WMMA_N 16
+#define WMMA_K 16
+
+#define BM 64
+#define BN 64
+#define BK 16
+
+#define THREADS_PER_BLOCK 1024
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для умножения тензоров с использованием тензорных ядер первого поколения
+//----------------------------------------------------------------------------------------------------
+template<class type_t,class kernel_output_t,class kernel_left_t,class kernel_right_t>
+__global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_output_t tensor_output,kernel_left_t tensor_left,kernel_right_t tensor_right)
+{
+ //разделяемая память для A и B (хранится в half)
+ __align__(16) __shared__ half As[BM][BK];
+ __align__(16) __shared__ half Bs[BK][BN];
+
+ //индексы блока
+ int32_t bx=blockIdx.x;
+ int32_t by=blockIdx.y;
+
+ //индексы потока
+ int32_t tid=threadIdx.x;//0..127
+ int32_t warp_id=tid/32;//0..3
+ int32_t lane_id=tid%32;//0..31
+
+ //какой подблок 16x16 обрабатывает данный варп
+ int32_t warp_m=warp_id/(BN/WMMA_N);
+ int32_t warp_n=warp_id%(BN/WMMA_N);
+
+ //координата Z
+ uint32_t out_z=Mod(blockIdx.z,tensor_output.GetSizeZ());
+
+ uint32_t w_out=blockIdx.z/tensor_output.GetSizeZ();
+ uint32_t w_left=Mod(w_out,tensor_left.GetSizeW());
+ uint32_t w_right=Mod(w_out,tensor_right.GetSizeW());
+ w_out=Mod(w_out,tensor_output.GetSizeW());
+
+ tensor_left.SelectW(w_left);
+ tensor_right.SelectW(w_right);
+ tensor_output.SelectW(w_out);
+
+ tensor_left.SelectZ(out_z);
+ tensor_right.SelectZ(out_z);
+ tensor_output.SelectZ(out_z);
+
+ //аккумулятор WMMA
+ nvcuda::wmma::fragment<nvcuda::wmma::accumulator,WMMA_M,WMMA_N,WMMA_K,float> c_frag;
+ nvcuda::wmma::fill_fragment(c_frag,0.0f);
+
+ int32_t K=tensor_left.GetSizeX();
+ int32_t M=tensor_left.GetSizeY();
+ int32_t N=tensor_right.GetSizeX();
+
+ //цикл по измерению K
+ for(int32_t k_tile=0;k_tile<K;k_tile+=BK)
+ {
+  //загрузка A в shared memory (float -> half)
+  //каждый поток загружает несколько элементов, распределяя работу по строкам
+  int32_t a_row=by*BM+tid/BK;//номер строки в глобальной A
+  int32_t a_col=k_tile+tid%BK;//номер столбца в глобальной A
+
+  if (a_row<M && a_col<K)
+  {
+   As[tid/BK][tid%BK]=__float2half(tensor_left.GetElement(a_row,a_col));
+  }
+  else
+  {
+   As[tid/BK][tid%BK]=__float2half(0.0f);
+  }
+  //загрузка B в shared memory (float -> half)
+  int32_t b_row=k_tile+tid/BN;//номер строки в глобальной B
+  int32_t b_col=bx*BN+tid%BN;//номер столбца в глобальной B
+
+  if (b_row<K && b_col<N)
+  {
+   Bs[tid/BN][tid%BN]=__float2half(tensor_right.GetElement(b_row,b_col));
+  }
+  else
+  {
+   Bs[tid/BN][tid%BN]=__float2half(0.0f);
+  }
+  __syncthreads();
+
+  //работа с WMMA
+  nvcuda::wmma::fragment<nvcuda::wmma::matrix_a,WMMA_M,WMMA_N,WMMA_K,half,nvcuda::wmma::row_major> a_frag;
+  nvcuda::wmma::fragment<nvcuda::wmma::matrix_b,WMMA_M,WMMA_N,WMMA_K,half,nvcuda::wmma::row_major> b_frag;
+
+  //загружаем фрагмент A из As
+  nvcuda::wmma::load_matrix_sync(a_frag,&As[warp_m*WMMA_M][0],BK);
+  //загружаем фрагмент B из Bs (ВАЖНО: адрес &Bs[0][warp_n * WMMA_N], шаг BN)
+  nvcuda::wmma::load_matrix_sync(b_frag,&Bs[0][warp_n*WMMA_N],BN);
+  //тензорное ядро
+  nvcuda::wmma::mma_sync(c_frag,a_frag,b_frag,c_frag);
+  __syncthreads();
+ }
+
+ //сохранение результата C
+ int32_t c_row=by*BM+warp_m*WMMA_M;
+ int32_t c_col=bx*BN+warp_n*WMMA_N;
+
+ __shared__ __align__(16) float output[THREADS_PER_BLOCK/32][WMMA_M*WMMA_N];
+ nvcuda::wmma::store_matrix_sync(output[warp_id],c_frag,WMMA_N,nvcuda::wmma::mem_row_major);
+ __syncthreads();
+
+ if (tid%32==0)
+ {
+  if (c_row<M && c_col<N)
+  {
+   for(int32_t m=0;m<WMMA_M;m++)
+   {
+    int32_t cy=c_row+m;
+    if (cy>=M) break;
+    for(int32_t n=0;n<WMMA_N;n++)
+    {
+     int32_t cx=c_col+n;
+     if (cx>=N) break;
+     tensor_output.SetElement(cy,cx,output[warp_id][m*WMMA_N+n]);
+    }
+   }
+  }
+ }
+
+/*
+  float *ptr=tensor_output.GetTensorDataPtr(w_out,out_z)+N*c_row+c_col;
+  nvcuda::wmma::store_matrix_sync(ptr,c_frag,N,nvcuda::wmma::mem_row_major);
+  */
+}
+
+
+//#endif
 
 //----------------------------------------------------------------------------------------------------
 //умножить тензоры
@@ -1664,6 +1805,24 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  cTensor_Left.CopyToDevice();
  cTensor_Right.CopyToDevice();
 
+ //#ifdef USE_TENSOR_CORE_GENERATION_ONE
+
+ // Запуск ядра
+ uint32_t block_z=sTensorKernel_Output.Size_Z*sTensorKernel_Output.Size_W;
+ if (block_z==0) block_z=1;
+
+ dim3 thread(THREADS_PER_BLOCK);
+ dim3 blocks((sTensorKernel_Output.Size_X+BN-1)/BN,(sTensorKernel_Output.Size_Y+BM-1)/BM,block_z);
+
+ CUDATensorMulTensorFunctionForTensorCoreGenerationOne<type_t,kernel_output_t,kernel_left_t,kernel_right_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right);
+
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ //#endif
+
+
+ #ifndef USE_TENSOR_CORE_GENERATION_ONE
  //разбиваем выходной тензор на блоки по TENSOR_MUL_TILE_BLOCK_SIZExTENSOR_MUL_TILE_BLOCK_SIZE элементов
  //для каждого из этих элементов запускаем по нити (всего TENSOR_MUL_TILE_BLOCK_SIZExTENSOR_MUL_TILE_BLOCK_SIZE нитей)
 
@@ -1685,6 +1844,8 @@ __host__ void CTensorMath<type_t>::MulAbstract(CTensor<type_t> &cTensor_Output,k
  CUDATensorMulTensorFunction<type_t,kernel_output_t,kernel_left_t,kernel_right_t><<<blocks,thread_basic>>>(sTensorKernel_Output,sTensorKernel_Left,sTensorKernel_Right);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
+ #endif
+
 
 /*
  std::vector<cudaStream_t> stream_array;

@@ -127,7 +127,7 @@
 	"../system/system.h"
 	"ccudadevicevector.cu.h"
 
-1769535498 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/settings.h
+1776774083 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/settings.h
 
 1755591366 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudadevicevector.cu.h
 	<stdio.h>
@@ -146,10 +146,12 @@
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 
-1772292533 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
+1776961502 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
 	"../settings.h"
 	"../cpu/ctensormath.h"
 	"ctensor.cu.h"
+	<cuda_fp16.h>
+	<mma.h>
 
 1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu
 	"ctensorconv.cu.h"
@@ -178,7 +180,7 @@
 1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu
 	"ctensortest.cu.h"
 
-1763203421 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu.h
+1776789888 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu.h
 	"ctensor.cu.h"
 	"../system/system.h"
 	"ctensormath.cu.h"
@@ -425,7 +427,7 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1776186104 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_vae.cu.h
+1776704848 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_vae.cu.h
 	"cmodel_basicvae.cu.h"
 
 1776099668 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicvae.cu.h
@@ -2359,7 +2361,7 @@
 1756747156 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayertimeembedding.cu
 	"cnetlayertimeembedding.cu.h"
 
-1762529210 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayersplitter.cu.h
+1776270069 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayersplitter.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
@@ -2411,16 +2413,19 @@
 	"ccolormodel.h"
 	"tga.h"
 
-1776186352 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayervaecoderoutput.cu.h
+1776270006 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayervaecoderoutput.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>
 	<math.h>
+	<memory>
 	"../common/idatastream.h"
 	"inetlayer.cu.h"
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 	"../common/crandom.h"
+	"cnetlayerlinear.cu.h"
+	"cnetlayersplitter.cu.h"
 
 1762064677 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayervaecoderoutput.cu
 	"cnetlayervaecoderoutput.cu.h"

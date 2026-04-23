@@ -9,4 +9,7 @@
 //использовать CPU вместо CUDA
 //#define USE_CPU
 
+//использовать тензорные ядра первого поколения
+#define USE_TENSOR_CORE_GENERATION_ONE
+
 #endif
