@@ -52,6 +52,7 @@ class CRandom
   static type_t GetRandValue(type_t max_value);///<случайное число
   static double GetGaussRandValue(double MO,double sko);///<генератор случайных чисел с нормальным распределением
   static void SetRandomNormal(CTensor<type_t> &cTensor,double min=-1,double max=1);///<заполнить тензор случайными числами с нормальным распределением
+  static void SetRandomNormalInt(CTensor<type_t> &cTensor,double min=-1,double max=1);///<заполнить тензор целыми случайными числами с нормальным распределением
   static void SetRandomNormalForMeanAndVar(CTensor<type_t> &cTensor,double mean=0,double var=1);///<заполнить тензор случайными числами с нормальным распределением
   static void SetRandom(CTensor<type_t> &cTensor,double min=-1,double max=1);///<заполнить тензор случайными числами с равномерным распределением
   static double GetPDF(double x,double mean,double sigma);///<получить плотность нормального распределения
@@ -135,6 +136,34 @@ void CRandom<type_t>::SetRandomNormal(CTensor<type_t> &cTensor,double min,double
      //есть вероятность (0.3%) что сгенерированное число выйдет за нужный нам диапазон
      while(value<min || value>max) value=GetGaussRandValue(average,sigma);//если это произошло генерируем новое число.
      cTensor.SetElement(w,z,y,x,value);
+	}
+   }
+  }
+ }
+ cTensor.SetHostOnChange();
+}
+
+//----------------------------------------------------------------------------------------------------
+//заполнить тензор целыми случайными числами с нормальным распределением
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CRandom<type_t>::SetRandomNormalInt(CTensor<type_t> &cTensor,double min,double max)
+{
+ uint32_t size=cTensor.GetSizeX()*cTensor.GetSizeY()*cTensor.GetSizeZ();
+ double average=(max+min)/2.0;
+ double sigma=(average-min)/3.0;
+ for(uint32_t w=0;w<cTensor.GetSizeW();w++)
+ {
+  for(uint32_t x=0;x<cTensor.GetSizeX();x++)
+  {
+   for(uint32_t y=0;y<cTensor.GetSizeY();y++)
+   {
+    for(uint32_t z=0;z<cTensor.GetSizeZ();z++)
+    {
+     type_t value=static_cast<type_t>(GetGaussRandValue(average,sigma));
+     //есть вероятность (0.3%) что сгенерированное число выйдет за нужный нам диапазон
+     while(value<min || value>max) value=GetGaussRandValue(average,sigma);//если это произошло генерируем новое число.
+     cTensor.SetElement(w,z,y,x,static_cast<int32_t>(value));
 	}
    }
   }

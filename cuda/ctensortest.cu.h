@@ -14,6 +14,7 @@
 #include "ctensormath.cu.h"
 #include "ctensorapplyfunc.cu.h"
 #include "ctensorconv.cu.h"
+#include "../common/crandom.h"
 
 //****************************************************************************************************
 //макроопределения
@@ -58,6 +59,7 @@ class CTensorTest
   static bool TestCreateDeltaWeightAndBiasWithStepAndPadding(void);///<протестировать создание поправок c шагом и дополнением
   static bool TestCreateDeltaWeightAndBias(void);///<протестировать создание поправок
   static bool TestBackwardConvolutionWithStepAndPadding(void);///<протестировать обратную свёртку с шагом и дополнением
+  static bool TestTensorCoreMulMatrix(void);///<протестировать умножение матриц через тензорные ядра
 };
 
 //****************************************************************************************************
@@ -649,8 +651,62 @@ bool CTensorTest<type_t>::TestBackwardConvolutionWithStepAndPadding(void)
  return(true);
 }
 
+//----------------------------------------------------------------------------------------------------
+//протестировать умножение матриц через тензорные ядра
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CTensorTest<type_t>::TestTensorCoreMulMatrix(void)
+{
+ for(size_t s=0;s<100000;s++)
+ {
+  size_t m=CRandom<type_t>::GetRandValue(1023)+1;
+  size_t n=CRandom<type_t>::GetRandValue(1023)+1;
+  size_t k=CRandom<type_t>::GetRandValue(1023)+1;
 
+  CTensor<type_t> cTensor_A(1,1,m,k);
+  CTensor<type_t> cTensor_B(1,1,k,n);
+  CTensor<type_t> cTensor_TensorCore(1,1,m,n);
+  CTensor<type_t> cTensor_CUDACore(1,1,m,n);
+  CTensor<type_t> cTensor_Delta(1,1,m,n);
 
+  CRandom<type_t>::SetRandomNormal(cTensor_A,-1,1);
+  CRandom<type_t>::SetRandomNormal(cTensor_B,-1,1);
+
+  CTensorMath<type_t>::Mul(cTensor_TensorCore,cTensor_A,cTensor_B,true);
+  CTensorMath<type_t>::Mul(cTensor_CUDACore,cTensor_A,cTensor_B,false);
+  CTensorMath<type_t>::Sub(cTensor_Delta,cTensor_CUDACore,cTensor_TensorCore);
+
+  if (s%100==0) printf("N:%i\r\n",(int)s);
+
+  //сравниваем
+  for(size_t w=0;w<cTensor_Delta.GetSizeW();w++)
+  {
+   for(size_t z=0;z<cTensor_Delta.GetSizeZ();z++)
+   {
+    for(size_t y=0;y<cTensor_Delta.GetSizeY();y++)
+    {
+     for(size_t x=0;x<cTensor_Delta.GetSizeX();x++)
+     {
+      float delta=cTensor_Delta.GetElement(w,z,y,x);
+      if (delta>0.1)
+      {
+      float value_cuda=cTensor_CUDACore.GetElement(w,z,y,x);
+      float value_tensor=cTensor_TensorCore.GetElement(w,z,y,x);
+       //printf("Matrix:%i Error at:%i %i %i %i delta=%f value_cuda=%f value_tensor=%f\r\n",(int)s,(int)w,(int)z,(int)y,(int)x,delta,value_cuda,value_tensor);
+       printf("S:%i M:%i N:%i K:%i  Delta:%f Value:%f\r\n",(int)s,(int)m,(int)n,(int)k,delta,value_tensor);
+       //cTensor_TensorCore.Print("TensorCore",false);
+       //throw("Стоп");
+       goto stop;
+      }
+     }
+    }
+   }
+  }
+  stop:
+
+ }
+ return(true);
+}
 //****************************************************************************************************
 //открытые функции
 //****************************************************************************************************
@@ -661,12 +717,15 @@ bool CTensorTest<type_t>::TestBackwardConvolutionWithStepAndPadding(void)
 
 
 
+
 //----------------------------------------------------------------------------------------------------
 //протестировать класс тензоров
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
 bool CTensorTest<type_t>::Test(void)
 {
+ TestTensorCoreMulMatrix();
+
  const uint32_t batch_size=10;
 
  CTensor<type_t> cTensorA(batch_size,1,2,2);
