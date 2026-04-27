@@ -573,7 +573,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
  //включаем обучение
  for(uint32_t n=0;n<DiffusionNet.size();n++)
  {
-  DiffusionNet[n]->TrainingModeAdam(0.9,0.99);
+  DiffusionNet[n]->TrainingModeAdam(0.5,0.9);
   DiffusionNet[n]->TrainingStart();
  }
 

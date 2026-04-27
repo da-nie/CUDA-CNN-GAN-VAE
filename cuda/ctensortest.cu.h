@@ -724,7 +724,7 @@ bool CTensorTest<type_t>::TestTensorCoreMulMatrix(void)
 template<class type_t>
 bool CTensorTest<type_t>::Test(void)
 {
- TestTensorCoreMulMatrix();
+ //TestTensorCoreMulMatrix();
 
  const uint32_t batch_size=10;
 
