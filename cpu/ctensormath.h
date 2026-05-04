@@ -81,6 +81,7 @@ class CTensorMath
   static void MaxPooling(CTensor<type_t> &cTensor_Output,CTensor<SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,uint32_t pooling_x,uint32_t pooling_y);///<уменьшение разрешения тензора выборкой большего элемента
   static void MaxPoolingBackward(CTensor<type_t> &cTensor_Output,const CTensor<SPos> &cTensor_Position,const CTensor<type_t> &cTensor_Input,uint32_t pooling_x,uint32_t pooling_y);///<обратный проход при увеличении разрешения тензора выборкой большего элемента
   static void Clip(CTensor<type_t> &cTensor,type_t min_value,type_t max_value);///<выполнить отсечку значений тензора
+  static void Signum(CTensor<type_t> &cTensor);///<выставить знак элементам тензора
 
   static void Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,uint32_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration);///<выполнить алгоритм Adam к весовому тензору
  private:
@@ -925,6 +926,35 @@ void CTensorMath<type_t>::Clip(CTensor<type_t> &cTensor,type_t min_value,type_t 
     {
      if (*item_ptr<min_value) *item_ptr=min_value;
      if (*item_ptr>max_value) *item_ptr=max_value;
+    }
+   }
+  }
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+///!ввыставить знак элементам тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::Signum(CTensor<type_t> &cTensor)
+{
+ type_t *item_ptr=cTensor.GetColumnPtr(0,0,0);
+
+ uint32_t size_y=cTensor.GetSizeY();
+ uint32_t size_x=cTensor.GetSizeX();
+ uint32_t size_z=cTensor.GetSizeZ();
+ uint32_t size_w=cTensor.GetSizeW();
+
+ for(uint32_t w=0;w<size_w;w++)
+ {
+  for(uint32_t z=0;z<size_z;z++)
+  {
+   for(uint32_t y=0;y<size_y;y++)
+   {
+    for(uint32_t x=0;x<size_x;x++,item_ptr++)
+    {
+     if (*item_ptr<0) *item_ptr=-1;
+     if (*item_ptr>0) *item_ptr=1;
     }
    }
   }

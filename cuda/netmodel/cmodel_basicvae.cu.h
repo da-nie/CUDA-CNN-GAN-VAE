@@ -249,14 +249,11 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
  }
  {
   CTimeStamp cTimeStamp("Вычисление ошибки:");
-  CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(),CoderNet[0]->GetOutputTensor(),2,2);
+  CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(),CoderNet[0]->GetOutputTensor(),1,1);
  }
 
- {
-  CTimeStamp cTimeStamp("Задание ошибки:");
-  DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
- }
-
+ CTensorMath<type_t>::Signum(cTensor_Error);
+/*
  for(uint32_t w=0;w<BATCH_SIZE;w++)
  {
   //считаем ошибку
@@ -269,11 +266,21 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
     {
      type_t c=cTensor_Error.GetElement(w,z,y,x);
      error+=c*c;
+     if (c>0) c=1;
+     if (c<0) c=-1;
+     cTensor_Error.SetElement(w,z,y,x,c);
     }
    }
   }
   if (error>cost) cost=error;
+ }*/
+ cost=1;
+
+ {
+  CTimeStamp cTimeStamp("Задание ошибки:");
+  DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
  }
+
  //выполняем вычисление весов декодировщика
  {
   CTimeStamp cTimeStamp("Обучение декодировщика:");
@@ -594,12 +601,6 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
    CTimeStamp cTimeStamp("Вычисление ошибки:");
    CTensorMath<type_t>::Sub(cTensor_Error,DecoderNet[DecoderNet.size()-1]->GetOutputTensor(),CoderNet[0]->GetOutputTensor());
   }
-  //задаём ошибку
-  {
-   CTimeStamp cTimeStamp("Задание ошибки:");
-   DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
-  }
-
   double cost=0;
   for(uint32_t b=0;b<BATCH_SIZE;b++)
   {
@@ -611,11 +612,21 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
      {
       type_t c=cTensor_Error.GetElement(b,z,y,x);
       cost+=c*c;
+      if (c>0) c=1;
+      if (c<0) c=-1;
+      cTensor_Error.SetElement(b,z,y,x,c);
      }
     }
    }
   }
   cost/=static_cast<double>(BATCH_SIZE);
+
+  //задаём ошибку
+  {
+   CTimeStamp cTimeStamp("Задание ошибки:");
+   DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
+  }
+
   //выполняем вычисление весов декодировщика
   {
    CTimeStamp cTimeStamp("Обучение декодировщика:");

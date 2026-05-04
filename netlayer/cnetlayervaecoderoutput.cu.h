@@ -244,12 +244,12 @@ void CNetLayerVAECoderOutput<type_t>::Forward(void)
 
  //генератор случайных чисел
  static std::random_device rd;
+ static std::mt19937 gen(rd());
 
  type_t kl_loss=0;//расстояние Кульбака-Лейбнера
 
  for(uint32_t w=0;w<BatchSize;w++)
  {
-  std::mt19937 gen(rd());
   std::normal_distribution<type_t> dist(mean,stddev);
 
   for(uint32_t z=0;z<OutputSize_Z;z++)
@@ -450,7 +450,7 @@ template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  cTensor_Delta=error;
- type_t k=1.0/(cTensor_PrevLayerError_LogVar.GetSizeX()*cTensor_PrevLayerError_LogVar.GetSizeY()*cTensor_PrevLayerError_LogVar.GetSizeZ());
+ type_t k=0.1;//1.0/(cTensor_PrevLayerError_LogVar.GetSizeX()*cTensor_PrevLayerError_LogVar.GetSizeY()*cTensor_PrevLayerError_LogVar.GetSizeZ());
 
  for(uint32_t w=0;w<BatchSize;w++)
  {

@@ -746,11 +746,12 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
    str+=std::to_string(static_cast<long double>(BATCH_AMOUNT));
    SYSTEM::PutMessageToConsole(str);
 
-   if (batch%10==0 && batch!=0)
+  /* if (batch%10==0 && batch!=0)
    {
     SaveRandomImage();
     SYSTEM::PutMessageToConsole("Save image.");
    }
+   */
 
    {
     cCUDATimeSpent.Start();
