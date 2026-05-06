@@ -2908,7 +2908,7 @@ void CTensorMath<type_t>::Signum(CTensor<type_t> &cTensor)
 //функция CUDA для выполнения алгоритма Adam
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_t> tensor_dweight,STensorKernel<type_t> tensor_m,STensorKernel<type_t> tensor_v,uint32_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration)
+__global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_t> tensor_dweight,STensorKernel<type_t> tensor_m,STensorKernel<type_t> tensor_v,uint32_t batch_size,double speed,double beta1,double beta2,double epsilon,double db1,double db2)
 {
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
@@ -2944,8 +2944,8 @@ __global__ void CUDAAdam(STensorKernel<type_t> tensor_weight,STensorKernel<type_
  m=beta1*m+(1.0-beta1)*dweight;
  v=beta2*v+(1.0-beta2)*dweight*dweight;
 
- type_t mc=m/(1.0-pow(beta1,iteration));
- type_t vc=v/(1.0-pow(beta2,iteration));
+ type_t mc=m/db1;
+ type_t vc=v/db2;
 
  dweight=speed*mc/(sqrt(vc)+epsilon);
 
@@ -2996,7 +2996,11 @@ void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &
  if (blocks.y==0) blocks.y=1;
  if (blocks.z==0) blocks.z=1;
 
- CUDAAdam<type_t><<<blocks,thread>>>(sTensorKernel_Weight,sTensorKernel_dWeight,sTensorKernel_M,sTensorKernel_V,batch_size,speed,beta1,beta2,epsilon,iteration);
+ iteration+=1;//чтобы избежать деления на 0 при 0 итерации
+ double db1=1.0-pow(beta1,iteration);
+ double db2=1.0-pow(beta2,iteration);
+
+ CUDAAdam<type_t><<<blocks,thread>>>(sTensorKernel_Weight,sTensorKernel_dWeight,sTensorKernel_M,sTensorKernel_V,batch_size,speed,beta1,beta2,epsilon,db1,db2);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 

@@ -291,7 +291,6 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
   CTimeStamp cTimeStamp("Обучение кодировщика:");
   for(uint32_t m=0,n=CoderNet.size()-1;m<CoderNet.size();m++,n--) CoderNet[n]->TrainingBackward();
  }
-
 }
 //----------------------------------------------------------------------------------------------------
 //сохранить случайное изображение с декодировщика
@@ -302,7 +301,7 @@ void CModelBasicVAE<type_t>::SaveRandomImage(void)
  char str[STRING_BUFFER_SIZE];
  static uint32_t counter=0;
 
- CTensor<type_t> cTensor_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
+ CTensor<type_t> cTensor_Input=CTensor<type_t>(BATCH_SIZE,NOISE_LAYER_SIDE_Z,NOISE_LAYER_SIDE_Y,NOISE_LAYER_SIDE_X);
  if (IsExit()==true) throw("Стоп");
 
  CRandom<type_t>::SetRandomNormalForMeanAndVar(cTensor_Input,0,1);
@@ -485,12 +484,12 @@ void CModelBasicVAE<type_t>::TrainingNet(bool mnist)
  //включаем обучение
  for(uint32_t n=0;n<CoderNet.size();n++)
  {
-  CoderNet[n]->TrainingModeAdam(0.5,0.9);
+  CoderNet[n]->TrainingModeAdam(0.9,0.999);
   CoderNet[n]->TrainingStart();
  }
  for(uint32_t n=0;n<DecoderNet.size();n++)
  {
-  DecoderNet[n]->TrainingModeAdam(0.5,0.9);
+  DecoderNet[n]->TrainingModeAdam(0.9,0.999);
   DecoderNet[n]->TrainingStart();
  }
 
