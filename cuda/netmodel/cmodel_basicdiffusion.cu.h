@@ -49,7 +49,7 @@ class CModelBasicDiffusion:public CModelMain<type_t>
    {
     Beta.resize(time_counter);
     Alpha.resize(time_counter);
-    AlphaBar.resize(time_counter+1);
+    AlphaBar.resize(time_counter);
     //заполняем коэффициенты зашумления
    /*
     float beta_start=0.01f;
@@ -62,31 +62,31 @@ class CModelBasicDiffusion:public CModelMain<type_t>
           else AlphaBar[i]=AlphaBar[i-1]*Alpha[i];
     }*/
 
-	//косинусное расписание
-	const float s=0.008f;
-	const float PI=3.141592653589793f;
-    for(uint32_t t=0;t<=time_counter;t++)
+  const float s=0.008f;
+    const float PI=3.141592653589793f;
+
+    // 1. Вычисляем AlphaBar[t] для t от 0 до time_counter-1
+    for(uint32_t t=0;t<time_counter;t++)
     {
      float k=static_cast<float>(t)/static_cast<float>(time_counter);
      float value=cosf((k+s)/(1.0f+s)*PI*0.5f);
-	 AlphaBar[t]=value*value;
-	}
-	//нормализация
-	float alpha_0=AlphaBar[0];
-    for(uint32_t t=0;t<=time_counter;t++) AlphaBar[t]/=alpha_0;
-	//вычисление beta
-    for(uint32_t t=1;t<=time_counter;t++)
-	{
-     Beta[t-1]=1-AlphaBar[t]/AlphaBar[t-1];
-	 if (Beta[t-1]<0.001f) Beta[t-1]=0.001f;
-	 if (Beta[t-1]>0.999f) Beta[t-1]=0.999f;
-	}
+     AlphaBar[t]=value*value;
+    }
+    // 2. Нормировка (AlphaBar[0] станет строго 1.0)
+    float alpha_0=AlphaBar[0];
+    for(uint32_t t=0;t<time_counter;t++) AlphaBar[t]/=alpha_0;
+
+    // 3. Вычисляем Alpha[t] и Beta[t]
     for(uint32_t t=0;t<time_counter;t++)
-	{
-     Alpha[t]=1-Beta[t];
-     if (t==0) AlphaBar[t]=Alpha[t];
-          else AlphaBar[t]=AlphaBar[t-1]*Alpha[t];
-	}
+    {
+     float prev_alpha_bar = (t == 0) ? 1.0f : AlphaBar[t-1];
+     if (AlphaBar[t]>1.0f) AlphaBar[t]=1.0f;
+     Alpha[t] = AlphaBar[t] / prev_alpha_bar;
+     Beta[t] = 1.0f - Alpha[t];
+
+     // НИКАКИХ ограничителей типа if(Beta[t]<0.001f) здесь быть не должно!
+     // Для косинусного расписания на первых шагах beta реально равно 0.00001.
+    }
    }
   };
   //параметры обучающих изображений
@@ -134,6 +134,8 @@ class CModelBasicDiffusion:public CModelMain<type_t>
   using CModelMain<type_t>::LoadImage;
   using CModelMain<type_t>::SaveNetLayers;
   using CModelMain<type_t>::LoadNetLayers;
+  using CModelMain<type_t>::SaveNetLayersEMA;
+  using CModelMain<type_t>::LoadNetLayersEMA;
   using CModelMain<type_t>::SaveNetLayersTrainingParam;
   using CModelMain<type_t>::LoadNetLayersTrainingParam;
   using CModelMain<type_t>::ExchangeImageIndex;
@@ -223,6 +225,15 @@ void CModelBasicDiffusion<type_t>::LoadNet(void)
   LoadNetLayers(iDataStream_Disc_Ptr.get(),DiffusionNet);
   SYSTEM::PutMessageToConsole("Сеть диффузионной модели загружена.");
  }
+ file=fopen("diffusion_neuronet_ema.net","rb");
+ if (file!=NULL)
+ {
+  fclose(file);
+  std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("diffusion_neuronet_ema.net",false));
+  LoadNetLayersEMA(iDataStream_Disc_Ptr.get(),DiffusionNet);
+  SYSTEM::PutMessageToConsole("Сеть диффузионной модели со средними коэффициентами загружена.");
+ }
+
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -233,6 +244,8 @@ void CModelBasicDiffusion<type_t>::SaveNet(void)
 {
  std::unique_ptr<IDataStream> iDataStream_Disc_Ptr(IDataStream::CreateNewDataStreamFile("diffusion_neuronet.net",true));
  SaveNetLayers(iDataStream_Disc_Ptr.get(),DiffusionNet);
+ std::unique_ptr<IDataStream> iDataStream_Disc_EMA_Ptr(IDataStream::CreateNewDataStreamFile("diffusion_neuronet_ema.net",true));
+ SaveNetLayersEMA(iDataStream_Disc_EMA_Ptr.get(),DiffusionNet);
 }
 //----------------------------------------------------------------------------------------------------
 //загрузить параметры обучения
@@ -383,28 +396,33 @@ void CModelBasicDiffusion<type_t>::SaveRandomImage(void)
   uint32_t size=Noise.size();
   DiffusionNet[0]->GetOutputTensor().CopyItemLayerWToDevice(b,ptr,size);
  }
- for(int32_t t=TIME_COUNTER-1;t>=0;t--)
+ for(uint32_t layer=0;layer<DiffusionNet.size();layer++) DiffusionNet[layer]->SetUseEMA(true);
+
+ // Цикл от 29 до 1 ВКЛЮЧИТЕЛЬНО. Шаг t=0 пропускается!
+ for(int32_t t=TIME_COUNTER-1;t>=1;t--)
  {
-  //задаём сети момент времени
   for(uint32_t b=0;b<BATCH_SIZE;b++)
   {
    for(uint32_t layer=0;layer<DiffusionNet.size();layer++) DiffusionNet[layer]->SetTimeStep(b,t);
   }
-  //получаем от сети предыдущий шум
+
   for(uint32_t layer=0;layer<DiffusionNet.size();layer++) DiffusionNet[layer]->Forward();
-  //расшумляем изображение
+
+  // Забираем коэффициенты
   float alpha=sDiffusion.Alpha[t];
   float beta=sDiffusion.Beta[t];
   float sqrt_alpha=std::sqrt(alpha);
-  float sqrt_alpha_bar=std::sqrt(sDiffusion.AlphaBar[t]);
-  float sqrt_one_minus_alpha_bar=std::sqrt(1.0-sDiffusion.AlphaBar[t]);
+  type_t sqrt_one_minus_alpha_bar=std::sqrt(std::max(0.0f, 1.0f-sDiffusion.AlphaBar[t]));
+
   type_t k=(1.0/sqrt_alpha);
-  CTensor<type_t> &input_noise=DiffusionNet[0]->GetOutputTensor();//входной шум
-  CTensor<type_t> &output_noise=DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor();//предсказанный сетью шум
+
+  CTensor<type_t> &input_noise=DiffusionNet[0]->GetOutputTensor();
+  CTensor<type_t> &output_noise=DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor();
+
   for(uint32_t b=0;b<BATCH_SIZE;b++)
   {
    uint32_t index=0;
-   GetNoise(Noise);//новый добавляемый шум
+   GetNoise(Noise);
    for(uint32_t z=0;z<input_noise.GetSizeZ();z++)
    {
     for(uint32_t y=0;y<input_noise.GetSizeY();y++)
@@ -413,10 +431,17 @@ void CModelBasicDiffusion<type_t>::SaveRandomImage(void)
      {
       type_t input=input_noise.GetElement(b,z,y,x);
       type_t output=output_noise.GetElement(b,z,y,x);
+
+      // Это в точности: (beta / sqrt(1 - alpha_bar)) * epsilon
       type_t net_noise=output*(1.0-alpha)/sqrt_one_minus_alpha_bar;
+
+      // Это в точности: (1 / sqrt(alpha)) * (x_t - net_noise)
       type_t prev_noise=k*(input-net_noise);
-      //if (t>0) prev_noise+=beta*Noise[index];
-      //задаём новый шум
+
+      // Добавляем случайный шум, если это не самый последний шаг (t=1)
+      // При t=1 мы получаем x_0, и добавлять шум нельзя
+      if (t>1) prev_noise+=std::sqrt(beta)*Noise[index];
+
       input_noise.SetElement(b,z,y,x,prev_noise);
      }
     }
@@ -425,6 +450,7 @@ void CModelBasicDiffusion<type_t>::SaveRandomImage(void)
  }
  //сохраняем изображения (они на входе сети)
  cTensor_Image=DiffusionNet[0]->GetOutputTensor();
+
  char str[STRING_BUFFER_SIZE];
  static uint32_t counter=0;
  for(uint32_t n=0;n<BATCH_SIZE;n++)
@@ -436,6 +462,7 @@ void CModelBasicDiffusion<type_t>::SaveRandomImage(void)
  //cTensor_Image.Print("Image");
  //throw("Стоп");
 
+ for(uint32_t layer=0;layer<DiffusionNet.size();layer++) DiffusionNet[layer]->SetUseEMA(false);
  //counter++;
 }
 //----------------------------------------------------------------------------------------------------
@@ -566,15 +593,20 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
 
  CreateDiffusionNet();
 
- for(uint32_t n=0;n<DiffusionNet.size();n++) DiffusionNet[n]->Reset();
+ for(uint32_t n=0;n<DiffusionNet.size();n++)
+ {
+  DiffusionNet[n]->Reset();
+  DiffusionNet[n]->EnableEMA(true);//-копируем случайно инициализированные тензоры в средние веса
+ }
 
- LoadNet();
+ LoadNet();//одновременно будут загружены средние веса
 
  //включаем обучение
  for(uint32_t n=0;n<DiffusionNet.size();n++)
  {
-  DiffusionNet[n]->TrainingModeAdam(0.5,0.9);
+  DiffusionNet[n]->TrainingModeAdam(0.9,0.999);
   DiffusionNet[n]->TrainingStart();
+  //DiffusionNet[n]->EnableEMA(true); - это скопирует текущие настройки сети, а не из файла средних
  }
 
  //загружаем изображения
@@ -587,6 +619,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
  SYSTEM::PutMessage("Образы изображений загружены.");
  //инициализируем параметры диффузии
  InitDiffusion();
+
  //создаём обучающий набор с учётом временных меток
  TrainingImage.resize(RealImage.size()*TIME_COUNTER);
  TrainingImageIndex.resize(RealImage.size()*TIME_COUNTER);
@@ -600,6 +633,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
    TrainingImageIndex[index]=index;
   }
  }
+
  //дополняем набор до кратного размеру пакета
  uint32_t image_amount=TrainingImage.size();
  BATCH_AMOUNT=image_amount/BATCH_SIZE;
@@ -614,6 +648,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
   image_amount=TrainingImageIndex.size();
   BATCH_AMOUNT=image_amount/BATCH_SIZE;
  }
+
  sprintf(str,"Исходных изображений:%i Обучающих изображений:%i Минипакетов:%i",static_cast<int>(RealImage.size()),static_cast<int>(image_amount),static_cast<int>(BATCH_AMOUNT));
  SYSTEM::PutMessageToConsole(str);
 
@@ -650,7 +685,7 @@ void CModelBasicDiffusion<type_t>::GetNoisyImageAndNoise(uint32_t time_step,cons
  GetNoise(noise);
  //вычисляем коэффициенты для текущего шага
  type_t sqrt_alpha_bar=std::sqrt(sDiffusion.AlphaBar[time_step]);
- type_t sqrt_one_minus_alpha_bar=std::sqrt(1.0-sDiffusion.AlphaBar[time_step]);
+ type_t sqrt_one_minus_alpha_bar=std::sqrt(std::max(0.0f, 1.0f-sDiffusion.AlphaBar[time_step]));
  //применяем шум к изображению
  for(uint32_t i=0;i<input_image.size();i++)
  {
@@ -680,7 +715,7 @@ void CModelBasicDiffusion<type_t>::GetNoise(std::vector<type_t> &noise)
 */
  //генератор случайных чисел
  static std::random_device rd;
- std::mt19937 gen(rd());
+ static std::mt19937 gen(rd());
  std::normal_distribution<type_t> dist(average,log_var);
 
  //генерируем шум

@@ -58,6 +58,12 @@ class CNetLayerAveragePooling:public INetLayer<type_t>
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
+
+  //режим усреднения
+  using INetLayer<type_t>::EMAEnabled;
+  using INetLayer<type_t>::UseEMA;
+  using INetLayer<type_t>::EMA_K;
+
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerAveragePooling(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -92,6 +98,10 @@ class CNetLayerAveragePooling:public INetLayer<type_t>
 
   void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
   void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
+
+  void EnableEMA(bool state);///<разрешить/запретить использование усреднённых весов
+  bool LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить усреднённые веса
+  bool SaveEMAWeight(IDataStream *iDataStream_Ptr);///<сохранить усреднённые веса
 
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
@@ -437,6 +447,51 @@ template<class type_t>
 void CNetLayerAveragePooling<type_t>::PrintOutputTensorSize(const std::string &name)
 {
  GetOutputTensor().Print(name+" AveragePooling: output",false);
+}
+
+//----------------------------------------------------------------------------------------------------
+/*!<разрешить/запретить использование усреднённых весов
+\param[in] state - разрешить запретить использование усреднённых весов
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerAveragePooling<type_t>::EnableEMA(bool state)
+{
+ EMAEnabled=state;
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerAveragePooling<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
+{
+ if (check_size==true)
+ {
+  if (AveragePooling_X!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки слоя сжатия с усреднением: неверный коэффициент масштабирования по X.");
+  if (AveragePooling_Y!=iDataStream_Ptr->LoadUInt32()) throw("Ошибка загрузки слоя сжатия с усреднением: неверный коэффициент масштабирования по Y.");
+ }
+ else
+ {
+  AveragePooling_X=iDataStream_Ptr->LoadUInt32();
+  AveragePooling_Y=iDataStream_Ptr->LoadUInt32();
+ }
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!сохранить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerAveragePooling<type_t>::SaveEMAWeight(IDataStream *iDataStream_Ptr)
+{
+ iDataStream_Ptr->SaveUInt32(AveragePooling_X);
+ iDataStream_Ptr->SaveUInt32(AveragePooling_Y);
+ return(true);
 }
 
 #endif

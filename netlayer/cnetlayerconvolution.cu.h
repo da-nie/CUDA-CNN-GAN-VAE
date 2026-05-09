@@ -51,6 +51,9 @@ class CNetLayerConvolution:public INetLayer<type_t>
   CTensor<type_t> cTensor_Kernel;///<ядра свёртки  [1,количество ядер,kx*ky*kz]
   CTensor<type_t> cTensor_Bias;///<сдвиги [количество,1,1]
 
+  CTensor<type_t> cTensor_Kernel_EMA;///<ядра свёртки  [1,количество ядер,kx*ky*kz]
+  CTensor<type_t> cTensor_Bias_EMA;///<сдвиги [количество,1,1]
+
   uint32_t Kernel_X;///<размер ядра по X
   uint32_t Kernel_Y;///<размер ядра по Y
   uint32_t Kernel_Z;///<размер ядра по Z
@@ -83,6 +86,10 @@ class CNetLayerConvolution:public INetLayer<type_t>
   using INetLayer<type_t>::Beta1;///<параметры алгоритма Adam
   using INetLayer<type_t>::Beta2;
   using INetLayer<type_t>::Epsilon;
+  //режим усреднения
+  using INetLayer<type_t>::EMAEnabled;
+  using INetLayer<type_t>::UseEMA;
+  using INetLayer<type_t>::EMA_K;
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerConvolution(uint32_t kernel_amount,uint32_t kernel_size,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -117,6 +124,11 @@ class CNetLayerConvolution:public INetLayer<type_t>
 
   void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
   void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
+
+  void EnableEMA(bool state);///<разрешить/запретить использование усреднённых весов
+  bool LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить усреднённые веса
+  bool SaveEMAWeight(IDataStream *iDataStream_Ptr);///<сохранить усреднённые веса
+
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -304,7 +316,8 @@ void CNetLayerConvolution<type_t>::Forward(void)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
 
  //выполняем прямую свёртку
- CTensorConv<type_t>::ForwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
+ if (UseEMA==false) CTensorConv<type_t>::ForwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
+               else CTensorConv<type_t>::ForwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel_EMA,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias_EMA,Stride_X,Stride_Y,Padding_X,Padding_Y);
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,input_z,input_y,input_x);
 }
 //----------------------------------------------------------------------------------------------------
@@ -347,7 +360,6 @@ bool CNetLayerConvolution<type_t>::Save(IDataStream *iDataStream_Ptr)
  iDataStream_Ptr->SaveInt32(Padding_Y);
  cTensor_Kernel.Save(iDataStream_Ptr);
  cTensor_Bias.Save(iDataStream_Ptr);
- //cTensor_Kernel.Print("ForwardKernel",true);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -532,6 +544,11 @@ void CNetLayerConvolution<type_t>::TrainingUpdateWeight(double speed,double iter
   CTensorMath<type_t>::Sub(cTensor_Kernel,cTensor_Kernel,cTensor_dKernel,1,speed/batch_scale);
   CTensorMath<type_t>::Sub(cTensor_Bias,cTensor_Bias,cTensor_dBias,1,speed/batch_scale);
  }
+ if (EMAEnabled==true)
+ {
+  CTensorMath<type_t>::Add(cTensor_Kernel_EMA,cTensor_Kernel_EMA,cTensor_Kernel,EMA_K,1.0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Bias_EMA,cTensor_Bias_EMA,cTensor_Bias,EMA_K,1.0-EMA_K);
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на тензор дельты слоя
@@ -595,6 +612,83 @@ template<class type_t>
 void CNetLayerConvolution<type_t>::PrintOutputTensorSize(const std::string &name)
 {
  GetOutputTensor().Print(name+" Convolution: output",false);
+}
+//----------------------------------------------------------------------------------------------------
+/*!<разрешить/запретить использование усреднённых весов
+\param[in] state - разрешить запретить использование усреднённых весов
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerConvolution<type_t>::EnableEMA(bool state)
+{
+ EMAEnabled=state;
+ if (state==true)
+ {
+  cTensor_Kernel_EMA=cTensor_Kernel;
+  cTensor_Bias_EMA=cTensor_Bias;
+ }
+ else
+ {
+  cTensor_Kernel_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_Bias_EMA=CTensor<type_t>(1,1,1,1);
+ }
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerConvolution<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
+{
+ if (check_size==true)
+ {
+  if (iDataStream_Ptr->LoadUInt32()!=Kernel_Amount) throw("Ошибка загрузки свёрточного слоя: неверное количество ядер.");
+  if (iDataStream_Ptr->LoadInt32()!=Kernel_X) throw("Ошибка загрузки свёрточного слоя: неверный размер ядер.");
+  if (iDataStream_Ptr->LoadInt32()!=Kernel_Y) throw("Ошибка загрузки свёрточного слоя: неверный размер ядер.");
+  if (iDataStream_Ptr->LoadInt32()!=Kernel_Z) throw("Ошибка загрузки свёрточного слоя: неверный размер ядер.");
+  if (iDataStream_Ptr->LoadInt32()!=Stride_X) throw("Ошибка загрузки свёрточного слоя: неверный шаг свёртки.");
+  if (iDataStream_Ptr->LoadInt32()!=Stride_Y) throw("Ошибка загрузки свёрточного слоя: неверный шаг свёртки.");
+  if (iDataStream_Ptr->LoadInt32()!=Padding_X) throw("Ошибка загрузки свёрточного слоя: неверный размер дополнения.");
+  if (iDataStream_Ptr->LoadInt32()!=Padding_Y) throw("Ошибка загрузки свёрточного слоя: неверный размер дополнения.");
+ }
+ else
+ {
+  Kernel_Amount=iDataStream_Ptr->LoadUInt32();
+  Kernel_X=iDataStream_Ptr->LoadInt32();
+  Kernel_Y=iDataStream_Ptr->LoadInt32();
+  Kernel_Z=iDataStream_Ptr->LoadInt32();
+  Stride_X=iDataStream_Ptr->LoadInt32();
+  Stride_Y=iDataStream_Ptr->LoadInt32();
+  Padding_X=iDataStream_Ptr->LoadInt32();
+  Padding_Y=iDataStream_Ptr->LoadInt32();
+ }
+
+ cTensor_Kernel_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Bias_EMA.Load(iDataStream_Ptr,check_size);
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!сохранить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerConvolution<type_t>::SaveEMAWeight(IDataStream *iDataStream_Ptr)
+{
+ iDataStream_Ptr->SaveInt32(Kernel_Amount);
+ iDataStream_Ptr->SaveInt32(Kernel_X);
+ iDataStream_Ptr->SaveInt32(Kernel_Y);
+ iDataStream_Ptr->SaveInt32(Kernel_Z);
+ iDataStream_Ptr->SaveInt32(Stride_X);
+ iDataStream_Ptr->SaveInt32(Stride_Y);
+ iDataStream_Ptr->SaveInt32(Padding_X);
+ iDataStream_Ptr->SaveInt32(Padding_Y);
+ cTensor_Kernel_EMA.Save(iDataStream_Ptr);
+ cTensor_Bias_EMA.Save(iDataStream_Ptr);
+ return(true);
 }
 
 #endif

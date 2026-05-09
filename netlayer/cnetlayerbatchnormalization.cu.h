@@ -54,6 +54,11 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   CTensor<type_t> cTensor_Mean;///<среднее
   CTensor<type_t> cTensor_Variable;///<дисперсия
 
+  CTensor<type_t> cTensor_Beta_EMA;///<параметр сдвига
+  CTensor<type_t> cTensor_Gamma_EMA;///<параметр масштабирования
+  CTensor<type_t> cTensor_Mean_EMA;///<среднее
+  CTensor<type_t> cTensor_Variable_EMA;///<дисперсия
+
   CTensor<type_t> cTensor_NewMean;///<новое среднее
   CTensor<type_t> cTensor_NewVariable;///<новая дисперсия
 
@@ -85,6 +90,10 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   using INetLayer<type_t>::Beta1;///<параметры алгоритма Adam
   using INetLayer<type_t>::Beta2;
   using INetLayer<type_t>::Epsilon;
+  //режим усреднения
+  using INetLayer<type_t>::EMAEnabled;
+  using INetLayer<type_t>::UseEMA;
+  using INetLayer<type_t>::EMA_K;
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerBatchNormalization(type_t momentum,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -119,6 +128,11 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
 
   void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
   void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
+
+  void EnableEMA(bool state);///<разрешить/запретить использование усреднённых весов
+  bool LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить усреднённые веса
+  bool SaveEMAWeight(IDataStream *iDataStream_Ptr);///<сохранить усреднённые веса
+
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -311,9 +325,18 @@ bool
  }
  else//режим работы
  {
-  cTensor_VAR=cTensor_Variable;
-  //считаем разность от среднего
-  CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_Mean,1.0,1.0);
+  if (UseEMA==false)
+  {
+   cTensor_VAR=cTensor_Variable;
+   //считаем разность от среднего
+   CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_Mean,1.0,1.0);
+  }
+  else
+  {
+   cTensor_VAR=cTensor_Variable_EMA;
+   //считаем разность от среднего
+   CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_Mean_EMA,1.0,1.0);
+  }
  }
 
 
@@ -339,10 +362,21 @@ bool
  //xhat = xmu * ivar
  CTensorMath<type_t>::TensorItemProduction(cTensor_XHAT_Array,cTensor_XHAT_Array,cTensor_IVAR);
  //считаем выход
- //gammax = gamma * xhat
- CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H_Array,cTensor_Gamma,cTensor_XHAT_Array);
- //out = gammax + beta
- CTensorMath<type_t>::Add(cTensor_H_Array,cTensor_TmpA_H_Array,cTensor_Beta);
+
+ if (UseEMA==false)
+ {
+  //gammax = gamma * xhat
+  CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H_Array,cTensor_Gamma,cTensor_XHAT_Array);
+  //out = gammax + beta
+  CTensorMath<type_t>::Add(cTensor_H_Array,cTensor_TmpA_H_Array,cTensor_Beta);
+  }
+  else
+  {
+   //gammax = gamma * xhat
+   CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H_Array,cTensor_Gamma_EMA,cTensor_XHAT_Array);
+   //out = gammax + beta
+   CTensorMath<type_t>::Add(cTensor_H_Array,cTensor_TmpA_H_Array,cTensor_Beta_EMA);
+  }
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -613,10 +647,16 @@ void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,doub
  }
 
  //printf("Layer:%i NewGamma:%f NewBeta:%f\r\n",Layer,cTensor_Gamma.GetElement(0,0,0),cTensor_Beta.GetElement(0,0,0));
-
-
  cTensor_Mean=cTensor_NewMean;
  cTensor_Variable=cTensor_NewVariable;
+
+ if (EMAEnabled==true)
+ {
+  CTensorMath<type_t>::Add(cTensor_Gamma_EMA,cTensor_Gamma_EMA,cTensor_Gamma,EMA_K,1,0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Beta_EMA,cTensor_Beta_EMA,cTensor_Beta,EMA_K,1,0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Mean_EMA,cTensor_Mean_EMA,cTensor_Mean,EMA_K,1,0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Variable_EMA,cTensor_Variable_EMA,cTensor_Variable,EMA_K,1,0-EMA_K);
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на тензор дельты слоя
@@ -680,5 +720,62 @@ void CNetLayerBatchNormalization<type_t>::PrintOutputTensorSize(const std::strin
 {
  GetOutputTensor().Print(name+" BatchNormalization: output",false);
 }
+//----------------------------------------------------------------------------------------------------
+/*!<разрешить/запретить использование усреднённых весов
+\param[in] state - разрешить запретить использование усреднённых весов
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerBatchNormalization<type_t>::EnableEMA(bool state)
+{
+ EMAEnabled=state;
+ if (state==true)
+ {
+  cTensor_Beta_EMA=cTensor_Beta;
+  cTensor_Gamma_EMA=cTensor_Gamma;
+  cTensor_Mean_EMA=cTensor_Mean;
+  cTensor_Variable_EMA=cTensor_Variable;
+ }
+ else
+ {
+  cTensor_Beta_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_Gamma_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_Mean_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_Variable_EMA=CTensor<type_t>(1,1,1,1);
+ }
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerBatchNormalization<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
+{
+ cTensor_Beta_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Gamma_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Mean_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Variable_EMA.Load(iDataStream_Ptr,check_size);
+ Momentum=iDataStream_Ptr->LoadDouble();
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!сохранить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerBatchNormalization<type_t>::SaveEMAWeight(IDataStream *iDataStream_Ptr)
+{
+ cTensor_Beta_EMA.Save(iDataStream_Ptr);
+ cTensor_Gamma_EMA.Save(iDataStream_Ptr);
+ cTensor_Mean_EMA.Save(iDataStream_Ptr);
+ cTensor_Variable_EMA.Save(iDataStream_Ptr);
+ iDataStream_Ptr->SaveDouble(Momentum);
+ return(true);
+}
+
 
 #endif

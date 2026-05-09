@@ -49,6 +49,9 @@ class CNetLayerLinear:public INetLayer<type_t>
   CTensor<type_t> cTensor_W;///<тензор весов слоя
   CTensor<type_t> cTensor_B;///<тензор сдвигов слоя
 
+  CTensor<type_t> cTensor_W_EMA;///<тензор весов слоя
+  CTensor<type_t> cTensor_B_EMA;///<тензор сдвигов слоя
+
   CTensor<type_t> cTensor_H;///<тензор значений нейронов до функции активации
 
   //тензоры, используемые при обучении
@@ -67,7 +70,10 @@ class CNetLayerLinear:public INetLayer<type_t>
   using INetLayer<type_t>::Beta1;///<параметры алгоритма Adam
   using INetLayer<type_t>::Beta2;
   using INetLayer<type_t>::Epsilon;
-
+  //режим усреднения
+  using INetLayer<type_t>::EMAEnabled;
+  using INetLayer<type_t>::UseEMA;
+  using INetLayer<type_t>::EMA_K;
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerLinear(uint32_t neurons,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -102,6 +108,11 @@ class CNetLayerLinear:public INetLayer<type_t>
 
   void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
   void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
+
+  void EnableEMA(bool state);///<разрешить/запретить использование усреднённых весов
+  bool LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить усреднённые веса
+  bool SaveEMAWeight(IDataStream *iDataStream_Ptr);///<сохранить усреднённые веса
+
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -259,11 +270,13 @@ void CNetLayerLinear<type_t>::Forward(void)
  uint32_t size_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,1,size_x*size_y*size_z,1);
 
- CTensorMath<type_t>::Mul(cTensor_H,cTensor_W,PrevLayerPtr->GetOutputTensor());
+ if (UseEMA==false) CTensorMath<type_t>::Mul(cTensor_H,cTensor_W,PrevLayerPtr->GetOutputTensor());
+               else CTensorMath<type_t>::Mul(cTensor_H,cTensor_W_EMA,PrevLayerPtr->GetOutputTensor());
 
  PrevLayerPtr->GetOutputTensor().RestoreSize();
 
- CTensorMath<type_t>::Add(cTensor_H,cTensor_H,cTensor_B);
+ if (UseEMA==false) CTensorMath<type_t>::Add(cTensor_H,cTensor_H,cTensor_B);
+               else CTensorMath<type_t>::Add(cTensor_H,cTensor_H,cTensor_B_EMA);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -462,6 +475,11 @@ void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration
   CTensorMath<type_t>::Sub(cTensor_W,cTensor_W,cTensor_dW,1,speed/batch_scale);
   CTensorMath<type_t>::Sub(cTensor_B,cTensor_B,cTensor_dB,1,speed/batch_scale);
  }
+ if (EMAEnabled==true)
+ {
+  CTensorMath<type_t>::Add(cTensor_W_EMA,cTensor_W_EMA,cTensor_W,EMA_K,1.0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_B_EMA,cTensor_B_EMA,cTensor_B,EMA_K,1.0-EMA_K);
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на тензор дельты слоя
@@ -529,5 +547,52 @@ void CNetLayerLinear<type_t>::PrintOutputTensorSize(const std::string &name)
 {
  GetOutputTensor().Print(name+" Linear: output",false);
 }
+//----------------------------------------------------------------------------------------------------
+/*!<разрешить/запретить использование усреднённых весов
+\param[in] state - разрешить запретить использование усреднённых весов
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerLinear<type_t>::EnableEMA(bool state)
+{
+ EMAEnabled=state;
+ if (state==true)
+ {
+  cTensor_W_EMA=cTensor_W;
+  cTensor_B_EMA=cTensor_B;
+ }
+ else
+ {
+  cTensor_W_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_B_EMA=CTensor<type_t>(1,1,1,1);
+ }
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerLinear<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
+{
+ cTensor_W_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_B_EMA.Load(iDataStream_Ptr,check_size);
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!сохранить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerLinear<type_t>::SaveEMAWeight(IDataStream *iDataStream_Ptr)
+{
+ cTensor_W_EMA.Save(iDataStream_Ptr);
+ cTensor_B_EMA.Save(iDataStream_Ptr);
+ return(true);
+}
+
 
 #endif

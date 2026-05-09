@@ -47,6 +47,10 @@ class INetLayer
   double Epsilon;
 
   bool Mark;///метка (применяется для любых операций пользователя: например, можно пометить слои, которые не нужно загружать в данный момент времени)
+
+  bool EMAEnabled;///разрешены ли к использованию EMA-веса
+  bool UseEMA;///используются ли веса EMA
+  double EMA_K;///коэффициент вклада весов EMA для фильтра
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
  private:
@@ -58,6 +62,9 @@ class INetLayer
   {
    TrainingMode=TRAINING_MODE_GRADIENT;
    Mark=false;
+   EMAEnabled=false;
+   UseEMA=false;
+   EMA_K=0.999;
   };
   //-деструктор-----------------------------------------------------------------------------------------
   virtual ~INetLayer() {};
@@ -84,7 +91,14 @@ class INetLayer
   virtual void SetTimeStep(uint32_t index,uint32_t time_step)=0;///<задать временной шаг
   virtual void PrintInputTensorSize(const std::string &name)=0;///<вывести размерность входного тензора слоя
   virtual void PrintOutputTensorSize(const std::string &name)=0;///<вывести размерность выходного тензора слоя
-
+  virtual void EnableEMA(bool state)=0;///<разрешить/запретить использование усреднённых весов
+  virtual bool LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size=false)=0;///<загрузить усреднённые веса
+  virtual bool SaveEMAWeight(IDataStream *iDataStream_Ptr)=0;///<сохранить усреднённые веса
+  virtual void SetUseEMA(bool state)///<переключиться на усреднённые веса
+  {
+   if (EMAEnabled==false && state==true) throw("Ошибка переключения на усреднённые веса! Усреднённые веса не были разрешены!");
+   UseEMA=state;
+  }
   void SetMark(bool state)///<установить или снять метку
   {
    Mark=state;

@@ -55,6 +55,10 @@ class CNetLayerSoftMax:public INetLayer<type_t>
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
+  //режим усреднения
+  using INetLayer<type_t>::EMAEnabled;
+  using INetLayer<type_t>::UseEMA;
+  using INetLayer<type_t>::EMA_K;
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerSoftMax(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -90,6 +94,11 @@ class CNetLayerSoftMax:public INetLayer<type_t>
 
   void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
   void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
+
+  void EnableEMA(bool state);///<разрешить/запретить использование усреднённых весов
+  bool LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить усреднённые веса
+  bool SaveEMAWeight(IDataStream *iDataStream_Ptr);///<сохранить усреднённые веса
+
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -476,6 +485,38 @@ template<class type_t>
 void CNetLayerSoftMax<type_t>::PrintOutputTensorSize(const std::string &name)
 {
  GetOutputTensor().Print(name+" SoftMax: output",false);
+}
+//----------------------------------------------------------------------------------------------------
+/*!<разрешить/запретить использование усреднённых весов
+\param[in] state - разрешить запретить использование усреднённых весов
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerSoftMax<type_t>::EnableEMA(bool state)
+{
+ EMAEnabled=state;
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerSoftMax<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
+{
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!сохранить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerSoftMax<type_t>::SaveEMAWeight(IDataStream *iDataStream_Ptr)
+{
+ return(true);
 }
 
 #endif

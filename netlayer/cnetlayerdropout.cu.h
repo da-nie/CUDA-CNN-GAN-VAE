@@ -53,6 +53,10 @@ class CNetLayerDropOut:public INetLayer<type_t>
   CTensor<type_t> cTensor_H_DropOut;///<тензоры исключения выхода слоя
   CTensor<type_t> cTensor_Delta;///<тензоры ошибки предыдущего слоя
   CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
+  //режим усреднения
+  using INetLayer<type_t>::EMAEnabled;
+  using INetLayer<type_t>::UseEMA;
+  using INetLayer<type_t>::EMA_K;
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerDropOut(double drop_out,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -87,6 +91,11 @@ class CNetLayerDropOut:public INetLayer<type_t>
 
   void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
   void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
+
+  void EnableEMA(bool state);///<разрешить/запретить использование усреднённых весов
+  bool LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить усреднённые веса
+  bool SaveEMAWeight(IDataStream *iDataStream_Ptr);///<сохранить усреднённые веса
+
  protected:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -404,5 +413,40 @@ void CNetLayerDropOut<type_t>::PrintOutputTensorSize(const std::string &name)
 {
  GetOutputTensor().Print(name+" DropOut: output",false);
 }
+//----------------------------------------------------------------------------------------------------
+/*!<разрешить/запретить использование усреднённых весов
+\param[in] state - разрешить запретить использование усреднённых весов
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerDropOut<type_t>::EnableEMA(bool state)
+{
+ EMAEnabled=true;
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerDropOut<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
+{
+ DropOut=iDataStream_Ptr->LoadDouble();
+ return(true);
+}
+//----------------------------------------------------------------------------------------------------
+/*!сохранить усреднённые веса
+\param[in] iDataStream_Ptr Указатель на класс ввода-вывода
+\return Успех операции
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+bool CNetLayerDropOut<type_t>::SaveEMAWeight(IDataStream *iDataStream_Ptr)
+{
+ iDataStream_Ptr->SaveDouble(DropOut);
+ return(true);
+}
+
 
 #endif

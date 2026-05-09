@@ -84,6 +84,8 @@ class CModelMain
   bool CreateResamplingImage(uint32_t input_image_width,uint32_t input_image_height,uint32_t input_image_depth,const std::vector< std::vector<type_t> > &image_input,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth,std::vector< std::vector<type_t> > &image_output);///<создать изображения другого разрешения
   void SaveNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<сохранить слои сети
   void LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<загрузить слои сети
+  void SaveNetLayersEMA(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<сохранить средние слои сети
+  void LoadNetLayersEMA(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward=false);///<загрузить средние слои сети
   void SaveNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t iteration,bool backward=false);///<сохранить параметры обучения слоёв сети
   void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t &iteration,bool backward=false);///<загрузить параметры обучения слоёв сети
   void ExchangeImageIndex(std::vector<uint32_t> &index);///<перемешать индексы изображений
@@ -320,6 +322,43 @@ void CModelMain<type_t>::LoadNetLayers(IDataStream *iDataStream_Ptr,std::vector<
   }
  }
 }
+
+
+//----------------------------------------------------------------------------------------------------
+/*!сохранить средние слои сети
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelMain<type_t>::SaveNetLayersEMA(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward)
+{
+ if (backward==false) for(uint32_t n=0;n<net.size();n++) net[n]->SaveEMAWeight(iDataStream_Ptr);
+                 else for(uint32_t n=net.size();n>0;n--) net[n-1]->SaveEMAWeight(iDataStream_Ptr);
+}
+//----------------------------------------------------------------------------------------------------
+/*!загрузить средние слои сети
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelMain<type_t>::LoadNetLayersEMA(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,bool backward)
+{
+ if (backward==false)
+ {
+  for(uint32_t n=0;n<net.size();n++)
+  {
+   if (net[n]->IsMark()==true) continue;
+   net[n]->LoadEMAWeight(iDataStream_Ptr,true);
+  }
+ }
+ else
+ {
+  for(uint32_t n=net.size();n>0;n--)
+  {
+   if (net[n-1]->IsMark()==true) continue;
+   net[n-1]->LoadEMAWeight(iDataStream_Ptr,true);
+  }
+ }
+}
+
 
 //----------------------------------------------------------------------------------------------------
 /*!сохранить параметры обучения слоёв сети
