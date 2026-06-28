@@ -20,6 +20,9 @@
 					<Add option="--fmad=true" />
 					<Add option="--use_fast_math" />
 				</Compiler>
+				<Linker>
+					<Add option="-O3" />
+				</Linker>
 			</Target>
 		</Build>
 		<Unit filename="common/ccolormodel.cpp" />
