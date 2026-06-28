@@ -395,6 +395,7 @@ void CModelBasicDiffusion<type_t>::SaveRandomImage(void)
   CTensor<type_t> &output_noise=DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor();
 
   GetNoiseTensor(cTensor_Noise);
+
   for(uint32_t b=0;b<BATCH_SIZE;b++)
   {
    uint32_t index=0;
@@ -662,6 +663,7 @@ void CModelBasicDiffusion<type_t>::InitDiffusion(void)
  sDiffusion.Init(TIME_COUNTER);
 }
 
+#ifdef USE_GPU_NORMAL_RANDOM_GENERATOR_FOR_DIFFUSION_NET
 //----------------------------------------------------------------------------------------------------
 //заполнить тензор зашумлённым изображением
 //----------------------------------------------------------------------------------------------------
@@ -679,32 +681,6 @@ void CModelBasicDiffusion<type_t>::SetNoisyImage(CTensor<type_t> &cTensor_NoisyI
  }
  CTensorMath<type_t>::GetNoiseImageAndNoise(cTensor_NoisyImage,cTensor_Noise,cTensor_Image,cTensor_SqrtAlphaBar,cTensor_OneMinusAlphaBar);
 }
-
-
-/*
-void CModelBasicDiffusion<type_t>::SetNoisyImage(uint32_t w,uint32_t time_step,CTensor<type_t> &cTensor_NoisyImage,CTensor<type_t> &cTensor_Noise,const std::vector<type_t> &input_image)
-{
-
- //применяем шум к изображению
- size_t index=0;
- type_t *noise_ptr=cTensor_Noise.GetColumnPtr(w,0,0);
- type_t *noisyimage_ptr=cTensor_NoisyImage.GetColumnPtr(w,0,0);
-
- for(uint32_t z=0;z<cTensor_Noise.GetSizeZ();z++)
- {
-  for(uint32_t y=0;y<cTensor_Noise.GetSizeY();y++)
-  {
-   for(uint32_t x=0;x<cTensor_Noise.GetSizeX();x++,index++,noise_ptr++,noisyimage_ptr++)
-   {
-    type_t noise=*noise_ptr;
-    type_t image=input_image[index];
-    type_t value=sqrt_alpha_bar*image+sqrt_one_minus_alpha_bar*noise;
-    *noisyimage_ptr=value;
-   }
-  }
- }
-}
-*/
 //----------------------------------------------------------------------------------------------------
 //!получить тензор шума
 //----------------------------------------------------------------------------------------------------
@@ -713,6 +689,83 @@ void CModelBasicDiffusion<type_t>::GetNoiseTensor(CTensor<type_t> &cTensor)
 {
  CTensorMath<type_t>::SetNormalNoise(cTensor);
 }
+#endif
+
+#ifndef USE_GPU_NORMAL_RANDOM_GENERATOR_FOR_DIFFUSION_NET
+//----------------------------------------------------------------------------------------------------
+//заполнить тензор зашумлённым изображением
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelBasicDiffusion<type_t>::SetNoisyImage(CTensor<type_t> &cTensor_NoisyImage,CTensor<type_t> &cTensor_Noise,const CTensor<type_t> &cTensor_Image,const std::vector<uint32_t> &time_step_array)
+{
+ if (time_step_array.size()!=BATCH_SIZE) throw("Размерность вектора временного шага отличается от количества элементов пакета!") ;
+
+ GetNoiseTensor(cTensor_Noise);
+
+ //применяем шум к изображению
+ size_t index=0;
+ type_t *noise_ptr=cTensor_Noise.GetColumnPtr(0,0,0);
+ const type_t *image_ptr=cTensor_Image.GetColumnPtr(0,0,0);
+ type_t *noisyimage_ptr=cTensor_NoisyImage.GetColumnPtr(0,0,0);
+
+ for(uint32_t w=0;w<cTensor_Noise.GetSizeW();w++)
+ {
+  uint32_t time_step=time_step_array[w];
+  type_t sqrt_alpha_bar=std::sqrt(sDiffusion.AlphaBar[time_step]);
+  type_t sqrt_one_minus_alpha_bar=std::sqrt(1.0-sDiffusion.AlphaBar[time_step]);
+  for(uint32_t z=0;z<cTensor_Noise.GetSizeZ();z++)
+  {
+   for(uint32_t y=0;y<cTensor_Noise.GetSizeY();y++)
+   {
+    for(uint32_t x=0;x<cTensor_Noise.GetSizeX();x++,index++,noise_ptr++,noisyimage_ptr++,image_ptr++)
+    {
+     type_t noise=*noise_ptr;
+     type_t image=*image_ptr;
+     type_t value=sqrt_alpha_bar*image+sqrt_one_minus_alpha_bar*noise;
+      *noisyimage_ptr=value;
+    }
+   }
+  }
+ }
+}
+//----------------------------------------------------------------------------------------------------
+//!получить тензор шума
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelBasicDiffusion<type_t>::GetNoiseTensor(CTensor<type_t> &cTensor)
+{
+ double max=1;
+ double min=-1;
+ double average=0;//(max+min)/2.0;
+ double log_var=1;//(average-min)/3.0;
+
+ static std::random_device rd;
+ std::mt19937_64 gen(rd());//ускоренный генератор _64
+ std::normal_distribution<type_t> dist(average,log_var);
+
+ type_t *noise_ptr=cTensor.GetColumnPtr(0,0,0);
+
+ for(uint32_t w=0;w<cTensor.GetSizeW();w++)
+ {
+  for(uint32_t z=0;z<cTensor.GetSizeZ();z++)
+  {
+   for(uint32_t y=0;y<cTensor.GetSizeY();y++)
+   {
+    for(uint32_t x=0;x<cTensor.GetSizeX();x++,noise_ptr++)
+    {
+     *noise_ptr=dist(gen);
+     /*
+     type_t value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,log_var));
+     while(value<min || value>max) value=static_cast<type_t>(CRandom<type_t>::GetGaussRandValue(average,log_var));//åñëè ýòî ïðîèçîøëî ãåíåðèðóåì íîâîå ÷èñëî.
+     *noise_ptr=value;
+     */
+    }
+   }
+  }
+ }
+}
+#endif
+
 
 //****************************************************************************************************
 //открытые функции

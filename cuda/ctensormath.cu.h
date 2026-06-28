@@ -2365,7 +2365,7 @@ void CTensorMath<type_t>::Transponse(CTensor<type_t> &cTensor_Output,const CTens
  {
   throw "void CTensor::Transponse: Размерности матриц не совпадают!";
  }
- cTensor_Input.CopyFromDevice(true);
+ cTensor_Input.CopyFromDevice();
 
  for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
  {
