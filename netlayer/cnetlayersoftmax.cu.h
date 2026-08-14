@@ -9,7 +9,7 @@
 //подключаемые библиотеки
 //****************************************************************************************************
 #include <stdio.h>
-#include <fstream>
+#include <fstream>      // исправлено: стандартный заголовок для файловых потоков
 #include <vector>
 #include <math.h>
 
@@ -228,7 +228,21 @@ void CNetLayerSoftMax<type_t>::Forward(void)
 
  for(size_t w=0;w<input_w;w++)
  {
-  //считаем сумму экспонент
+  // === ИСПРАВЛЕНИЕ: численная стабилизация — находим максимум ===
+  type_t max_val = input.GetElement(w,0,0,0);
+  for(size_t z=0;z<input_z;z++)
+  {
+   for(size_t y=0;y<input_y;y++)
+   {
+    for(size_t x=0;x<input_x;x++)
+    {
+     type_t val = input.GetElement(w,z,y,x);
+     if (val > max_val) max_val = val;
+    }
+   }
+  }
+
+  //считаем сумму стабилизированных экспонент
   double summ=0;
   for(size_t z=0;z<input_z;z++)
   {
@@ -236,8 +250,8 @@ void CNetLayerSoftMax<type_t>::Forward(void)
    {
     for(size_t x=0;x<input_x;x++)
     {
-     type_t e=input.GetElement(w,z,y,x);
-     summ+=exp(e);
+     type_t e = input.GetElement(w,z,y,x);
+     summ += exp(e - max_val);
     }
    }
   }
@@ -248,8 +262,8 @@ void CNetLayerSoftMax<type_t>::Forward(void)
    {
     for(size_t x=0;x<input_x;x++)
     {
-     type_t e=input.GetElement(w,z,y,x);
-     e=exp(e)/summ;
+     type_t e = input.GetElement(w,z,y,x);
+     e = exp(e - max_val) / summ;
      cTensor_H.SetElement(w,z,y,x,e);
     }
    }
@@ -386,61 +400,40 @@ CTensor<type_t>& CNetLayerSoftMax<type_t>::GetDeltaTensor(void)
 template<class type_t>
 void CNetLayerSoftMax<type_t>::SetOutputError(CTensor<type_t>& error)
 {
- CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
+ // Используем уже вычисленные выходы softmax из Forward (cTensor_H)
+ // Это даёт максимальную эффективность и численную стабильность.
+ CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();   // оставлено для совместимости, не используется
 
- uint32_t input_x=input.GetSizeX();
- uint32_t input_y=input.GetSizeY();
- uint32_t input_z=input.GetSizeZ();
- uint32_t input_w=input.GetSizeW();
+ uint32_t input_x = cTensor_H.GetSizeX();
+ uint32_t input_y = cTensor_H.GetSizeY();
+ uint32_t input_z = cTensor_H.GetSizeZ();
+ uint32_t input_w = cTensor_H.GetSizeW();
 
- for(size_t w=0;w<input_w;w++)
+ for(size_t w=0; w<input_w; w++)
  {
-  type_t summ=0;
-
-  for(size_t z=0;z<input_z;z++)
+  // 1) Вычисляем взвешенную сумму ошибок: sum_j (p_j * error_j)
+  type_t weighted_error_sum = 0;
+  for(size_t z=0; z<input_z; z++)
   {
-   for(size_t y=0;y<input_y;y++)
+   for(size_t y=0; y<input_y; y++)
    {
-    for(size_t x=0;x<input_x;x++)
+    for(size_t x=0; x<input_x; x++)
     {
-     type_t e=input.GetElement(w,z,y,x);
-     summ+=exp(e);
+     weighted_error_sum += cTensor_H.GetElement(w,z,y,x) * error.GetElement(w,z,y,x);
     }
    }
   }
 
-
-  for(size_t z=0;z<input_z;z++)
+  // 2) Дельта: delta_i = p_i * (error_i - weighted_error_sum)
+  for(size_t z=0; z<input_z; z++)
   {
-   for(size_t y=0;y<input_y;y++)
+   for(size_t y=0; y<input_y; y++)
    {
-    for(size_t x=0;x<input_x;x++)
+    for(size_t x=0; x<input_x; x++)
     {
-     //выход предшествующего слоя
-     type_t ezc=exp(input.GetElement(w,z,y,x));
-
-     type_t delta=0;
-     //выход softmax
-     for(size_t zs=0;zs<input_z;zs++)
-     {
-      for(size_t ys=0;ys<input_y;ys++)
-      {
-       for(size_t xs=0;xs<input_x;xs++)
-       {
-        if (x==xs && y==ys && z==zs) continue;
-
-        type_t ezk=exp(input.GetElement(w,zs,ys,xs));
-        type_t c=error.GetElement(w,zs,ys,xs);
-        type_t d=-ezc*ezk/(summ*summ);
-        delta+=d*c;
-       }
-      }
-     }
-
-     type_t d=ezc*(summ-ezc)/(summ*summ);
-     type_t c=error.GetElement(w,z,y,x);
-     delta+=d*c;
-     cTensor_Delta.SetElement(w,z,y,x,delta);
+     type_t p = cTensor_H.GetElement(w,z,y,x);
+     type_t delta = p * (error.GetElement(w,z,y,x) - weighted_error_sum);
+     cTensor_Delta.SetElement(w,z,y,x, delta);
     }
    }
   }

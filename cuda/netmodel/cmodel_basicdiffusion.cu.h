@@ -93,7 +93,6 @@ class CModelBasicDiffusion:public CModelMain<type_t>
   struct STrainingImage
   {
    uint32_t RealImageIndex;///<индекс истинного изображения
-   uint32_t TimeStep;///<шаг времени
   };
   //-переменные-----------------------------------------------------------------------------------------
   uint32_t IMAGE_WIDTH;///<ширина входных изображений
@@ -292,7 +291,8 @@ void CModelBasicDiffusion<type_t>::TrainingDiffusionNet(uint32_t mini_batch_inde
   uint32_t img=b+mini_batch_index*BATCH_SIZE;
   uint32_t training_index=TrainingImageIndex[img];
   uint32_t real_index=TrainingImage[training_index].RealImageIndex;
-  uint32_t time_step=TrainingImage[training_index].TimeStep;
+  uint32_t time_step=CRandom<float>::GetRandValue(TIME_COUNTER*10);
+  time_step%=TIME_COUNTER;
   //задаём массив времени
   time_step_array[b]=time_step;
   //задаём тензор изрбражения
@@ -517,8 +517,6 @@ void CModelBasicDiffusion<type_t>::Training(void)
   {
    if (IsExit()==true) throw("Стоп");
 
-   if (batch%1000==0) SaveRandomImage();
-
    str="Итерация:";
    str+=std::to_string(static_cast<long double>(Iteration+1));
    str+=" минипакет:";
@@ -611,18 +609,13 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
  //инициализируем параметры диффузии
  InitDiffusion();
 
- //создаём обучающий набор с учётом временных меток
- TrainingImage.resize(RealImage.size()*TIME_COUNTER);
- TrainingImageIndex.resize(RealImage.size()*TIME_COUNTER);
- uint32_t index=0;
+ //создаём обучающий набор
+ TrainingImage.resize(RealImage.size());
+ TrainingImageIndex.resize(RealImage.size());
  for(uint32_t n=0;n<RealImage.size();n++)
  {
-  for(uint32_t t=0;t<TIME_COUNTER;t++,index++)
-  {
-   TrainingImage[index].RealImageIndex=n;
-   TrainingImage[index].TimeStep=t;
-   TrainingImageIndex[index]=index;
-  }
+  TrainingImage[n].RealImageIndex=n;
+  TrainingImageIndex[n]=n;
  }
 
  //дополняем набор до кратного размеру пакета
