@@ -54,6 +54,8 @@ class CNetLayerFunction:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  //ограничение нормы
+  using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerFunction(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);

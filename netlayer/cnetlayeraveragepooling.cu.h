@@ -63,6 +63,8 @@ class CNetLayerAveragePooling:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  //ограничение нормы
+  using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
 
  public:
   //-конструктор----------------------------------------------------------------------------------------
@@ -364,6 +366,7 @@ void CNetLayerAveragePooling<type_t>::TrainingBackward(bool create_delta_weight)
  cTensor_PrevLayerError.ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
 
  CTensorMath<type_t>::UpSampling(cTensor_PrevLayerError,cTensor_Delta,AveragePooling_X,AveragePooling_Y);//задаём ошибку предыдущего слоя
+ CTensorMath<type_t>::Mul(cTensor_PrevLayerError,cTensor_PrevLayerError,static_cast<type_t>(1.0/(AveragePooling_X*AveragePooling_Y)));
 
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);
  cTensor_PrevLayerError.ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);

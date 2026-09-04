@@ -46,11 +46,12 @@ class INetLayer
   double Beta2;
   double Epsilon;
 
-  bool Mark;///метка (применяется для любых операций пользователя: например, можно пометить слои, которые не нужно загружать в данный момент времени)
+  bool Mark;///<метка (применяется для любых операций пользователя: например, можно пометить слои, которые не нужно загружать в данный момент времени)
 
-  bool EMAEnabled;///разрешены ли к использованию EMA-веса
-  bool UseEMA;///используются ли веса EMA
-  double EMA_K;///коэффициент вклада весов EMA для фильтра
+  bool EMAEnabled;///<разрешены ли к использованию EMA-веса
+  bool UseEMA;///<используются ли веса EMA
+  double EMA_K;///<коэффициент вклада весов EMA для фильтра
+  double ClipByNormThresHold;///<ограничение нормы
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
  private:
@@ -65,6 +66,7 @@ class INetLayer
    EMAEnabled=false;
    UseEMA=false;
    EMA_K=0.999;
+   ClipByNormThresHold=1.0;
   };
   //-деструктор-----------------------------------------------------------------------------------------
   virtual ~INetLayer() {};
@@ -111,7 +113,7 @@ class INetLayer
   {
    TrainingMode=TRAINING_MODE_GRADIENT;
   }
-  void TrainingModeAdam(double beta1=0.9,double beta2=0.999,double epsilon=1E-8)///<включить режим обучения "алгоритм Adam"
+  void TrainingModeAdam(double beta1=0.9,double beta2=0.999,double epsilon=1E-6)///<включить режим обучения "алгоритм Adam"
   {
    TrainingMode=TRAINING_MODE_ADAM;
    Beta1=beta1;

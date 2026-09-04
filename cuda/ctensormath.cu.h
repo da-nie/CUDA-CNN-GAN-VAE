@@ -136,13 +136,19 @@ class CTensorMath
 
   static void Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &cTensor_dWeight,CTensor<type_t> &cTensor_M,CTensor<type_t> &cTensor_V,uint32_t batch_size,double speed,double beta1,double beta2,double epsilon,double iteration);///<выполнить алгоритм Adam к весовому тензору
 
-  static void SetTimeStep(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<uint32_t> &cTensor_TimeStep);///<добавить к тензору временной шаг
+  static void SetTimeStep(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<uint32_t> &cTensor_TimeStep,type_t scale);///<добавить к тензору временной шаг
 
   static void CreateDropOutMatrix(CTensor<type_t> &cTensor_Output,type_t drop_out);///<создать матрицу исключения
 
   static void SetNormalNoise(CTensor<type_t> &cTensor_Output);///<задать тензор случайными значениями с нормальным распределением
 
   static void GetNoiseImageAndNoise(CTensor<type_t> &cTensor_NoisyImage,CTensor<type_t> &cTensor_Noise,const CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_SqrtAlphaBar,const CTensor<type_t> &cTensor_SqrtOneMinusAlphaBar);///<заполнить тензоры зашумлённым изображением и шумом
+
+  static void ClipByNormXY(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t threshold);///<ограничить тензор по норме XY
+  static void ClipByNormX(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t threshold);///<ограничить тензор по норме X
+
+  static void GroupNormForward(CTensor<type_t> &cTensor_Output, CTensor<type_t> &cTensor_Input, CTensor<type_t> &cTensor_Gamma, CTensor<type_t> &cTensor_Beta, CTensor<type_t> &cTensor_XHAT, CTensor<type_t> &cTensor_InvStd, uint32_t num_groups, uint32_t channels_per_group,type_t epsilon);///<прямой проход GroupNorm
+  static void GroupNormBackward(CTensor<type_t> &cTensor_Delta_Array, CTensor<type_t> &cTensor_XHAT_Array, CTensor<type_t> &cTensor_Gamma, CTensor<type_t> &cTensor_InvStd_Array, CTensor<type_t> &cTensor_PrevLayerError_Array, CTensor<type_t> &cTensor_dGamma, CTensor<type_t> &cTensor_dBeta, uint32_t num_groups, uint32_t channels_per_group, bool calc_weights);///<обратный проход GroupNorm
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -3326,7 +3332,7 @@ void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &
 //функция CUDA для добавления временного шага
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,STensorKernel<uint32_t> tensor_time_step)
+__global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,STensorKernel<uint32_t> tensor_time_step,type_t scale)
 {
  uint32_t blockCol=blockIdx.z;
  uint32_t blockRow=blockIdx.y;
@@ -3348,8 +3354,8 @@ __global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,STensorKerne
 
  type_t angle=time_step/pow(10000.0f,static_cast<type_t>(pos)/static_cast<type_t>(size));
  type_t value=tensor_input.GetElement(w,z,yp,xp);
- if ((pos&0x01)==0) value+=sin(angle);//чётное
-               else value+=cos(angle);//нечётное
+ if ((pos&0x01)==0) value+=sin(angle)*scale;//чётное
+               else value+=cos(angle)*scale;//нечётное
  tensor_output.SetElement(w,z,yp,xp,value);
  __syncthreads();
 }
@@ -3358,7 +3364,7 @@ __global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,STensorKerne
 //!добавить к тензору временной шаг
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::SetTimeStep(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<uint32_t> &cTensor_TimeStep)
+void CTensorMath<type_t>::SetTimeStep(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<uint32_t> &cTensor_TimeStep,type_t scale)
 {
  if (cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z ||
      cTensor_Input.Size_W!=cTensor_Output.Size_W || cTensor_TimeStep.Size_W!=cTensor_Input.Size_W || cTensor_TimeStep.Size_X!=1 ||
@@ -3388,7 +3394,7 @@ void CTensorMath<type_t>::SetTimeStep(CTensor<type_t> &cTensor_Output,const CTen
  if (blocks.x==0) blocks.x=1;
  if (blocks.y==0) blocks.y=1;
  if (blocks.z==0) blocks.z=1;
- CUDASetTimeStep<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,sTensorKernel_TimeStep);
+ CUDASetTimeStep<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,sTensorKernel_TimeStep,scale);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
@@ -3415,6 +3421,11 @@ __global__ void CUDADropOut(STensorKernel<type_t> tensor_output,unsigned long lo
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t pos=(xp+yp*tensor_output.Size_X+z*tensor_output.Size_X*tensor_output.Size_Y)+w*tensor_output.Size_X*tensor_output.Size_Y*tensor_output.Size_Z;
+
+ /*
+ curandStatePhilox4_32_10_t state;
+ curand_init(seed,pos,0,&state);
+*/
 
  curandState state;
  curand_init(seed,pos,0,&state);
@@ -3592,6 +3603,395 @@ void CTensorMath<type_t>::GetNoiseImageAndNoise(CTensor<type_t> &cTensor_NoisyIm
 
  cTensor_Noise.SetDeviceOnChange();
  cTensor_NoisyImage.SetDeviceOnChange();
+}
+
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для ограничения нормы элементов по X и Y для каждого Z
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorClipByNormXYTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,type_t threshold)
+{
+ uint32_t w_in=Mod(blockIdx.x,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(blockIdx.x,tensor_output.GetSizeW());
+ uint32_t z=Mod(blockIdx.y,tensor_output.GetSizeZ());
+
+ //суммируем по X и Y
+ type_t *d_xin=tensor_input.GetTensorDataPtr(w_in,z);
+ type_t *d_xout=tensor_output.GetTensorDataPtr(w_out,z);
+ type_t *d_xin_local=d_xin;
+ type_t summ=0;
+ for(uint32_t y=0;y<tensor_input.GetSizeY();y++)
+ {
+  for(uint32_t x=0;x<tensor_input.GetSizeX();x++,d_xin_local++)
+  {
+   type_t v=*d_xin_local;
+   summ+=v*v;
+  }
+ }
+ summ=sqrt(summ);
+ //нормируем, если нужно
+ if (summ>threshold)
+ {
+  type_t k=threshold/summ;
+  for(uint32_t y=0;y<tensor_input.GetSizeY();y++)
+  {
+   for(uint32_t x=0;x<tensor_input.GetSizeX();x++,d_xin++,d_xout++)
+   {
+    type_t v=*d_xin;
+    v*=k;
+    *d_xout=v;
+   }
+  }
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//!ограничить тензор по норме XY
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::ClipByNormXY(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t threshold)
+{
+ if (cTensor_Input.Size_W!=cTensor_Output.Size_W || cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::ClipByNorm: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ //запускаем процесс
+ dim3 thread(1,1,1);
+
+ dim3 blocks(cTensor_Input.Size_W,cTensor_Input.Size_Z);
+
+ CUDATensorClipByNormXYTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,threshold);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для ограничения нормы элементов по X для каждого Y и Z
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorClipByNormXTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,type_t threshold)
+{
+ uint32_t w_in=Mod(blockIdx.x,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(blockIdx.x,tensor_output.GetSizeW());
+ uint32_t z=Mod(blockIdx.y,tensor_output.GetSizeZ());
+ uint32_t y=blockIdx.z;
+
+ //суммируем по X
+ type_t *d_xin=tensor_input.GetTensorDataPtr(w_in,z)+y*tensor_input.GetSizeX();
+ type_t *d_xout=tensor_output.GetTensorDataPtr(w_out,z)+y*tensor_input.GetSizeX();
+ type_t *d_xin_local=d_xin;
+ type_t summ=0;
+ for(uint32_t x=0;x<tensor_input.GetSizeX();x++,d_xin_local++)
+ {
+  type_t v=*d_xin_local;
+  summ+=v*v;
+ }
+ summ=sqrt(summ);
+ //нормируем, если нужно
+ if (summ>threshold)
+ {
+  type_t k=threshold/summ;
+  for(uint32_t x=0;x<tensor_input.GetSizeX();x++,d_xin++,d_xout++)
+  {
+   type_t v=*d_xin;
+   v*=k;
+   *d_xout=v;
+  }
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//!ограничить тензор по норме X
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::ClipByNormX(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t threshold)
+{
+ if (cTensor_Input.Size_W!=cTensor_Output.Size_W || cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ {
+  throw "CTensor::ClipByNorm: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ //запускаем процесс
+ dim3 thread(1,1,1);
+
+ dim3 blocks(cTensor_Input.Size_W,cTensor_Input.Size_Z,cTensor_Input.Size_Y);
+
+ CUDATensorClipByNormXTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,threshold);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для прямого прохода GroupNorm
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDAGroupNormForwardFunction(
+    STensorKernel<type_t> tensor_output,
+    STensorKernel<type_t> tensor_input,
+    STensorKernel<type_t> tensor_gamma,
+    STensorKernel<type_t> tensor_beta,
+    STensorKernel<type_t> tensor_xhat,
+    STensorKernel<type_t> tensor_inv_std,
+    uint32_t channels_per_group,
+    type_t epsilon)
+{
+    uint32_t w = blockIdx.x;
+    uint32_t g = blockIdx.y;
+
+    uint32_t Z = tensor_input.GetSizeZ();
+    uint32_t Y = tensor_input.GetSizeY();
+    uint32_t X = tensor_input.GetSizeX();
+    // Исправлено: приведение к type_t до умножения, чтобы избежать переполнения uint32_t
+    type_t M = static_cast<type_t>(channels_per_group) *
+               static_cast<type_t>(Y) *
+               static_cast<type_t>(X);
+
+    // 1. Считаем среднее (mean)
+    type_t sum = 0;
+    for (uint32_t c = g * channels_per_group; c < (g + 1) * channels_per_group; c++)
+    {
+        type_t *ptr = tensor_input.GetTensorDataPtr(w, c);
+        for (uint32_t i = 0; i < Y * X; i++) sum += ptr[i];
+    }
+    type_t mean = sum / M;
+
+    // 2. Считаем дисперсию (variance)
+    type_t sq_sum = 0;
+    for (uint32_t c = g * channels_per_group; c < (g + 1) * channels_per_group; c++)
+    {
+        type_t *ptr = tensor_input.GetTensorDataPtr(w, c);
+        for (uint32_t i = 0; i < Y * X; i++)
+        {
+            type_t diff = ptr[i] - mean;
+            sq_sum += diff * diff;
+        }
+    }
+    type_t var = sq_sum / M;
+
+    // ЗАЩИТА: дисперсия не может быть отрицательной (из-за погрешностей float)
+    if (var < 0) var = 0;
+
+    type_t inv_std = 1.0 / sqrt(var + epsilon);
+
+    // Кэшируем для backward
+    tensor_inv_std.SetElement(w, g, 0, 0, inv_std);
+
+    // 3. Нормализуем и масштабируем
+    for (uint32_t c = g * channels_per_group; c < (g + 1) * channels_per_group; c++)
+    {
+        type_t gamma = tensor_gamma.GetElement(0, c, 0, 0);
+        type_t beta = tensor_beta.GetElement(0, c, 0, 0);
+        type_t *in_ptr = tensor_input.GetTensorDataPtr(w, c);
+        type_t *out_ptr = tensor_output.GetTensorDataPtr(w, c);
+        type_t *xhat_ptr = tensor_xhat.GetTensorDataPtr(w, c);
+
+        for (uint32_t i = 0; i < Y * X; i++)
+        {
+            type_t xhat = (in_ptr[i] - mean) * inv_std;
+
+            // FIREWALL: Если на входе мусор, обнуляем, чтобы не плодить NaN
+            if (!isfinite(xhat)) xhat = 0;
+            if (!isfinite(in_ptr[i])) xhat = 0;
+
+            xhat_ptr[i] = xhat;
+            type_t out_val = gamma * xhat + beta;
+            if (!isfinite(out_val)) out_val = 0; // Защита выхода
+            out_ptr[i] = out_val;
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для обратного прохода GroupNorm
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDAGroupNormBackwardFunction(
+    STensorKernel<type_t> tensor_dy,
+    STensorKernel<type_t> tensor_xhat,
+    STensorKernel<type_t> tensor_gamma,
+    STensorKernel<type_t> tensor_inv_std,
+    STensorKernel<type_t> tensor_dx,
+    STensorKernel<type_t> tensor_dgamma,
+    STensorKernel<type_t> tensor_dbeta,
+    uint32_t channels_per_group,
+    bool calc_weights)
+{
+    uint32_t w = blockIdx.x;
+    uint32_t g = blockIdx.y;
+
+    uint32_t W = tensor_dy.GetSizeW(); // BatchSize
+    uint32_t Y = tensor_dy.GetSizeY();
+    uint32_t X = tensor_dy.GetSizeX();
+    // Исправлено: приведение к type_t до умножения
+    type_t M = static_cast<type_t>(channels_per_group) *
+               static_cast<type_t>(Y) *
+               static_cast<type_t>(X);
+
+     // Масштабирующий коэффициент для усреднения (1 / BatchSize * Y * X)
+    type_t scale =1.0;// 1.0 / (static_cast<type_t>(W) * static_cast<type_t>(Y) * static_cast<type_t>(X));
+
+
+    type_t inv_std = tensor_inv_std.GetElement(w, g, 0, 0);
+
+    // Первый проход: суммируем градиенты по группе
+    type_t sum_dxhat = 0;
+    type_t sum_dxhat_xhat = 0;
+
+    for (uint32_t c = g * channels_per_group; c < (g + 1) * channels_per_group; c++)
+    {
+        type_t gamma = tensor_gamma.GetElement(0, c, 0, 0);
+        type_t *dy_ptr = tensor_dy.GetTensorDataPtr(w, c);
+        type_t *xhat_ptr = tensor_xhat.GetTensorDataPtr(w, c);
+
+        for (uint32_t i = 0; i < Y * X; i++)
+        {
+            type_t dy = dy_ptr[i];
+            type_t xhat = xhat_ptr[i];
+            type_t dxhat = dy * gamma;
+
+            sum_dxhat += dxhat;
+            sum_dxhat_xhat += dxhat * xhat;
+
+            if (calc_weights)
+            {
+                type_t dg = dy * xhat * scale;
+                type_t db = dy * scale;
+                if (isfinite(dg)) atomicAdd(&tensor_dgamma.GetTensorDataPtr(0, c)[0], dg);
+                if (isfinite(db)) atomicAdd(&tensor_dbeta.GetTensorDataPtr(0, c)[0], db);
+            }
+        }
+    }
+
+ // Второй проход: вычисляем градиент для предыдущего слоя
+    for (uint32_t c = g * channels_per_group; c < (g + 1) * channels_per_group; c++)
+    {
+        type_t gamma = tensor_gamma.GetElement(0, c, 0, 0);
+        type_t *dy_ptr = tensor_dy.GetTensorDataPtr(w, c);
+        type_t *xhat_ptr = tensor_xhat.GetTensorDataPtr(w, c);
+        type_t *dx_ptr = tensor_dx.GetTensorDataPtr(w, c);
+
+        for (uint32_t i = 0; i < Y * X; i++)
+        {
+            type_t dy = dy_ptr[i];
+            type_t xhat = xhat_ptr[i];
+            type_t dxhat = dy * gamma;
+
+            type_t dx = (1.0 / M) * inv_std * (M * dxhat - sum_dxhat - xhat * sum_dxhat_xhat);
+
+            // FIREWALL: Не пускаем NaN в предыдущие слои
+            if (!isfinite(dx)) dx = 0;
+
+            dx_ptr[i] = dx;
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------------
+//!выполнить прямой проход GroupNorm
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::GroupNormForward(
+    CTensor<type_t> &cTensor_Output,
+    CTensor<type_t> &cTensor_Input,
+    CTensor<type_t> &cTensor_Gamma,
+    CTensor<type_t> &cTensor_Beta,
+    CTensor<type_t> &cTensor_XHAT,
+    CTensor<type_t> &cTensor_InvStd,
+    uint32_t num_groups,
+    uint32_t channels_per_group,
+    type_t epsilon)   // добавлен параметр epsilon
+{
+    cTensor_Input.CopyToDevice();
+    cTensor_Gamma.CopyToDevice();
+    cTensor_Beta.CopyToDevice();
+
+    STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+    STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+    STensorKernel<type_t> sTensorKernel_Gamma(cTensor_Gamma);
+    STensorKernel<type_t> sTensorKernel_Beta(cTensor_Beta);
+    STensorKernel<type_t> sTensorKernel_XHAT(cTensor_XHAT);
+    STensorKernel<type_t> sTensorKernel_InvStd(cTensor_InvStd);
+
+    dim3 blocks(cTensor_Input.Size_W, num_groups);
+    dim3 threads(1, 1);
+
+    CUDAGroupNormForwardFunction<type_t><<<blocks, threads>>>(
+        sTensorKernel_Output, sTensorKernel_Input, sTensorKernel_Gamma, sTensorKernel_Beta,
+        sTensorKernel_XHAT, sTensorKernel_InvStd, channels_per_group, epsilon  // передаём epsilon
+    );
+    HANDLE_ERROR(cudaGetLastError());
+    HANDLE_ERROR(cudaDeviceSynchronize());
+
+    cTensor_Output.SetDeviceOnChange();
+    cTensor_XHAT.SetDeviceOnChange();
+    cTensor_InvStd.SetDeviceOnChange();
+}
+
+//----------------------------------------------------------------------------------------------------
+//!выполнить обратный проход GroupNorm
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::GroupNormBackward(
+    CTensor<type_t> &cTensor_Delta_Array,
+    CTensor<type_t> &cTensor_XHAT_Array,
+    CTensor<type_t> &cTensor_Gamma,
+    CTensor<type_t> &cTensor_InvStd_Array,
+    CTensor<type_t> &cTensor_PrevLayerError_Array,
+    CTensor<type_t> &cTensor_dGamma,
+    CTensor<type_t> &cTensor_dBeta,
+    uint32_t num_groups,
+    uint32_t channels_per_group,
+    bool calc_weights)
+{
+    cTensor_Delta_Array.CopyToDevice();
+    cTensor_XHAT_Array.CopyToDevice();
+    cTensor_Gamma.CopyToDevice();
+    cTensor_InvStd_Array.CopyToDevice();
+
+    STensorKernel<type_t> sTensorKernel_Dy(cTensor_Delta_Array);
+    STensorKernel<type_t> sTensorKernel_Xhat(cTensor_XHAT_Array);
+    STensorKernel<type_t> sTensorKernel_Gamma(cTensor_Gamma);
+    STensorKernel<type_t> sTensorKernel_InvStd(cTensor_InvStd_Array);
+    STensorKernel<type_t> sTensorKernel_Dx(cTensor_PrevLayerError_Array);
+    STensorKernel<type_t> sTensorKernel_Dgamma(cTensor_dGamma);
+    STensorKernel<type_t> sTensorKernel_Dbeta(cTensor_dBeta);
+
+    dim3 blocks(cTensor_Delta_Array.Size_W, num_groups);
+    dim3 threads(1, 1);
+
+    CUDAGroupNormBackwardFunction<type_t><<<blocks, threads>>>(
+        sTensorKernel_Dy, sTensorKernel_Xhat, sTensorKernel_Gamma, sTensorKernel_InvStd,
+        sTensorKernel_Dx, sTensorKernel_Dgamma, sTensorKernel_Dbeta, channels_per_group, calc_weights
+    );
+    HANDLE_ERROR(cudaGetLastError());
+    HANDLE_ERROR(cudaDeviceSynchronize());
+
+    cTensor_PrevLayerError_Array.SetDeviceOnChange();
+    if (calc_weights)
+    {
+        cTensor_dGamma.SetDeviceOnChange();
+        cTensor_dBeta.SetDeviceOnChange();
+    }
 }
 
 #endif

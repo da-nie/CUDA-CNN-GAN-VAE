@@ -49,6 +49,8 @@ class CNetLayerConvolutionInput:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  //ограничение нормы
+  using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerConvolutionInput(uint32_t size_z,uint32_t size_y,uint32_t size_x,uint32_t batch_size=1);

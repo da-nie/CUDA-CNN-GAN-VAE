@@ -70,7 +70,7 @@
 	"ctensor.h"
 	"ctensormath.h"
 
-1777488411 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensormath.h
+1779897930 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensormath.h
 	"ctensor.h"
 
 1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cpu/ctensorconv.cpp
@@ -98,23 +98,23 @@
 	"ctensorconv.h"
 	"ctensorapplyfunc.h"
 
-1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu
+1745037930 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu
 	"ccudatimespent.cu.h"
 
-1745048730 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu.h
+1745037930 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudatimespent.cu.h
 	<stdio.h>
 	<stdint.h>
 	<cuda_runtime.h>
 	<cuda_runtime_api.h>
 	"handle_error.cu.h"
 
-1745048730 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/handle_error.cu.h
+1745037930 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/handle_error.cu.h
 	"../system/system.h"
 
-1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensor.cu
+1745037930 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensor.cu
 	"ctensor.cu.h"
 
-1772290870 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensor.cu.h
+1772280070 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensor.cu.h
 	"../settings.h"
 	"../cpu/ctensor.h"
 	<vector>
@@ -127,9 +127,9 @@
 	"../system/system.h"
 	"ccudadevicevector.cu.h"
 
-1778523201 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/settings.h
+1787407790 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/settings.h
 
-1755591366 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudadevicevector.cu.h
+1755580566 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ccudadevicevector.cu.h
 	<stdio.h>
 	<stdint.h>
 	<cuda_runtime.h>
@@ -137,27 +137,29 @@
 	"handle_error.cu.h"
 	"../system/system.h"
 
-1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu
+1745037930 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu
 	"ctensorapplyfunc.cu.h"
 
-1766240084 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu.h
+1766229284 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorapplyfunc.cu.h
 	"../settings.h"
 	"../cpu/ctensorapplyfunc.h"
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 
-1778929779 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
+1787370794 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu.h
 	"../settings.h"
 	"../cpu/ctensormath.h"
 	"ctensor.cu.h"
+	<cuda_runtime.h>
+	<cuda_runtime_api.h>
+	<curand_kernel.h>
 	<cuda_fp16.h>
 	<mma.h>
-	<curand_kernel.h>
 
-1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu
+1745037930 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu
 	"ctensorconv.cu.h"
 
-1777315796 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu.h
+1787137524 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensorconv.cu.h
 	"../settings.h"
 	"../cpu/ctensorconv.h"
 	"ctensor.cu.h"
@@ -165,23 +167,23 @@
 	<vector>
 	"ccudatimespent.cu.h"
 
-1745037930 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu
+1745027130 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensormath.cu
 	"ctensormath.cu.h"
 
-1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu
+1745037930 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu
 	"ctimestamp.cu.h"
 	"../system/system.h"
 
-1745048730 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu.h
+1745037930 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctimestamp.cu.h
 	<string>
 	<cuda_runtime.h>
 	<cuda_runtime_api.h>
 	"ccudatimespent.cu.h"
 
-1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu
+1745037930 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu
 	"ctensortest.cu.h"
 
-1777046725 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu.h
+1777035924 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/ctensortest.cu.h
 	"ctensor.cu.h"
 	"../system/system.h"
 	"ctensormath.cu.h"
@@ -249,7 +251,7 @@
 	<stdint.h>
 	<string>
 
-1745048730 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/tensor.cu.h
+1745037930 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/tensor.cu.h
 	"ctensor.cu.h"
 	"ctensormath.cu.h"
 	"ctensorconv.cu.h"
@@ -404,7 +406,7 @@
 	"../cuda/tensor.cu.h"
 	"neuron.cu.h"
 
-1778338656 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
+1786898143 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayerbatchnormalization.cu.h
 	<stdio.h>
 	<fstream>
 	"../common/idatastream.h"
@@ -446,7 +448,7 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/tensor.cu
+1745037930 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/tensor.cu
 	"tensor.cu.h"
 
 1745048730 source:/home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/libjpeg/cdjpeg.c
@@ -2332,10 +2334,10 @@
 	<stdlib.h>
 	<math.h>
 
-1778932016 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_diffusion.cu.h
+1786898256 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_diffusion.cu.h
 	"cmodel_basicdiffusion.cu.h"
 
-1778929590 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicdiffusion.cu.h
+1786892424 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/cuda/netmodel/cmodel_basicdiffusion.cu.h
 	<string>
 	<vector>
 	<array>
@@ -2446,7 +2448,7 @@
 	"../ctimestamp.cu.h"
 	"cmodelmain.cu.h"
 
-1778338119 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayersoftmax.cu.h
+1786467823 /home/da-nie/Working/CUDA/CUDA-CNN-GAN-VAE/netlayer/cnetlayersoftmax.cu.h
 	<stdio.h>
 	<fstream>
 	<vector>

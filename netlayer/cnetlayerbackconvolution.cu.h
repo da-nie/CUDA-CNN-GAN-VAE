@@ -90,6 +90,8 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  //ограничение нормы
+  using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerBackConvolution(uint32_t kernel_size,uint32_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -484,7 +486,7 @@ void CNetLayerBackConvolution<type_t>::TrainingBackward(bool create_delta_weight
  //вычисляем ошибку предшествующего слоя
  CTensor<type_t> cTensor_BiasZero=cTensor_Bias;
  CTensorMath<type_t>::Fill(cTensor_BiasZero,0);
- CTensorConv<type_t>::ForwardConvolution(cTensor_PrevLayerError,cTensor_Delta,cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_BiasZero,Stride_X,Stride_Y,Padding_X,Padding_Y);
+ CTensorConv<type_t>::BackwardConvolution(cTensor_PrevLayerError,cTensor_Delta,cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_BiasZero,Stride_X,Stride_Y,Padding_X,Padding_Y);
  if (create_delta_weight==true)
  {
   CTensorMath<type_t>::Fill(cTensor_dKernel_Batch,0);
@@ -519,6 +521,9 @@ void CNetLayerBackConvolution<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerBackConvolution<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
+ CTensorMath<type_t>::ClipByNormX(cTensor_dKernel,cTensor_dKernel,ClipByNormThresHold);
+ CTensorMath<type_t>::ClipByNormXY(cTensor_dBias,cTensor_dBias,ClipByNormThresHold);
+
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam

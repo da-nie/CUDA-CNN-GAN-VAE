@@ -54,6 +54,7 @@ class CNetLayerTimeEmbedding:public INetLayer<type_t>
   uint32_t InputSize_Z;///<размер входного тензора по Z
 
   CTensor<uint32_t> cTensor_TimeLine;///<тензор моментов времени
+  type_t Scale;///<масштабирование временной добавки
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
@@ -61,15 +62,17 @@ class CNetLayerTimeEmbedding:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  //ограничение нормы
+  using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerTimeEmbedding(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
+  CNetLayerTimeEmbedding(INetLayer<type_t> *prev_layer_ptr=NULL,type_t scale=1.0,uint32_t batch_size=1);
   CNetLayerTimeEmbedding(void);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerTimeEmbedding();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
+  void Create(INetLayer<type_t> *prev_layer_ptr=NULL,type_t scale=1.0,uint32_t batch_size=1);///<создать слой
   void Reset(void);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -113,9 +116,9 @@ class CNetLayerTimeEmbedding:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerTimeEmbedding<type_t>::CNetLayerTimeEmbedding(INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
+CNetLayerTimeEmbedding<type_t>::CNetLayerTimeEmbedding(INetLayer<type_t> *prev_layer_ptr,type_t scale,uint32_t batch_size)
 {
- Create(prev_layer_ptr,batch_size);
+ Create(prev_layer_ptr,scale,batch_size);
 }
 //----------------------------------------------------------------------------------------------------
 //!конструктор
@@ -149,12 +152,13 @@ CNetLayerTimeEmbedding<type_t>::~CNetLayerTimeEmbedding()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerTimeEmbedding<type_t>::Create(INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
+void CNetLayerTimeEmbedding<type_t>::Create(INetLayer<type_t> *prev_layer_ptr,type_t scale,uint32_t batch_size)
 {
  PrevLayerPtr=prev_layer_ptr;
  NextLayerPtr=NULL;
 
  BatchSize=batch_size;
+ Scale=scale;
 
  if (prev_layer_ptr==NULL) throw("Слой времени не может быть входным!");//слой без предшествующего считается входным
 
@@ -223,7 +227,7 @@ void CNetLayerTimeEmbedding<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerTimeEmbedding<type_t>::Forward(void)
 {
- CTensorMath<type_t>::SetTimeStep(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_TimeLine);
+ CTensorMath<type_t>::SetTimeStep(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_TimeLine,Scale);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор

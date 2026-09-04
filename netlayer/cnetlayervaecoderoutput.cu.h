@@ -76,6 +76,8 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  //ограничение нормы
+  using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerVAECoderOutput(type_t kl_speed=0.1,INetLayer<type_t> *mu_layer_ptr=NULL,INetLayer<type_t> *logvar_layer_ptr=NULL,uint32_t batch_size=1);

@@ -74,6 +74,8 @@ class CNetLayerLinear:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  //ограничение нормы
+  using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerLinear(uint32_t neurons,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -463,6 +465,9 @@ void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
+ CTensorMath<type_t>::ClipByNormXY(cTensor_dW,cTensor_dW,ClipByNormThresHold);
+ CTensorMath<type_t>::ClipByNormXY(cTensor_dB,cTensor_dB,ClipByNormThresHold);
+
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam

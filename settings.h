@@ -14,4 +14,7 @@
 //использовать ли генерацию случайных чисел с нормальным распределением для диффузионной сети на GPU (на многих картах будет сильно медленнее, чем на CPU)
 //#define USE_GPU_NORMAL_RANDOM_GENERATOR_FOR_DIFFUSION_NET
 
+//использовать цветовую модель LAB
+//#define USE_COLOR_MODEL_LAB
+
 #endif

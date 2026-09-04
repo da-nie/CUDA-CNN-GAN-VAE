@@ -94,6 +94,8 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  //ограничение нормы
+  using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerBatchNormalization(type_t momentum,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -628,6 +630,9 @@ void CNetLayerBatchNormalization<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
+ CTensorMath<type_t>::ClipByNormXY(cTensor_dGamma,cTensor_dGamma,ClipByNormThresHold);
+ CTensorMath<type_t>::ClipByNormXY(cTensor_dBeta,cTensor_dBeta,ClipByNormThresHold);
+
 /*
  printf("Layer:%i Gamma:%f Beta:%f -> ",Layer,cTensor_Gamma.GetElement(0,0,0,0),cTensor_Beta.GetElement(0,0,0,0));
  printf("dGamma:%f dBeta:%f\r\n",cTensor_dGamma.GetElement(0,0,0,0),cTensor_dBeta.GetElement(0,0,0,0));
@@ -652,10 +657,10 @@ void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,doub
 
  if (EMAEnabled==true)
  {
-  CTensorMath<type_t>::Add(cTensor_Gamma_EMA,cTensor_Gamma_EMA,cTensor_Gamma,EMA_K,1,0-EMA_K);
-  CTensorMath<type_t>::Add(cTensor_Beta_EMA,cTensor_Beta_EMA,cTensor_Beta,EMA_K,1,0-EMA_K);
-  CTensorMath<type_t>::Add(cTensor_Mean_EMA,cTensor_Mean_EMA,cTensor_Mean,EMA_K,1,0-EMA_K);
-  CTensorMath<type_t>::Add(cTensor_Variable_EMA,cTensor_Variable_EMA,cTensor_Variable,EMA_K,1,0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Gamma_EMA,cTensor_Gamma_EMA,cTensor_Gamma,EMA_K,1.0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Beta_EMA,cTensor_Beta_EMA,cTensor_Beta,EMA_K,1.0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Mean_EMA,cTensor_Mean_EMA,cTensor_Mean,EMA_K,1.0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Variable_EMA,cTensor_Variable_EMA,cTensor_Variable,EMA_K,1.0-EMA_K);
  }
 }
 //----------------------------------------------------------------------------------------------------

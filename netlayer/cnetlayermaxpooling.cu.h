@@ -63,6 +63,8 @@ class CNetLayerMaxPooling:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  //ограничение нормы
+  using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerMaxPooling(uint32_t pooling_y,uint32_t pooling_x,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
