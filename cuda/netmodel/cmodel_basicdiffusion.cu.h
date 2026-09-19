@@ -98,10 +98,6 @@ class CModelBasicDiffusion:public CModelMain<type_t>
   uint32_t IMAGE_WIDTH;///<ширина входных изображений
   uint32_t IMAGE_HEIGHT;///<высота входных изображений
   uint32_t IMAGE_DEPTH;///<глубина входных изображений
-  uint32_t HIDDEN_LAYER_SIDE_X;///<размерность стороны скрытого слоя по X
-  uint32_t HIDDEN_LAYER_SIDE_Y;///<размерность стороны скрытого слоя по Y
-  uint32_t HIDDEN_LAYER_SIDE_Z;///<размерность стороны скрытого слоя по Z
-  uint32_t HIDDEN_LAYER_SIZE;///<размерность скрытого слоя
 
   uint32_t BATCH_AMOUNT;///<количество пакетов
   uint32_t BATCH_SIZE;///<размер пакета
@@ -189,10 +185,6 @@ CModelBasicDiffusion<type_t>::CModelBasicDiffusion(void)
  IMAGE_WIDTH=0;
  IMAGE_HEIGHT=0;
  IMAGE_DEPTH=0;
- HIDDEN_LAYER_SIDE_X=0;
- HIDDEN_LAYER_SIDE_Y=0;
- HIDDEN_LAYER_SIDE_Z=0;
- HIDDEN_LAYER_SIZE=HIDDEN_LAYER_SIDE_X*HIDDEN_LAYER_SIDE_Y*HIDDEN_LAYER_SIDE_Z;
 
  SPEED=0;
 
@@ -203,7 +195,7 @@ CModelBasicDiffusion<type_t>::CModelBasicDiffusion(void)
 
  Iteration=0;
 
- TIME_COUNTER=1000;
+ TIME_COUNTER=500;
 }
 //----------------------------------------------------------------------------------------------------
 //деструктор

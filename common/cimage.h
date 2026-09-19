@@ -16,6 +16,7 @@
 
 #include "ccolormodel.h"
 #include "tga.h"
+#include "../settings.h"
 
 //****************************************************************************************************
 //макроопределения
@@ -144,9 +145,11 @@ bool CImage<type_t>::LoadImage(const std::string &file_name,uint32_t output_imag
    if (output_image_depth==1) image[x+y*output_image_width]=gray;
    if (output_image_depth==3)
    {
+    #ifdef USE_COLOR_MODEL_LAB
     r=sl;
     g=sa;
     b=sb;
+    #endif
 
     if (r<-1) r=-1;
     if (g<-1) g=-1;
@@ -241,6 +244,7 @@ void CImage<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &name,
      b*=255.0;
     }
 
+    #ifdef USE_COLOR_MODEL_LAB
     //восстановление из Lab
     {
      float sl=ir;
@@ -252,6 +256,7 @@ void CImage<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &name,
 
 	 CColorModel::Lab2RGB(sl,sa,sb,r,g,b);
     }
+    #endif
 
 
     if (r<0) r=0;

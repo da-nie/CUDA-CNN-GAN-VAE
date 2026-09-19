@@ -3327,7 +3327,7 @@ void CTensorMath<type_t>::Adam(CTensor<type_t> &cTensor_Weight,CTensor<type_t> &
  cTensor_V.SetDeviceOnChange();
 }
 
-
+/*
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для добавления временного шага
 //----------------------------------------------------------------------------------------------------
@@ -3358,6 +3358,60 @@ __global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,STensorKerne
                else value+=cos(angle)*scale;//нечётное
  tensor_output.SetElement(w,z,yp,xp,value);
  __syncthreads();
+}*/
+
+
+//----------------------------------------------------------------------------------------------------
+// Функция CUDA для добавления временного шага
+//
+// ВАЖНО: временное кодирование зависит ТОЛЬКО от канала z и шага t.
+// Оно одинаково для всех пространственных позиций (xp, yp).
+// Формула (стандарт "Attention is All You Need"):
+//   emb[2i]   = sin( t / 10000^(2i/C) )
+//   emb[2i+1] = cos( t / 10000^(2i/C) )
+// где C — число каналов тензора, i = z / 2.
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,
+                                STensorKernel<type_t> tensor_input,
+                                STensorKernel<uint32_t> tensor_time_step,
+                                type_t scale)
+{
+    uint32_t blockCol = blockIdx.z;
+    uint32_t blockRow = blockIdx.y;
+    uint32_t z = Mod(blockIdx.x, tensor_input.GetSizeZ());
+    uint32_t w = Mod((blockIdx.x / tensor_input.GetSizeZ()), tensor_input.GetSizeW());
+
+    // координаты элементов блока в выходном тензоре
+    uint32_t x = threadIdx.x;
+    uint32_t y = threadIdx.y;
+
+    // получаем подтензоры
+    uint32_t xp = blockCol * CTensorMath<type_t>::TILE_BLOCK_SIZE + x;
+    uint32_t yp = blockRow * CTensorMath<type_t>::TILE_BLOCK_SIZE + y;
+
+    if (xp >= tensor_input.GetSizeX() || yp >= tensor_input.GetSizeY()) return;
+
+    // шаг времени для данного элемента пакета (w — индекс картинки в батче)
+    type_t time_step = static_cast<type_t>(tensor_time_step.GetElement(w, 0, 0, 0));
+
+    // --- Временное кодирование: зависит только от z и t ---
+    const uint32_t C = tensor_input.GetSizeZ();        // число каналов
+    const uint32_t i = z / 2;                          // индекс "полупары" sin/cos
+    const type_t exponent = static_cast<type_t>(2 * i) / static_cast<type_t>(C);
+    const type_t freq = pow(10000.0f, exponent);
+    const type_t angle = time_step / freq;
+
+    type_t emb_z;
+    if ((z & 0x01) == 0)     // чётный канал -> sin
+        emb_z = sin(angle) * scale;
+    else                     // нечётный канал -> cos
+        emb_z = cos(angle) * scale;
+
+    // --- Добавление одинакового значения ко всем пикселям канала z ---
+    type_t value = tensor_input.GetElement(w, z, yp, xp);
+    value += emb_z;
+    tensor_output.SetElement(w, z, yp, xp, value);
 }
 
 //----------------------------------------------------------------------------------------------------
