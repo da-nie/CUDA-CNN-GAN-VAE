@@ -312,6 +312,7 @@ void CModelBasicVAE<type_t>::SaveRandomImage(void)
  //выполняем прямой проход по сети
  //for(uint32_t layer=0;layer<CoderNet.size();layer++) CoderNet[layer]->Forward();
  //выполняем прямой проход по сети
+ for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->SetInferenceMode(true);
  for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->Forward();
  //получаем ответ сети
  cTensor_Image=DecoderNet[DecoderNet.size()-1]->GetOutputTensor();
@@ -346,7 +347,7 @@ void CModelBasicVAE<type_t>::SaveRandomImage(void)
   SaveImage(cTensor_Image,str,n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
   if (n==0) SaveImage(cTensor_Image,"Test/test-current.tga",n,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
  }
-
+ for(uint32_t layer=0;layer<DecoderNet.size();layer++) DecoderNet[layer]->SetInferenceMode(false);
  counter++;
 }
 //----------------------------------------------------------------------------------------------------
@@ -486,11 +487,13 @@ void CModelBasicVAE<type_t>::TrainingNet(bool mnist)
  {
   CoderNet[n]->TrainingModeAdam(0.9,0.999);
   CoderNet[n]->TrainingStart();
+  CoderNet[n]->SetInferenceMode(false);
  }
  for(uint32_t n=0;n<DecoderNet.size();n++)
  {
   DecoderNet[n]->TrainingModeAdam(0.9,0.999);
   DecoderNet[n]->TrainingStart();
+  DecoderNet[n]->SetInferenceMode(false);
  }
 
  //загружаем изображения
@@ -721,11 +724,13 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoderNet(bool mnist)
  {
   CoderNet[n]->TrainingModeAdam();
   CoderNet[n]->TrainingStart();
+  CoderNet[n]->SetInferenceMode(false);
  }
  for(uint32_t n=0;n<DecoderNet.size();n++)
  {
   DecoderNet[n]->TrainingModeAdam();
   DecoderNet[n]->TrainingStart();
+  DecoderNet[n]->SetInferenceMode(false);
  }
 
  //загружаем параметры обучения

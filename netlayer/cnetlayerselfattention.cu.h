@@ -1,8 +1,8 @@
-#ifndef C_NET_LAYER_VAE_CODER_OUTPUT_H
-#define C_NET_LAYER_VAE_CODER_OUTPUT_H
+#ifndef C_NET_LAYER_SELF_ATTENTION_H
+#define C_NET_LAYER_SELF_ATTENTION_H
 
 //****************************************************************************************************
-//\file Слой выхода кодера генеративного автоэнкодера
+//\file Слой самовнимания
 //****************************************************************************************************
 
 //****************************************************************************************************
@@ -36,10 +36,10 @@
 //****************************************************************************************************
 
 //****************************************************************************************************
-//! Слой выхода кодера генеративного автоэнкодера
+//! Слой самовнимания
 //****************************************************************************************************
 template<class type_t>
-class CNetLayerVAECoderOutput:public INetLayer<type_t>
+class CNetLayerSelfAttention:public INetLayer<type_t>
 {
  public:
   //-перечисления---------------------------------------------------------------------------------------
@@ -49,13 +49,16 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
   //-переменные-----------------------------------------------------------------------------------------
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  INetLayer<type_t> *MuLayerPtr;///<указатель на слой mu
-  INetLayer<type_t> *LogVarLayerPtr;///<указатель на слой logvar
+  //структура слоя самовнимания
+  std::shared_ptr<INetLayer<type_t> > iNetLayer_Q;
+  std::shared_ptr<INetLayer<type_t> > iNetLayer_K;
+  std::shared_ptr<INetLayer<type_t> > iNetLayer_V;
+  std::shared_ptr<INetLayer<type_t> > iNetLayer_Splitter;
+  std::shared_ptr<INetLayer<type_t> > iNetLayer_Concatenator;
+  std::shared_ptr<INetLayer<type_t> > iNetLayer_Softmax;
+  std::shared_ptr<INetLayer<type_t> > iNetLayer_Output;
 
   uint32_t BatchSize;///<размер пакета для обучения
-
-  CTensor<type_t> cTensor_H;///<выходной тензор значений нейронов
-  CTensor<type_t> cTensor_Epsilon;///<тензор шума
 
   uint32_t InputSize_X;///<размер входного тензора по X
   uint32_t InputSize_Y;///<размер входного тензора по Y
@@ -65,13 +68,6 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
   uint32_t OutputSize_Y;///<размер выходного тензора по Y
   uint32_t OutputSize_Z;///<размер выходного тензора по Z
 
-  //тензоры, используемые при обучении
-  CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
-  CTensor<type_t> cTensor_PrevLayerError_Mu;///<тензоры ошибки слоя mu
-  CTensor<type_t> cTensor_PrevLayerError_LogVar;///<тензоры ошибки слоя logvar
-
-  type_t KLSpeed;///<предельная скорость KL-дивергенции
-  type_t KLSpeedCurrent;///<текущая скорость KL-дивергенции
   //режим усреднения
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
@@ -80,13 +76,13 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
   using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerVAECoderOutput(type_t kl_speed=0.1,INetLayer<type_t> *mu_layer_ptr=NULL,INetLayer<type_t> *logvar_layer_ptr=NULL,uint32_t batch_size=1);
-  CNetLayerVAECoderOutput(void);
+  CNetLayerSelfAttention(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
+  CNetLayerSelfAttention(void);
   //-деструктор-----------------------------------------------------------------------------------------
-  ~CNetLayerVAECoderOutput();
+  ~CNetLayerSelfAttention();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(type_t kl_speed=0.1,INetLayer<type_t> *mu_layer_ptr=NULL,INetLayer<type_t> *logvar_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
+  void Create(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(type_t scale=1);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
@@ -130,15 +126,15 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerVAECoderOutput<type_t>::CNetLayerVAECoderOutput(type_t kl_speed,INetLayer<type_t> *mu_layer_ptr,INetLayer<type_t> *logvar_layer_ptr,uint32_t batch_size)
+CNetLayerSelfAttention<type_t>::CNetLayerSelfAttention(INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
- Create(kl_speed,mu_layer_ptr,logvar_layer_ptr,batch_size);
+ Create(prev_layer_ptr,batch_size);
 }
 //----------------------------------------------------------------------------------------------------
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerVAECoderOutput<type_t>::CNetLayerVAECoderOutput(void)
+CNetLayerSelfAttention<type_t>::CNetLayerSelfAttention(void)
 {
  Create();
 }
@@ -146,7 +142,7 @@ CNetLayerVAECoderOutput<type_t>::CNetLayerVAECoderOutput(void)
 //!деструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerVAECoderOutput<type_t>::~CNetLayerVAECoderOutput()
+CNetLayerSelfAttention<type_t>::~CNetLayerSelfAttention()
 {
 }
 
@@ -166,18 +162,28 @@ CNetLayerVAECoderOutput<type_t>::~CNetLayerVAECoderOutput()
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::Create(type_t kl_speed,INetLayer<type_t> *mu_layer_ptr,INetLayer<type_t> *logvar_layer_ptr,uint32_t batch_size)
+void CNetLayerSelfAttention<type_t>::Create(INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
- MuLayerPtr=mu_layer_ptr;
- LogVarLayerPtr=logvar_layer_ptr;
+ PrevLayerPtr=prev_layer_ptr;
+ NextLayerPtr=NULL;
+ BatchSize=batch_size;
+ Training=false;
+
+  if (PrevLayerPtr==NULL) throw("Слой самовнимания не может быть входным!");//слой без предшествующего считается входным
+
+ iNetLayer_Splitter=std::shared_ptr<INetLayer<type_t>>(new CNetLayerSplitter<type_t>(2,prev_layer_ptr,BatchSize));
+ iNetLayer_Q=std::shared_ptr<INetLayer<type_t>>(new CNetLayerConvolution<type_t>(1,1,1,1,0,0,iNetLayer_Splitter.get(),BatchSize));
+ iNetLayer_K;
+ iNetLayer_V;
+ iNetLayer_Softmax;
+ iNetLayer_Output;
+ iNetLayer_Concatenator;
+
+
+
+
  NextLayerPtr=NULL;
 
- KLSpeed=kl_speed;
- KLSpeedCurrent=0;
-
- BatchSize=batch_size;
-
- if (mu_layer_ptr==NULL || logvar_layer_ptr==NULL) throw("Слой выхода кодера VAE не может быть входным!");//слой без предшествующего считается входным
 
  //запомним размеры входного тензора, чтобы потом всегда к ним приводить
  InputSize_X=MuLayerPtr->GetOutputTensor().GetSizeX();
@@ -206,7 +212,7 @@ void CNetLayerVAECoderOutput<type_t>::Create(type_t kl_speed,INetLayer<type_t> *
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::Reset(type_t scale)
+void CNetLayerSelfAttention<type_t>::Reset(type_t scale)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -216,12 +222,12 @@ void CNetLayerVAECoderOutput<type_t>::Reset(type_t scale)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output)
+void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  cTensor_H=output;
 }
 //----------------------------------------------------------------------------------------------------
@@ -231,19 +237,19 @@ void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output)
+void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output)
 {
- if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
- if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+ if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  output=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::Forward(void)
+void CNetLayerSelfAttention<type_t>::Forward(void)
 {
  //считаем выход слоя
  type_t mean=0;
@@ -293,7 +299,7 @@ void CNetLayerVAECoderOutput<type_t>::Forward(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerVAECoderOutput<type_t>::GetOutputTensor(void)
+CTensor<type_t>& CNetLayerSelfAttention<type_t>::GetOutputTensor(void)
 {
  return(cTensor_H);
 }
@@ -304,7 +310,7 @@ CTensor<type_t>& CNetLayerVAECoderOutput<type_t>::GetOutputTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
+void CNetLayerSelfAttention<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
 {
  NextLayerPtr=next_layer_ptr;
 }
@@ -315,7 +321,7 @@ void CNetLayerVAECoderOutput<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_la
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerVAECoderOutput<type_t>::Save(IDataStream *iDataStream_Ptr)
+bool CNetLayerSelfAttention<type_t>::Save(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }
@@ -326,7 +332,7 @@ bool CNetLayerVAECoderOutput<type_t>::Save(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerVAECoderOutput<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
+bool CNetLayerSelfAttention<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
  return(true);
 }
@@ -337,7 +343,7 @@ bool CNetLayerVAECoderOutput<type_t>::Load(IDataStream *iDataStream_Ptr,bool che
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerVAECoderOutput<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
+bool CNetLayerSelfAttention<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }
@@ -348,7 +354,7 @@ bool CNetLayerVAECoderOutput<type_t>::SaveTrainingParam(IDataStream *iDataStream
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerVAECoderOutput<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
+bool CNetLayerSelfAttention<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }
@@ -357,7 +363,7 @@ bool CNetLayerVAECoderOutput<type_t>::LoadTrainingParam(IDataStream *iDataStream
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::TrainingStart(void)
+void CNetLayerSelfAttention<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
@@ -369,7 +375,7 @@ void CNetLayerVAECoderOutput<type_t>::TrainingStart(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::TrainingStop(void)
+void CNetLayerSelfAttention<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
@@ -381,7 +387,7 @@ void CNetLayerVAECoderOutput<type_t>::TrainingStop(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::TrainingBackward(bool create_delta_weight)
+void CNetLayerSelfAttention<type_t>::TrainingBackward(bool create_delta_weight)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -389,7 +395,7 @@ void CNetLayerVAECoderOutput<type_t>::TrainingBackward(bool create_delta_weight)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::TrainingResetDeltaWeight(void)
+void CNetLayerSelfAttention<type_t>::TrainingResetDeltaWeight(void)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -398,7 +404,7 @@ void CNetLayerVAECoderOutput<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
+void CNetLayerSelfAttention<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
  if (iteration<=5) KLSpeedCurrent=0;
  else
@@ -413,7 +419,7 @@ void CNetLayerVAECoderOutput<type_t>::TrainingUpdateWeight(double speed,double i
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CTensor<type_t>& CNetLayerVAECoderOutput<type_t>::GetDeltaTensor(void)
+CTensor<type_t>& CNetLayerSelfAttention<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
 }
@@ -423,7 +429,7 @@ CTensor<type_t>& CNetLayerVAECoderOutput<type_t>::GetDeltaTensor(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::SetOutputError(CTensor<type_t>& error)
+void CNetLayerSelfAttention<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  cTensor_Delta=error;
  type_t k=KLSpeedCurrent;
@@ -468,7 +474,7 @@ void CNetLayerVAECoderOutput<type_t>::SetOutputError(CTensor<type_t>& error)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::ClipWeight(type_t min,type_t max)
+void CNetLayerSelfAttention<type_t>::ClipWeight(type_t min,type_t max)
 {
 }
 
@@ -479,7 +485,7 @@ void CNetLayerVAECoderOutput<type_t>::ClipWeight(type_t min,type_t max)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
+void CNetLayerSelfAttention<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
 {
 }
 
@@ -489,9 +495,9 @@ void CNetLayerVAECoderOutput<type_t>::SetTimeStep(uint32_t index,uint32_t time_s
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::PrintInputTensorSize(const std::string &name)
+void CNetLayerSelfAttention<type_t>::PrintInputTensorSize(const std::string &name)
 {
- if (MuLayerPtr!=NULL) MuLayerPtr->GetOutputTensor().Print(name+" VAECoderOutput: input ",false);
+ if (MuLayerPtr!=NULL) MuLayerPtr->GetOutputTensor().Print(name+" SelfAttention: input ",false);
 }
 //----------------------------------------------------------------------------------------------------
 /*!вывести размерность выходного тензора слоя
@@ -499,9 +505,9 @@ void CNetLayerVAECoderOutput<type_t>::PrintInputTensorSize(const std::string &na
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::PrintOutputTensorSize(const std::string &name)
+void CNetLayerSelfAttention<type_t>::PrintOutputTensorSize(const std::string &name)
 {
- GetOutputTensor().Print(name+" VAECoderOutput: output",false);
+ GetOutputTensor().Print(name+" SelfAttention: output",false);
 }
 //----------------------------------------------------------------------------------------------------
 /*!<разрешить/запретить использование усреднённых весов
@@ -509,7 +515,7 @@ void CNetLayerVAECoderOutput<type_t>::PrintOutputTensorSize(const std::string &n
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::EnableEMA(bool state)
+void CNetLayerSelfAttention<type_t>::EnableEMA(bool state)
 {
  EMAEnabled=true;
 }
@@ -520,7 +526,7 @@ void CNetLayerVAECoderOutput<type_t>::EnableEMA(bool state)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerVAECoderOutput<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
+bool CNetLayerSelfAttention<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
 {
  return(true);
 }
@@ -531,7 +537,7 @@ bool CNetLayerVAECoderOutput<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerVAECoderOutput<type_t>::SaveEMAWeight(IDataStream *iDataStream_Ptr)
+bool CNetLayerSelfAttention<type_t>::SaveEMAWeight(IDataStream *iDataStream_Ptr)
 {
  return(true);
 }

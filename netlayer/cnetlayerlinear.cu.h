@@ -85,7 +85,7 @@ class CNetLayerLinear:public INetLayer<type_t>
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(uint32_t neurons,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
-  void Reset(void);///<выполнить инициализацию весов и сдвигов
+  void Reset(type_t scale=1);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
@@ -195,7 +195,7 @@ void CNetLayerLinear<type_t>::Create(uint32_t neurons,INetLayer<type_t> *prev_la
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerLinear<type_t>::Reset(void)
+void CNetLayerLinear<type_t>::Reset(type_t scale)
 {
  if (PrevLayerPtr==NULL) return;
 
@@ -213,6 +213,7 @@ void CNetLayerLinear<type_t>::Reset(void)
    type_t rnd=static_cast<type_t>(CRandom<type_t>::GetRandValue(2.0)-1.0);
    type_t init=rnd*koeff;
    //type_t init=cTensor_Rand.GetElement(0,0,x);
+   init*=scale;
    cTensor_W.SetElement(0,0,y,x,init);
   }
  }
@@ -224,6 +225,7 @@ void CNetLayerLinear<type_t>::Reset(void)
   //используем метод инициализации He (Ге)
   //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
   type_t init=0.1;//rnd*koeff;
+  init*=scale;
   cTensor_B.SetElement(0,0,y,0,init);
  }
 }

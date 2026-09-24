@@ -540,6 +540,8 @@ void CModelBasicGAN<type_t>::TrainingGenerator(double &cost,double &middle_answe
 template<class type_t>
 void CModelBasicGAN<type_t>::SaveRandomImage(void)
 {
+ for(uint32_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->SetInferenceMode(true);
+
  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
  CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
@@ -555,6 +557,7 @@ void CModelBasicGAN<type_t>::SaveRandomImage(void)
   //sprintf(str,"Test/test%03i.txt",n);
   //cTensor_Generator_Output.PrintToFile(str,"Изображение",true);
  }
+ for(uint32_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->SetInferenceMode(false);
 }
 //----------------------------------------------------------------------------------------------------
 //сохранить изображение из набора
@@ -851,11 +854,13 @@ void CModelBasicGAN<type_t>::TrainingNet(bool mnist)
  {
   GeneratorNet[n]->TrainingModeAdam(0.5,0.9);
   GeneratorNet[n]->TrainingStart();
+  GeneratorNet[n]->SetInferenceMode(false);
  }
  for(uint32_t n=0;n<DiscriminatorNet.size();n++)
  {
   DiscriminatorNet[n]->TrainingModeAdam(0.5,0.9);
   DiscriminatorNet[n]->TrainingStart();
+  DiscriminatorNet[n]->SetInferenceMode(false);
  }
 SYSTEM::PutMessageToConsole("Загружаем изображения");
  //загружаем изображения
@@ -954,10 +959,19 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
    GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
 
    //выполняем прямой проход по сети
-   for(uint32_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
+   for(uint32_t layer=0;layer<GeneratorNet.size();layer++)
+   {
+    GeneratorNet[layer]->SetInferenceMode(true);
+    GeneratorNet[layer]->Forward();
+   }
    SaveImage(GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(),"Test/test-current.tga",0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
    SaveImage(cTensor_Generator_Etalon,"Test/etalon.tga",0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
    SaveKitImage();
+   for(uint32_t layer=0;layer<GeneratorNet.size();layer++)
+   {
+    GeneratorNet[layer]->SetInferenceMode(false);
+   }
+
    SYSTEM::PutMessageToConsole("");
   }
 
@@ -1125,6 +1139,7 @@ void CModelBasicGAN<type_t>::TestTrainingGeneratorNet(bool mnist)
  {
   GeneratorNet[n]->TrainingModeAdam();
   GeneratorNet[n]->TrainingStart();
+  GeneratorNet[n]->SetInferenceMode(false);
  }
 
  //загружаем параметры обучения

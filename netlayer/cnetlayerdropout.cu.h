@@ -59,6 +59,7 @@ class CNetLayerDropOut:public INetLayer<type_t>
   using INetLayer<type_t>::EMA_K;
   //ограничение нормы
   using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
+  using INetLayer<type_t>::InferenceMode;///режим вывода
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerDropOut(double drop_out,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -68,7 +69,7 @@ class CNetLayerDropOut:public INetLayer<type_t>
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(double drop_out,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
-  void Reset(void);///<выполнить инициализацию весов и сдвигов
+  void Reset(type_t scale=1);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
@@ -169,7 +170,7 @@ void CNetLayerDropOut<type_t>::Create(double drop_out,INetLayer<type_t> *prev_la
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerDropOut<type_t>::Reset(void)
+void CNetLayerDropOut<type_t>::Reset(type_t scale)
 {
 }
 //----------------------------------------------------------------------------------------------------
@@ -200,9 +201,13 @@ void CNetLayerDropOut<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerDropOut<type_t>::Forward(void)
 {
- if (Training==false) return;
+ if (Training==false || InferenceMode==true) return;
  //создаём матрицу исключения
- //CTensorMath<type_t>::CreateDropOutMatrix(cTensor_H_DropOut,DropOut);//очень медленно выходит
+ #ifdef USE_GPU_RANDOM_GENERATOR
+ CTensorMath<type_t>::CreateDropOutMatrix(cTensor_H_DropOut,DropOut);//очень медленно выходит
+ #endif
+
+ #ifndef USE_GPU_RANDOM_GENERATOR
  //создаём матрицу исключения
  CTensorMath<type_t>::Fill(cTensor_H_DropOut,0);
  type_t mult=static_cast<type_t>(1.0/(1.0-DropOut));
@@ -222,6 +227,7 @@ void CNetLayerDropOut<type_t>::Forward(void)
    }
   }
  }
+ #endif
 
  //умножаем входной тензор на тензор исключения поэлементно
  CTensorMath<type_t>::TensorItemProduction(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_H_DropOut);
@@ -235,7 +241,7 @@ void CNetLayerDropOut<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerDropOut<type_t>::GetOutputTensor(void)
 {
- if (Training==true) return(cTensor_H);
+ if (Training==true && InferenceMode==false) return(cTensor_H);
  return(PrevLayerPtr->GetOutputTensor());
 }
 //----------------------------------------------------------------------------------------------------

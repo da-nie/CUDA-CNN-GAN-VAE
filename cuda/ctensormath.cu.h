@@ -106,8 +106,8 @@ class CTensorMath
   static void Pow2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale=1);///<возведение элементов тензора в квадрат
   static void SQRT(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_sqrt_value);///<вычисление квадратного корня из элементов тензора
   static void AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias);///<добавить смещения к элементам тензора (смещения одинаковы для x и y, но по z смещения разные)
-  static void SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input);///<вычислить сумму элементов по X и Y для каждого Z
-
+  static void SumXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,type_t scale=1);///<вычислить сумму элементов по X и Y для каждого Z
+  static void AddToXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_UnitWZ,type_t scale_input=1,type_t scale_unit_wz=1);///<прибавить одинаковые значения элементов по X и Y для каждого Z и W
 
   static void LayerNormalizeX(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_dGamma,CTensor<type_t> &cTensor_dBeta);///<выполнить нормализацию по слою X
   static void LayerAddX(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_ValueX);///<добавить значеня по слою X
@@ -1386,7 +1386,7 @@ void CTensorMath<type_t>::AddBias(CTensor<type_t> &cTensor_Working,const CTensor
 //функция CUDA для вычисления суммы элементов по X и Y для каждого Z
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__global__ void CUDATensorSummXYTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
+__global__ void CUDATensorSumXYTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,type_t scale)
 {
  uint32_t w_in=Mod(blockIdx.x,tensor_input.GetSizeW());
  uint32_t w_out=Mod(blockIdx.x,tensor_output.GetSizeW());
@@ -1402,18 +1402,22 @@ __global__ void CUDATensorSummXYTensorFunction(STensorKernel<type_t> tensor_outp
  {
   for(uint32_t x=0;x<tensor_input.GetSizeX();x++,d_xin++) summ+=*d_xin;
  }
- *d_xout=summ;
+ *d_xout=summ*scale;
 }
 
 //----------------------------------------------------------------------------------------------------
 //вычислить сумму элементов по X и Y для каждого Z
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input)
+void CTensorMath<type_t>::SumXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,type_t scale)
 {
- if (cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
+ if (cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_W!=cTensor_Output.Size_W)
  {
-  throw "CTensor::SummXY: Размерности тензоров не совпадают!";
+  throw "CTensor::SumXY: Размерности тензоров не совпадают!";
+ }
+ if (cTensor_Output.Size_X!=1 || cTensor_Output.Size_Y!=1)
+ {
+  throw "CTensor::SumXY: Размерность выходного тензора по x и y должна быть 1!";
  }
 
  cTensor_Input.CopyToDevice();
@@ -1439,17 +1443,85 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
  if (blocks.x==0) blocks.x=1;
  if (blocks.y==0) blocks.y=1;
  if (blocks.z==0) blocks.z=1;
- CUDATensorSummXYTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
+ CUDATensorSumXYTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 */
- CUDATensorSummXYTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
+ CUDATensorSumXYTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,scale);
  HANDLE_ERROR(cudaGetLastError());
  HANDLE_ERROR(cudaDeviceSynchronize());
 
  cTensor_Output.SetDeviceOnChange();
 }
 
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для прибавления одинаковых значений элементов по X и Y для каждого Z
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorAddToXYTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,STensorKernel<type_t> tensor_unit_wz,type_t scale_input,type_t scale_unit_wz)
+{
+ uint32_t w_unit_wz=Mod(blockIdx.x,tensor_unit_wz.GetSizeW());
+ uint32_t w_in=Mod(blockIdx.x,tensor_input.GetSizeW());
+ uint32_t w_out=Mod(blockIdx.x,tensor_output.GetSizeW());
+ uint32_t z=Mod(blockIdx.y,tensor_output.GetSizeZ());
+
+ type_t *d_xin=tensor_input.GetTensorDataPtr(w_in,z);
+ type_t *d_xout=tensor_output.GetTensorDataPtr(w_out,z);
+
+ type_t d=tensor_unit_wz.GetElement(w_unit_wz,z,0,0);
+ d*=scale_unit_wz;
+
+ for(uint32_t y=0;y<tensor_input.GetSizeY();y++)
+ {
+  for(uint32_t x=0;x<tensor_input.GetSizeX();x++,d_xin++,d_xout++)
+  {
+   type_t v=(*d_xin);
+   v*=scale_input,
+   (*d_xout)=v+d;
+  }
+ }
+}
+
+
+
+
+//----------------------------------------------------------------------------------------------------
+//прибавить одинаковые значения элементов по X и Y для каждого Z и W
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::AddToXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_UnitWZ,type_t scale_input,type_t scale_unit_wz)
+{
+ if (cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_W!=cTensor_Output.Size_W)
+ {
+  throw "CTensor::AddXY: Размерности тензоров не совпадают!";
+ }
+ if (cTensor_UnitWZ.Size_X!=1 || cTensor_UnitWZ.Size_Y!=1)
+ {
+  throw "CTensor::AddXY: Добавляемый тензор должен иметь по x и y размерность 1!";
+ }
+ if (cTensor_UnitWZ.Size_W!=cTensor_Input.Size_W || cTensor_UnitWZ.Size_Z!=cTensor_Input.Size_Z)
+ {
+  throw "CTensor::AddXY: Добавляемый тензор должен иметь по w и z размерность равную входному тензору!";
+ }
+
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+ STensorKernel<type_t> sTensorKernel_UnitWZ(cTensor_UnitWZ);
+
+ //запускаем процесс
+ dim3 thread(1,1,1);
+
+ dim3 blocks(cTensor_Input.Size_W,cTensor_Input.Size_Z);
+
+ CUDATensorAddToXYTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,sTensorKernel_UnitWZ,scale_input,scale_unit_wz);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
 
 
 
@@ -1749,7 +1821,7 @@ void CTensorMath<type_t>::SplitKQVTensor(CTensor<type_t> &cTensor_Q,CTensor<type
 //функция CUDA для вычисления суммы элементов по X и Y для каждого Z
 //----------------------------------------------------------------------------------------------------
 template<class type_t,uint32_t blockSize>
-__global__ void CUDASummXYTensorFunction(uint32_t size,STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
+__global__ void CUDASumXYTensorFunction(uint32_t size,STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
 {
  uint32_t w_in=Mod(blockIdx.y,tensor_input.GetSizeW());
  uint32_t w_out=Mod(blockIdx.y,tensor_output.GetSizeW());
@@ -1808,11 +1880,11 @@ __global__ void CUDASummXYTensorFunction(uint32_t size,STensorKernel<type_t> ten
 //вычислить сумму элементов по X и Y для каждого Z
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input)
+void CTensorMath<type_t>::SumXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input)
 {
  if (cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
-  throw "CTensor::SummXY: Размерности тензоров не совпадают!";
+  throw "CTensor::SumXY: Размерности тензоров не совпадают!";
  }
 
  cTensor_Input.CopyToDevice();
@@ -1839,7 +1911,7 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
  {
   dim3 block(grid_Size,cTensor_Input.GetSizeW(),cTensor_Input.GetSizeZ());
   dim3 thread(block_Size);
-  CUDASummXYTensorFunction<type_t,block_Size><<<block,thread>>>(size,sTensorKernel_InputCopy,sTensorKernel_Input);
+  CUDASumXYTensorFunction<type_t,block_Size><<<block,thread>>>(size,sTensorKernel_InputCopy,sTensorKernel_Input);
   cudaDeviceSynchronize();
   HANDLE_ERROR(cudaGetLastError());
   HANDLE_ERROR(cudaDeviceSynchronize());
@@ -1848,7 +1920,7 @@ void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t>
   dim3 block(1,cTensor_Input.GetSizeW(),cTensor_Input.GetSizeZ());
   dim3 thread(block_Size);
   if (size>grid_Size) size=grid_Size;
-  CUDASummXYTensorFunction<type_t,block_Size><<<block,thread>>>(size,sTensorKernel_Input,sTensorKernel_InputCopy);
+  CUDASumXYTensorFunction<type_t,block_Size><<<block,thread>>>(size,sTensorKernel_Input,sTensorKernel_InputCopy);
   cudaDeviceSynchronize();
   HANDLE_ERROR(cudaGetLastError());
   HANDLE_ERROR(cudaDeviceSynchronize());
@@ -3372,10 +3444,7 @@ __global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,STensorKerne
 // где C — число каналов тензора, i = z / 2.
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-__global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,
-                                STensorKernel<type_t> tensor_input,
-                                STensorKernel<uint32_t> tensor_time_step,
-                                type_t scale)
+__global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,STensorKernel<uint32_t> tensor_time_step,type_t scale)
 {
     uint32_t blockCol = blockIdx.z;
     uint32_t blockRow = blockIdx.y;
@@ -3403,10 +3472,8 @@ __global__ void CUDASetTimeStep(STensorKernel<type_t> tensor_output,
     const type_t angle = time_step / freq;
 
     type_t emb_z;
-    if ((z & 0x01) == 0)     // чётный канал -> sin
-        emb_z = sin(angle) * scale;
-    else                     // нечётный канал -> cos
-        emb_z = cos(angle) * scale;
+    if ((z & 0x01) == 0) emb_z = sin(angle) * scale;// чётный канал -> sin
+                    else emb_z = cos(angle) * scale;// нечётный канал -> cos
 
     // --- Добавление одинакового значения ко всем пикселям канала z ---
     type_t value = tensor_input.GetElement(w, z, yp, xp);
@@ -3475,11 +3542,6 @@ __global__ void CUDADropOut(STensorKernel<type_t> tensor_output,unsigned long lo
  if (xp>=tensor_output.GetSizeX() || yp>=tensor_output.GetSizeY()) return;
 
  uint32_t pos=(xp+yp*tensor_output.Size_X+z*tensor_output.Size_X*tensor_output.Size_Y)+w*tensor_output.Size_X*tensor_output.Size_Y*tensor_output.Size_Z;
-
- /*
- curandStatePhilox4_32_10_t state;
- curand_init(seed,pos,0,&state);
-*/
 
  curandState state;
  curand_init(seed,pos,0,&state);

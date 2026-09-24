@@ -73,7 +73,7 @@ class CNetLayerSplitter:public INetLayer<type_t>
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(uint32_t output_amount=1,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
-  void Reset(void);///<выполнить инициализацию слоя
+  void Reset(type_t scale=1);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
@@ -191,7 +191,7 @@ void CNetLayerSplitter<type_t>::Create(uint32_t output_amount,INetLayer<type_t> 
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSplitter<type_t>::Reset(void)
+void CNetLayerSplitter<type_t>::Reset(type_t scale)
 {
 }
 //----------------------------------------------------------------------------------------------------

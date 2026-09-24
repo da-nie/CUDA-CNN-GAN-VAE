@@ -62,7 +62,7 @@ class CTensorMath
   static void AddBias(CTensor<type_t> &cTensor_Working,const CTensor<type_t> &cTensor_Bias);///<добавить смещения к элементам тензора (смещения одинаковы для x и y, но по z смещения разные)
   static void Pow2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale=1);///<возведение элементов тензора в квадрат
   static void SQRT(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,type_t scale,type_t add_sqrt_value);//вычисление квадратного корня из элементов тензора
-  static void SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input);///<вычислить сумму элементов по X и Y для каждого Z
+  static void SumXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input);///<вычислить сумму элементов по X и Y для каждого Z
 
   template<class kernel_output_t,class kernel_left_t,class kernel_right_t>
   static void MulAbstract(CTensor<type_t> &cTensor_Output,kernel_output_t &sTensorKernel_Output,const CTensor<type_t> &cTensor_Left,kernel_left_t &sTensorKernel_Left,const CTensor<type_t> &cTensor_Right,kernel_right_t &sTensorKernel_Right);///<умножить тензоры
@@ -452,11 +452,11 @@ void CTensorMath<type_t>::SQRT(CTensor<type_t> &cTensor_Output,const CTensor<typ
 //вычислить сумму элементов по X и Y для каждого Z
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::SummXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input)
+void CTensorMath<type_t>::SumXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input)
 {
  if (cTensor_Input.Size_Z!=cTensor_Output.Size_Z)
  {
-  throw "CTensor::SummXY: Размерности тензоров не совпадают!";
+  throw "CTensor::SumXY: Размерности тензоров не совпадают!";
  }
 
  uint32_t input_w=cTensor_Input.Size_W;

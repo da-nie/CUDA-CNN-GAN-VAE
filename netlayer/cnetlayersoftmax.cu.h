@@ -70,7 +70,7 @@ class CNetLayerSoftMax:public INetLayer<type_t>
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
-  void Reset(void);///<выполнить инициализацию слоя
+  void Reset(type_t scale=1);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
@@ -182,7 +182,7 @@ void CNetLayerSoftMax<type_t>::Create(INetLayer<type_t> *prev_layer_ptr,uint32_t
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerSoftMax<type_t>::Reset(void)
+void CNetLayerSoftMax<type_t>::Reset(type_t scale)
 {
 }
 //----------------------------------------------------------------------------------------------------

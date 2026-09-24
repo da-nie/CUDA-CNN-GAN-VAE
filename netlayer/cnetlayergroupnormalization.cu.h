@@ -77,6 +77,7 @@ class CNetLayerGroupNormalization:public INetLayer<type_t>
   using INetLayer<type_t>::EMA_K;
   //ограничение нормы
   using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
+  using INetLayer<type_t>::InferenceMode;///режим вывода
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerGroupNormalization(uint32_t num_groups, INetLayer<type_t> *prev_layer_ptr=NULL, uint32_t batch_size=1);
@@ -85,7 +86,7 @@ class CNetLayerGroupNormalization:public INetLayer<type_t>
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(uint32_t num_groups, INetLayer<type_t> *prev_layer_ptr=NULL, uint32_t batch_size=1);///<создать слой
-  void Reset(void);///<выполнить инициализацию весов и сдвигов
+  void Reset(type_t scale=1);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output) { cTensor_H_Array=output; }///<задать выход слоя
   void GetOutput(CTensor<type_t> &output) { output=cTensor_H_Array; }///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
@@ -186,7 +187,7 @@ void CNetLayerGroupNormalization<type_t>::Create(uint32_t num_groups, INetLayer<
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerGroupNormalization<type_t>::Reset(void)
+void CNetLayerGroupNormalization<type_t>::Reset(type_t scale)
 {
  CTensorMath<type_t>::Fill(cTensor_Gamma, 1);
  CTensorMath<type_t>::Fill(cTensor_Beta, 0);
@@ -206,17 +207,8 @@ void CNetLayerGroupNormalization<type_t>::Forward(void)
  CTensor<type_t> &beta = (UseEMA) ? cTensor_Beta_EMA : cTensor_Beta;
 
  // Вызов функции из CTensorMath с передачей GN_EPSILON
- CTensorMath<type_t>::GroupNormForward(
-     cTensor_H_Array,
-     input,
-     gamma,
-     beta,
-     cTensor_XHAT_Array,
-     cTensor_InvStd_Array,
-     NumGroups,
-     ChannelsPerGroup,
-     (type_t)GN_EPSILON   // используем единую константу
- );
+    // используем единую константу
+ CTensorMath<type_t>::GroupNormForward(cTensor_H_Array,input,gamma,beta,cTensor_XHAT_Array,cTensor_InvStd_Array,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -317,19 +309,7 @@ void CNetLayerGroupNormalization<type_t>::TrainingBackward(bool create_delta_wei
  }
 
  // Вызов функции из CTensorMath
- CTensorMath<type_t>::GroupNormBackward(
-     cTensor_Delta_Array,
-     cTensor_XHAT_Array,
-     cTensor_Gamma,
-     cTensor_InvStd_Array,
-     cTensor_PrevLayerError_Array,
-     cTensor_dGamma,
-     cTensor_dBeta,
-     NumGroups,
-     ChannelsPerGroup,
-     create_delta_weight
- );
-
+ CTensorMath<type_t>::GroupNormBackward(cTensor_Delta_Array,cTensor_XHAT_Array,cTensor_Gamma,cTensor_InvStd_Array,cTensor_PrevLayerError_Array,cTensor_dGamma,cTensor_dBeta,NumGroups,ChannelsPerGroup,create_delta_weight);
  PrevLayerPtr->SetOutputError(cTensor_PrevLayerError_Array);
 }
 

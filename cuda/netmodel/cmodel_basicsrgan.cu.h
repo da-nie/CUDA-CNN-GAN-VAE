@@ -203,9 +203,11 @@ void CModelBasicSR_GAN<type_t>::CreateHiResImage(CTensor<type_t> &cTensor_Input,
  if (IsExit()==true) throw("Стоп");
  Net[0]->SetOutput(cTensor_Input);//входной вектор
  //выполняем прямой проход по сети
+ for(uint32_t layer=0;layer<Net.size();layer++) Net[layer]->SetInferenceMode(true);
  for(uint32_t layer=0;layer<Net.size();layer++) Net[layer]->Forward();
  //получаем ответ сети
  cTensor_Image=Net[Net.size()-1]->GetOutputTensor();
+ for(uint32_t layer=0;layer<Net.size();layer++) Net[layer]->SetInferenceMode(false);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -419,6 +421,7 @@ void CModelBasicSR_GAN<type_t>::TrainingNet(bool mnist)
   Net[n]->TrainingModeAdam();
   //Net[n]->TrainingModeGradient();
   Net[n]->TrainingStart();
+  Net[n]->SetInferenceMode(false);
  }
 
  //загружаем изображения

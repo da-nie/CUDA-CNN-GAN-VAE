@@ -336,7 +336,7 @@ void CModelBasicDiffusion<type_t>::TrainingDiffusionNet(uint32_t mini_batch_inde
  //считаем ошибку
  CTensorMath<type_t>::Pow2(cTensor_Error,cTensor_Error,static_cast<type_t>(1.0/4.0));
  static CTensor<type_t> cTensor_Loss(cTensor_Error.GetSizeW(),cTensor_Error.GetSizeZ(),1,1);
- CTensorMath<type_t>::SummXY(cTensor_Loss,cTensor_Error);
+ CTensorMath<type_t>::SumXY(cTensor_Loss,cTensor_Error);
 
  double error=0;
  for(uint32_t b=0;b<BATCH_SIZE;b++)
@@ -365,7 +365,7 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDIM(int32_t step_counter)
  for(uint32_t layer=0;layer<DiffusionNet.size();layer++)
  {
   DiffusionNet[layer]->SetUseEMA(true);
-  //DiffusionNet[layer]->TrainingStop();
+  DiffusionNet[layer]->SetInferenceMode(true);
  }
 
  // Шаг перехода. При 1 работает как точный DDPM, при >1 как DDIM
@@ -452,7 +452,7 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDIM(int32_t step_counter)
  for(uint32_t layer=0;layer<DiffusionNet.size();layer++)
  {
   DiffusionNet[layer]->SetUseEMA(false);
-  //DiffusionNet[layer]->TrainingStart();
+  DiffusionNet[layer]->SetInferenceMode(false);
  }
  //counter++;
 }
@@ -468,7 +468,32 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDPM(void)
  for(uint32_t layer=0;layer<DiffusionNet.size();layer++)
  {
   DiffusionNet[layer]->SetUseEMA(true);
-  //DiffusionNet[layer]->TrainingStop();
+  DiffusionNet[layer]->SetInferenceMode(true);
+ }
+ CTensor<type_t> &input_noise=DiffusionNet[0]->GetOutputTensor();
+ CTensor<type_t> &output_noise=DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor();
+ CTensor<type_t> &cTensor_Image=DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor();
+
+ for(size_t t=0;t<500;t+=50)
+ {
+  for(uint32_t b=0;b<BATCH_SIZE;b++)
+  {
+   for(uint32_t layer=0;layer<DiffusionNet.size();layer++) DiffusionNet[layer]->SetTimeStep(b,t);
+  }
+  for(uint32_t layer=0;layer<DiffusionNet.size();layer++) DiffusionNet[layer]->Forward();
+  char str[STRING_BUFFER_SIZE];
+  sprintf(str,"Test/time-%03i.tga",static_cast<int>(t));
+  SaveImage(cTensor_Image,str,0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
+ }
+ /*
+
+
+ //задаём сети начальный шум
+ GetNoiseTensor(DiffusionNet[0]->GetOutputTensor());
+ for(uint32_t layer=0;layer<DiffusionNet.size();layer++)
+ {
+  DiffusionNet[layer]->SetUseEMA(true);
+  DiffusionNet[layer]->SetInferenceMode(true);
  }
 
  // Цикл от TIME_COUNTER-1 до 1 ВКЛЮЧИТЕЛЬНО. Шаг t=0 пропускается!
@@ -492,7 +517,7 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDPM(void)
   CTensor<type_t> &input_noise=DiffusionNet[0]->GetOutputTensor();
   CTensor<type_t> &output_noise=DiffusionNet[DiffusionNet.size()-1]->GetOutputTensor();
 
-  GetNoiseTensor(cTensor_Noise);
+  //GetNoiseTensor(cTensor_Noise);
 
   for(uint32_t b=0;b<BATCH_SIZE;b++)
   {
@@ -503,7 +528,49 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDPM(void)
     {
      for(uint32_t x=0;x<input_noise.GetSizeX();x++,index++)
      {
-      type_t noise=cTensor_Noise.GetElement(b,z,y,x);
+
+// Внутри цикла по z, y, x:
+
+type_t alpha_t         = sDiffusion.Alpha[t];
+type_t alpha_bar_t     = sDiffusion.AlphaBar[t];
+type_t alpha_bar_prev  = (t > 0) ? sDiffusion.AlphaBar[t-1] : 1.0f;
+type_t beta_t          = sDiffusion.Beta[t];
+
+type_t sqrt_alpha_t          = std::sqrt(alpha_t);
+type_t sqrt_alpha_bar_t      = std::sqrt(alpha_bar_t);
+type_t sqrt_alpha_bar_prev   = std::sqrt(alpha_bar_prev);
+type_t sqrt_one_minus_alpha_bar_t = std::sqrt(std::max(0.0f, 1.0f - alpha_bar_t));
+
+type_t input  = input_noise.GetElement(b, z, y, x);
+type_t output = output_noise.GetElement(b, z, y, x);
+
+// 1. Оценка x0
+type_t x0_pred = (input - sqrt_one_minus_alpha_bar_t * output) / sqrt_alpha_bar_t;
+
+// 2. Клиппирование x0_pred
+if (t<(int32_t)(TIME_COUNTER/2))
+{
+
+ if (x0_pred >  1.0f) x0_pred =  1.0f;
+ if (x0_pred < -1.0f) x0_pred = -1.0f;
+}
+// 3. Реконструкция x_{t-1} через DDPM-коэффициенты
+// Коэффициент при x0_pred: √ᾱ_{t-1}
+// Коэффициент при ε_θ:     √α_t · (1-ᾱ_{t-1}) / √(1-ᾱ_t)
+type_t coef_x0  = sqrt_alpha_bar_prev;
+type_t coef_eps = sqrt_alpha_t * (1.0f - alpha_bar_prev) / sqrt_one_minus_alpha_bar_t;
+
+type_t prev_noise = coef_x0 * x0_pred + coef_eps * output;
+
+// 4. Добавляем шум (только если не последний шаг)
+type_t noise = 0.0f;  // если детерминированный режим
+// type_t noise = cTensor_Noise.GetElement(b, z, y, x);  // если стохастический
+if (t > 1) prev_noise += std::sqrt(beta_t) * noise;
+
+input_noise.SetElement(b, z, y, x, prev_noise);
+*/
+/*
+      type_t noise=0;//cTensor_Noise.GetElement(b,z,y,x);
 
       type_t input=input_noise.GetElement(b,z,y,x);
       type_t output=output_noise.GetElement(b,z,y,x);
@@ -519,6 +586,8 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDPM(void)
       if (t>1) prev_noise+=std::sqrt(beta)*noise;
 
       input_noise.SetElement(b,z,y,x,prev_noise);
+*/
+/*
      }
     }
    }
@@ -541,9 +610,10 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDPM(void)
  for(uint32_t layer=0;layer<DiffusionNet.size();layer++)
  {
   DiffusionNet[layer]->SetUseEMA(false);
-  //DiffusionNet[layer]->TrainingStart();
+  DiffusionNet[layer]->SetInferenceMode(false);
  }
  //counter++;
+ */
 }
 
 
@@ -703,6 +773,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
  //включаем обучение
  for(uint32_t n=0;n<DiffusionNet.size();n++)
  {
+  DiffusionNet[n]->SetInferenceMode(false);
   DiffusionNet[n]->TrainingModeAdam(0.9,0.999);
   DiffusionNet[n]->TrainingStart();
   //DiffusionNet[n]->EnableEMA(true); - это скопирует текущие настройки сети, а не из файла средних
@@ -720,12 +791,17 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
  InitDiffusion();
 
  //создаём обучающий набор
- TrainingImage.resize(RealImage.size());
- TrainingImageIndex.resize(RealImage.size());
+ uint32_t scale=1;//расширение набора
+ TrainingImage.resize(RealImage.size()*scale);
+ TrainingImageIndex.resize(RealImage.size()*scale);
+ uint32_t i=0;
  for(uint32_t n=0;n<RealImage.size();n++)
  {
-  TrainingImage[n].RealImageIndex=n;
-  TrainingImageIndex[n]=n;
+  for(uint32_t m=0;m<scale;m++,i++)
+  {
+   TrainingImage[i].RealImageIndex=n;
+   TrainingImageIndex[i]=n;
+  }
  }
 
  //дополняем набор до кратного размеру пакета

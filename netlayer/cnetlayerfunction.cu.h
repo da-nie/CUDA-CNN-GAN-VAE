@@ -65,7 +65,7 @@ class CNetLayerFunction:public INetLayer<type_t>
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(NNeuron::NEURON_FUNCTION neuron_function=NNeuron::NEURON_FUNCTION_SIGMOID,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
-  void Reset(void);///<выполнить инициализацию весов и сдвигов
+  void Reset(type_t scale=1);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
@@ -168,7 +168,7 @@ void CNetLayerFunction<type_t>::Create(NNeuron::NEURON_FUNCTION neuron_function,
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerFunction<type_t>::Reset(void)
+void CNetLayerFunction<type_t>::Reset(type_t scale)
 {
 }
 //----------------------------------------------------------------------------------------------------

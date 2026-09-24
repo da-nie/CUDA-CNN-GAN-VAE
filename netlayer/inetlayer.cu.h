@@ -52,6 +52,8 @@ class INetLayer
   bool UseEMA;///<используются ли веса EMA
   double EMA_K;///<коэффициент вклада весов EMA для фильтра
   double ClipByNormThresHold;///<ограничение нормы
+
+  bool InferenceMode;///<режим выполнения
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
  private:
@@ -67,12 +69,13 @@ class INetLayer
    UseEMA=false;
    EMA_K=0.999;
    ClipByNormThresHold=1.0;
+   InferenceMode=true;
   };
   //-деструктор-----------------------------------------------------------------------------------------
   virtual ~INetLayer() {};
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  virtual void Reset(void)=0;///<выполнить инициализацию весов и сдвигов
+  virtual void Reset(type_t scale=1)=0;///<выполнить инициализацию весов и сдвигов
   virtual void SetOutput(CTensor<type_t> &output)=0;///<задать выход слоя
   virtual void GetOutput(CTensor<type_t> &output)=0;///<получить выход слоя
   virtual void Forward(void)=0;///<выполнить прямой проход по слою
@@ -96,31 +99,35 @@ class INetLayer
   virtual void EnableEMA(bool state)=0;///<разрешить/запретить использование усреднённых весов
   virtual bool LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size=false)=0;///<загрузить усреднённые веса
   virtual bool SaveEMAWeight(IDataStream *iDataStream_Ptr)=0;///<сохранить усреднённые веса
+  virtual void SetInferenceMode(bool state)///<включить режим вывода
+  {
+   InferenceMode=state;
+  }
   virtual void SetUseEMA(bool state)///<переключиться на усреднённые веса
   {
    if (EMAEnabled==false && state==true) throw("Ошибка переключения на усреднённые веса! Усреднённые веса не были разрешены!");
    UseEMA=state;
   }
-  void SetMark(bool state)///<установить или снять метку
+  virtual void SetMark(bool state)///<установить или снять метку
   {
    Mark=state;
   }
-  bool IsMark(void)///<узнать, установлена ли метка
+  virtual bool IsMark(void)///<узнать, установлена ли метка
   {
    return(Mark);
   }
-  void TrainingModeGradient(void)///<включить режим обучения "градиентный спуск"
+  virtual void TrainingModeGradient(void)///<включить режим обучения "градиентный спуск"
   {
    TrainingMode=TRAINING_MODE_GRADIENT;
   }
-  void TrainingModeAdam(double beta1=0.9,double beta2=0.999,double epsilon=1E-6)///<включить режим обучения "алгоритм Adam"
+  virtual void TrainingModeAdam(double beta1=0.9,double beta2=0.999,double epsilon=1E-6)///<включить режим обучения "алгоритм Adam"
   {
    TrainingMode=TRAINING_MODE_ADAM;
    Beta1=beta1;
    Beta2=beta2;
    Epsilon=epsilon;
   }
-  TRAINING_MODE GetTrainingMode(void)///<получить выбранный режим обучения
+  virtual TRAINING_MODE GetTrainingMode(void)///<получить выбранный режим обучения
   {
    return(TrainingMode);
   }

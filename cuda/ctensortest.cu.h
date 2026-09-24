@@ -907,7 +907,7 @@ bool CTensorTest<type_t>::Test(void)
   CTensor<type_t> cTensor_Input(8,16,size,size);
   cTensor_Input.Fill(1);
   CTensor<type_t> cTensor_Output(8,16,1,1);
-  CTensorMath<type_t>::SummXY(cTensor_Output,cTensor_Input);
+  CTensorMath<type_t>::SumXY(cTensor_Output,cTensor_Input);
   uint32_t summ=size*size;
   bool error=false;
   for(uint32_t w=0;w<cTensor_Output.GetSizeW();w++)

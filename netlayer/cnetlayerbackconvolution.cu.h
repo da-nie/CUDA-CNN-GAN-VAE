@@ -101,7 +101,7 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(uint32_t kernel_size,uint32_t kernel_depth,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
-  void Reset(void);///<выполнить инициализацию весов и сдвигов
+  void Reset(type_t scale=1);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
@@ -241,7 +241,7 @@ void CNetLayerBackConvolution<type_t>::Create(uint32_t kernel_size,uint32_t kern
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerBackConvolution<type_t>::Reset(void)
+void CNetLayerBackConvolution<type_t>::Reset(type_t scale)
 {
  if (PrevLayerPtr==NULL) return;
 
@@ -258,6 +258,7 @@ void CNetLayerBackConvolution<type_t>::Reset(void)
    //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
    //type_t init=rnd*koeff;
    type_t init=cTensor_Rand.GetElement(0,0,0,m);
+   init*=scale;
    cTensor_Kernel.SetElement(0,0,n,m,init);
   }
  }
@@ -269,6 +270,7 @@ void CNetLayerBackConvolution<type_t>::Reset(void)
   //используем метод инициализации He (Ге)
   //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
   type_t init=0;//rnd*koeff;//TODO: обнулено, пока не будет ясно, как считать поправки к смещениям
+  init*=scale;
   cTensor_Bias.SetElement(0,z,0,0,init);
  }
 }

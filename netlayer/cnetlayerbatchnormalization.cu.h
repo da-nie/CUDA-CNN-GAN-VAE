@@ -96,6 +96,8 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   using INetLayer<type_t>::EMA_K;
   //ограничение нормы
   using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
+
+  using INetLayer<type_t>::InferenceMode;///режим вывода
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerBatchNormalization(type_t momentum,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -105,7 +107,7 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(type_t momentum,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
-  void Reset(void);///<выполнить инициализацию весов и сдвигов
+  void Reset(type_t scale=1);///<выполнить инициализацию весов и сдвигов
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
@@ -233,7 +235,7 @@ void CNetLayerBatchNormalization<type_t>::Create(type_t momentum,INetLayer<type_
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerBatchNormalization<type_t>::Reset(void)
+void CNetLayerBatchNormalization<type_t>::Reset(type_t scale)
 {
  CTensorMath<type_t>::Fill(cTensor_Gamma,1);
  CTensorMath<type_t>::Fill(cTensor_Beta,0);
@@ -303,7 +305,7 @@ bool
  type_t N=static_cast<type_t>(BatchSize);
  //используем Tensor_XHAT_Array вместо Tensor_XMU_Array - всё равно Tensor_XMU_Array нужно только здесь, а Tensor_XHAT_Array до заполнения не используется
  CTensor<type_t> &cTensor_VAR=cTensor_TmpB;
- if (TrainingEnabled==true)//режим обучения
+ if (TrainingEnabled==true && InferenceMode==false)//режим обучения
  {
   //считаем среднее для каждого элемента пакета по всем пакетам
   //mu = 1./N * np.sum(x, axis = 0)

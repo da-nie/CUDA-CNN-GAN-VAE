@@ -73,7 +73,7 @@ class CNetLayerTimeEmbedding:public INetLayer<type_t>
  public:
   //-открытые функции-----------------------------------------------------------------------------------
   void Create(INetLayer<type_t> *prev_layer_ptr=NULL,type_t scale=1.0,uint32_t batch_size=1);///<создать слой
-  void Reset(void);///<выполнить инициализацию слоя
+  void Reset(type_t scale=1);///<выполнить инициализацию слоя
   void SetOutput(CTensor<type_t> &output);///<задать выход слоя
   void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
@@ -188,7 +188,7 @@ void CNetLayerTimeEmbedding<type_t>::Create(INetLayer<type_t> *prev_layer_ptr,ty
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerTimeEmbedding<type_t>::Reset(void)
+void CNetLayerTimeEmbedding<type_t>::Reset(type_t scale)
 {
 }
 //----------------------------------------------------------------------------------------------------
