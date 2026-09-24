@@ -72,7 +72,7 @@ class CTensor
  friend struct STensorKernel;
 
  template<class new_type_t>
- friend struct STensorTransponseKernel;
+ friend struct STensorTransposeKernel;
 
  template<class new_type_t>
  friend class CTensorMath;

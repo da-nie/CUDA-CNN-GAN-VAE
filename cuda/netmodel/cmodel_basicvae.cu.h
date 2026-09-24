@@ -431,12 +431,12 @@ void CModelBasicVAE<type_t>::Training(void)
     //корректируем веса
     {
      CTimeStamp cTimeStamp("Обновление весов кодировщика:");
-     for(uint32_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+     for(uint32_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingUpdateWeight(speed,Iteration);
     }
     //корректируем веса декодировщика
     {
      CTimeStamp cTimeStamp("Обновление весов декодировщика:");
-     for(uint32_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+     for(uint32_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration);
     }
 
 
@@ -643,12 +643,12 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
   //корректируем веса декодировщика
   {
    CTimeStamp cTimeStamp("Обновление весов декодировщика:");
-   for(uint32_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+   for(uint32_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration);
   }
   //корректируем веса кодировщика
   {
    CTimeStamp cTimeStamp("Обновление весов кодировщика:");
-   for(uint32_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+   for(uint32_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingUpdateWeight(speed,Iteration);
   }
   str="Ошибка кодировщика-декодировщика:";
   str+=std::to_string((long double)cost);

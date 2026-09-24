@@ -1116,7 +1116,7 @@ void CModelSorter<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов сортировщика:");
     for(uint32_t n=0;n<SorterNet.size();n++)
     {
-     SorterNet[n]->TrainingUpdateWeight(speed,Iteration+1,BATCH_SIZE);
+     SorterNet[n]->TrainingUpdateWeight(speed,Iteration,BATCH_SIZE);
     }
    }
    if (cost>full_cost) full_cost=cost;

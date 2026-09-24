@@ -68,10 +68,10 @@ class CTensorMath
   static void MulAbstract(CTensor<type_t> &cTensor_Output,kernel_output_t &sTensorKernel_Output,const CTensor<type_t> &cTensor_Left,kernel_left_t &sTensorKernel_Left,const CTensor<type_t> &cTensor_Right,kernel_right_t &sTensorKernel_Right);///<умножить тензоры
 
   static void Mul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить тензоры
-  static void TransponseMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить транспонированный левый тензор на правый
+  static void TransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить транспонированный левый тензор на правый
   static void Mul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const type_t &value_right);///<умножить тензор на число
   static void Mul(CTensor<type_t> &cTensor_Output,const type_t &value_left,const CTensor<type_t> &cTensor_Right);///<умножить тензор на число
-  static void Transponse(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<транспонировать тензор
+  static void Transpose(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<транспонировать тензор
   static void TensorItemProduction(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Left,CTensor<type_t> &cTensor_Right);///<поэлементное произведение тензора на тензор
   static CTensor<type_t> Transpose(const CTensor<type_t> &cTensor_Input);///<получить транспонированный тензор
 
@@ -598,12 +598,12 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
 //умножить транспонированный левый тензор на правый
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::TransponseMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
+void CTensorMath<type_t>::TransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
 {
  if (cTensor_Left.Size_Y!=cTensor_Right.Size_Y  || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_Y!=cTensor_Left.Size_X || cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
-  throw "CTensor::TransponseMul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
+  throw "CTensor::TransposeMul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
  }
 
  uint32_t left_w=cTensor_Left.Size_W;
@@ -640,12 +640,12 @@ void CTensorMath<type_t>::TransponseMul(CTensor<type_t> &cTensor_Output,const CT
 //умножить транспонированный левый тензор на правый (оптимизированная версия)
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::TransponseMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
+void CTensorMath<type_t>::TransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
 {
  if (cTensor_Left.Size_Y!=cTensor_Right.Size_Y  || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_Y!=cTensor_Left.Size_X || cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
-  throw "CTensor::TransponseMul: Размерности тензоров не совпадают!";
+  throw "CTensor::TransposeMul: Размерности тензоров не совпадают!";
  }
 
  uint32_t K_DIM = cTensor_Left.Size_Y; // Общая размерность (внутренняя)
@@ -784,11 +784,11 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const type_t &valu
 //транспонировать тензор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::Transponse(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
+void CTensorMath<type_t>::Transpose(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
 {
  if (cTensor_Output.Size_Y!=cTensor_Input.Size_X || cTensor_Output.Size_X!=cTensor_Input.Size_Y || cTensor_Output.Size_Z!=cTensor_Input.Size_Z || cTensor_Output.Size_W!=cTensor_Input.Size_W)
  {
-  throw "void CTensor::Transponse(CTensor &cTensor_Output,const CTensor &cTensor_Input): Размерности матриц не совпадают!";
+  throw "void CTensor::Transpose(CTensor &cTensor_Output,const CTensor &cTensor_Input): Размерности матриц не совпадают!";
  }
 
  uint32_t input_w=cTensor_Input.Size_W;
@@ -857,7 +857,7 @@ template<class type_t>
 CTensor<type_t> CTensorMath<type_t>::Transpose(const CTensor<type_t> &cTensor_Input)
 {
  CTensor<type_t> cTensor(cTensor_Input.Size_W,cTensor_Input.Size_Z,cTensor_Input.Size_X,cTensor_Input.Size_Y);
- Transponse(cTensor,cTensor_Input);
+ Transpose(cTensor,cTensor_Input);
  return(cTensor);
 }
 

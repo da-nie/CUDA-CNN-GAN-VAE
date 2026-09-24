@@ -69,7 +69,7 @@ CModelDiffusion<type_t>::CModelDiffusion(void)
 
  BATCH_SIZE=8;
 
- ITERATION_OF_SAVE_IMAGE=10;
+ ITERATION_OF_SAVE_IMAGE=1;
  ITERATION_OF_SAVE_NET=1;
 }
 //----------------------------------------------------------------------------------------------------
@@ -90,11 +90,11 @@ CModelDiffusion<type_t>::~CModelDiffusion()
 template<class type_t>
 void CModelDiffusion<type_t>::CreateDiffusionNet(void)
 {
- const type_t time_scale=10;//множитель временной добавки
+ const type_t time_scale=1;//множитель временной добавки
  const uint32_t NUM_BLOCKS=4;//количество блоков энкодера и декодера
  const uint32_t BOTTLENECK_CONVS=3;//количество свёрток "бутылочного горлышка"
  const type_t BN_MOMENTUM=0.9;//фильтр нормализаций
- uint32_t kernels=16;
+ uint32_t kernels=32;
 
  uint32_t mlp_time_size=128;
 

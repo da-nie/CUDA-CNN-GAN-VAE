@@ -64,6 +64,13 @@ class CNetLayerTimeEmbeddingMLP:public INetLayer<type_t>
   //внутренняя сеть
   std::vector< std::shared_ptr<INetLayer<type_t> > > LocalNet;///<внутренняя сеть
 
+  using INetLayer<type_t>::TrainingMode;
+
+  //параметры алгоритма Adam
+  using INetLayer<type_t>::Beta1;
+  using INetLayer<type_t>::Beta2;
+  using INetLayer<type_t>::Epsilon;
+
   //режим усреднения
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
@@ -71,12 +78,12 @@ class CNetLayerTimeEmbeddingMLP:public INetLayer<type_t>
   //ограничение нормы
   using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
 
-  /*
-  using INetLayer<type_t>::SetInferenceMode;
-  using INetLayer<type_t>::SetUseEMA;
-  using INetLayer<type_t>::TrainingModeGradient;
-  using INetLayer<type_t>::TrainingModeAdam;
-  */
+  // обучаемый масштаб
+  type_t emb_scale;         // текущее значение
+  type_t emb_scale_EMA;     // EMA-версия (для инференса)
+  type_t emb_scale_M;       // Adam: первый момент
+  type_t emb_scale_V;       // Adam: второй момент
+  type_t emb_scale_d;       // градиент
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerTimeEmbeddingMLP(INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t time_size=128,uint32_t max_time_counter=1000,uint32_t batch_size=1);
@@ -203,7 +210,6 @@ void CNetLayerTimeEmbeddingMLP<type_t>::Create(INetLayer<type_t> *prev_layer_ptr
  LocalNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,LocalNet.back().get(),BatchSize)));
  LocalNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerConvolution<type_t>(InputSize_Z,1,1,1,0,0,LocalNet.back().get(),BatchSize)));
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->Reset();
- LocalNet.back()->Reset(0.001);
 
  //создаём выходные тензоры
  cTensor_H=CTensor<type_t>(BatchSize,output_z,output_y,output_x);
@@ -218,7 +224,12 @@ template<class type_t>
 void CNetLayerTimeEmbeddingMLP<type_t>::Reset(type_t scale)
 {
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->Reset(scale);
- LocalNet.back()->Reset(scale*0.001);
+ LocalNet.back()->Reset(scale);
+ emb_scale=1.0f;
+ emb_scale_EMA=1.0f;
+ emb_scale_M=0.0f;
+ emb_scale_V=0.0f;
+ emb_scale_d=0.0f;
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать выход слоя
@@ -259,8 +270,13 @@ void CNetLayerTimeEmbeddingMLP<type_t>::Forward(void)
  //выполняем встроенную сеть
  LocalNet[0]->GetOutputTensor()=cTensor_TimeLine;//задаём время
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->Forward();
+
+ type_t scale=emb_scale;
+ if (UseEMA==true) scale=emb_scale_EMA;
  //прибавляем ко всем значениям (y,x) одно и то же значение
- CTensorMath<type_t>::AddToXY(cTensor_H,PrevLayerPtr->GetOutputTensor(),LocalNet.back()->GetOutputTensor());
+ CTensorMath<type_t>::AddToXY(cTensor_H,PrevLayerPtr->GetOutputTensor(),LocalNet.back()->GetOutputTensor(),1,scale);
+
+ //printf("%i Scale:%f\r\n",InputSize_Z,scale);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -295,6 +311,7 @@ bool CNetLayerTimeEmbeddingMLP<type_t>::Save(IDataStream *iDataStream_Ptr)
  iDataStream_Ptr->SaveInt32(TimeSize);
  iDataStream_Ptr->SaveInt32(MaxTimeCounter);
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->Save(iDataStream_Ptr);
+ iDataStream_Ptr->SaveDouble(emb_scale);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -317,6 +334,7 @@ bool CNetLayerTimeEmbeddingMLP<type_t>::Load(IDataStream *iDataStream_Ptr,bool c
   MaxTimeCounter=iDataStream_Ptr->LoadInt32();
  }
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->Load(iDataStream_Ptr,check_size);
+ emb_scale=static_cast<type_t>(iDataStream_Ptr->LoadDouble());
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -329,6 +347,9 @@ template<class type_t>
 bool CNetLayerTimeEmbeddingMLP<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
 {
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->SaveTrainingParam(iDataStream_Ptr);
+ iDataStream_Ptr->SaveDouble(emb_scale_M);
+ iDataStream_Ptr->SaveDouble(emb_scale_V);
+ iDataStream_Ptr->SaveDouble(emb_scale_d);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -341,6 +362,9 @@ template<class type_t>
 bool CNetLayerTimeEmbeddingMLP<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
 {
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->LoadTrainingParam(iDataStream_Ptr);
+ emb_scale_M=static_cast<type_t>(iDataStream_Ptr->LoadDouble());
+ emb_scale_V=static_cast<type_t>(iDataStream_Ptr->LoadDouble());
+ emb_scale_d=static_cast<type_t>(iDataStream_Ptr->LoadDouble());
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -359,6 +383,10 @@ void CNetLayerTimeEmbeddingMLP<type_t>::TrainingStart(void)
  cTensor_DeltaLocalNet=CTensor<type_t>(w,z,y,x);
 
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->TrainingStart();
+
+ emb_scale_M=0.0f;
+ emb_scale_V=0.0f;
+ emb_scale_d=0.0f;
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -384,6 +412,18 @@ void CNetLayerTimeEmbeddingMLP<type_t>::TrainingBackward(bool create_delta_weigh
  //обучаем встроенную сеть
  LocalNet.back()->SetOutputError(cTensor_DeltaLocalNet);
  for(uint32_t m=0,n=LocalNet.size()-1;m<LocalNet.size();m++,n--) LocalNet[n]->TrainingBackward(create_delta_weight);
+
+ //обновляем масштаб
+ CTensor<type_t> &emb=LocalNet.back()->GetOutputTensor();
+ type_t dscale=0.0f;
+ for(uint32_t b=0;b<BatchSize;b++)
+ {
+  for(uint32_t c=0;c<cTensor_DeltaLocalNet.GetSizeZ();c++)
+  {
+   dscale+=cTensor_DeltaLocalNet.GetElement(b,c,0,0)*emb.GetElement(b,c,0,0)/emb_scale;// делим на emb_scale, так как в SetOutputError мы умножали на него
+  }
+ }
+ emb_scale_d+=dscale;
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -393,6 +433,7 @@ template<class type_t>
 void CNetLayerTimeEmbeddingMLP<type_t>::TrainingResetDeltaWeight(void)
 {
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->TrainingResetDeltaWeight();
+ emb_scale_d=0.0f;
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обновления весов
@@ -403,6 +444,33 @@ template<class type_t>
 void CNetLayerTimeEmbeddingMLP<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->TrainingUpdateWeight(speed,iteration,batch_scale);
+
+ if (TrainingMode==INetLayer<type_t>::TRAINING_MODE_ADAM)
+ {
+  iteration+=1;
+
+  //printf("%i dScale:%f\r\n",InputSize_Z,emb_scale_d);
+
+  emb_scale_M=Beta1*emb_scale_M+(1.0-Beta1)*emb_scale_d;
+  emb_scale_V=Beta2*emb_scale_V+(1.0-Beta2)*emb_scale_d*emb_scale_d;
+
+  double m_hat=emb_scale_M/(1.0-std::pow(Beta1,iteration));
+  double v_hat=emb_scale_V/(1.0-std::pow(Beta2,iteration));
+
+  emb_scale-=static_cast<type_t>(speed*m_hat/(std::sqrt(v_hat)+Epsilon));
+
+  // EMA
+  if (EMAEnabled==true) emb_scale_EMA=static_cast<type_t>(EMA_K*emb_scale_EMA+(1.0-EMA_K)*emb_scale);
+
+  // защита от экстремальных значений
+  if (emb_scale>100.0f) emb_scale=100.0f;
+  if (emb_scale<-100.0f) emb_scale=-100.0f;
+  if (!std::isfinite(emb_scale)) emb_scale=1.0f;
+ }
+ if (TrainingMode==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
+ {
+  //TODO: реализовать обновление НЕ ЧЕРЕЗ Adam
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на тензор дельты слоя
@@ -426,7 +494,8 @@ void CNetLayerTimeEmbeddingMLP<type_t>::SetOutputError(CTensor<type_t>& error)
  //суммируем градиент
  type_t k=cTensor_H.GetSizeY()*cTensor_H.GetSizeX();
  k=1/k;
- CTensorMath<type_t>::SumXY(cTensor_DeltaLocalNet,cTensor_Delta,1);
+ k*=emb_scale;
+ CTensorMath<type_t>::SumXY(cTensor_DeltaLocalNet,cTensor_Delta,k);
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон
@@ -450,7 +519,7 @@ template<class type_t>
 void CNetLayerTimeEmbeddingMLP<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
 {
  //заполняем тензор времени
- type_t t=time_step;//static_cast<type_t>(time_step)/static_cast<type_t>(MaxTimeCounter);//нормализуем
+ type_t t=static_cast<type_t>(time_step)/static_cast<type_t>(MaxTimeCounter);//нормализуем
  uint32_t d=cTensor_TimeLine.GetSizeZ();
  for(uint32_t z=0;z<d/2;z++)
  {
@@ -513,6 +582,7 @@ bool CNetLayerTimeEmbeddingMLP<type_t>::LoadEMAWeight(IDataStream *iDataStream_P
   MaxTimeCounter=iDataStream_Ptr->LoadInt32();
  }
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->LoadEMAWeight(iDataStream_Ptr,check_size);
+ emb_scale_EMA=static_cast<type_t>(iDataStream_Ptr->LoadDouble());
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -527,6 +597,7 @@ bool CNetLayerTimeEmbeddingMLP<type_t>::SaveEMAWeight(IDataStream *iDataStream_P
  iDataStream_Ptr->SaveInt32(TimeSize);
  iDataStream_Ptr->SaveInt32(MaxTimeCounter);
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->SaveEMAWeight(iDataStream_Ptr);
+ iDataStream_Ptr->SaveDouble(emb_scale_EMA);
  return(true);
 }
 

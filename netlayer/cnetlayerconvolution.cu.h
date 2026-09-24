@@ -254,7 +254,7 @@ void CNetLayerConvolution<type_t>::Reset(type_t scale)
  for(uint32_t n=0;n<Kernel_Amount;n++)
  {
   type_t size=static_cast<type_t>(Kernel_X*Kernel_Y*input_z);
-  type_t koeff=static_cast<type_t>(sqrt(6.0/size));
+  type_t koeff=static_cast<type_t>(sqrt(2.0/size));
   CTensor<type_t> cTensor_Rand(1,1,1,size);
   //CRandom<type_t>::SetRandomNormal(cTensor_Rand,-koeff,koeff);
 
@@ -276,7 +276,7 @@ void CNetLayerConvolution<type_t>::Reset(type_t scale)
  {
   //используем метод инициализации He (Ге)
   //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
-  type_t init=0.1;//rnd*koeff;
+  type_t init=0;//rnd*koeff;
   init*=scale;
   cTensor_Bias.SetElement(0,z,0,0,init);
  }

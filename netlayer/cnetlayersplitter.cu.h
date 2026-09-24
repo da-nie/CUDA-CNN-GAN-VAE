@@ -193,6 +193,7 @@ void CNetLayerSplitter<type_t>::Create(uint32_t output_amount,INetLayer<type_t> 
 template<class type_t>
 void CNetLayerSplitter<type_t>::Reset(type_t scale)
 {
+ SetErrorCounter=0;
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать выход слоя
@@ -306,6 +307,7 @@ void CNetLayerSplitter<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
+ SetErrorCounter=0;
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения

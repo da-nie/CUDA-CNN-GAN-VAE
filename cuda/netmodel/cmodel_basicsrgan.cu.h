@@ -378,7 +378,7 @@ void CModelBasicSR_GAN<type_t>::Training(void)
      CTimeStamp cTimeStamp("Обновление весов:");
      for(uint32_t n=0;n<Net.size();n++)
      {
-      Net[n]->TrainingUpdateWeight(speed,Iteration+1);
+      Net[n]->TrainingUpdateWeight(speed,Iteration);
      }
     }
 

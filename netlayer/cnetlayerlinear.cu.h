@@ -224,7 +224,7 @@ void CNetLayerLinear<type_t>::Reset(type_t scale)
  {
   //используем метод инициализации He (Ге)
   //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
-  type_t init=0.1;//rnd*koeff;
+  type_t init=0;//rnd*koeff;
   init*=scale;
   cTensor_B.SetElement(0,0,y,0,init);
  }
@@ -427,7 +427,7 @@ void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
  uint32_t size_z=cTensor_PrevLayerError.GetSizeZ();
 
  cTensor_PrevLayerError.ReinterpretSize(BatchSize,1,size_x*size_y*size_z,1);
- CTensorMath<type_t>::TransponseMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta);
+ CTensorMath<type_t>::TransposeMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta);
  cTensor_PrevLayerError.RestoreSize();
  //задаём ошибку предыдущего слоя
 

@@ -252,7 +252,6 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
        //суммируем по всем фильтрам
        for(int32_t f=0;f<kernel_amount;f++)
        {
-        summ+=cTensor_Bias.GetElement(w_bias,f,0,0);//TODO: надо выяснить, как прибавлять смещения
         type_t k=cTensor_Kernel.GetElement(w_kernel,0,f,z*kernel_x*kernel_y+(kernel_y-1-ky)*kernel_x+(kernel_x-1-kx));
         type_t d=cTensor_Delta.GetElement(w_input,f,delta_y0,delta_x0);
         summ+=k*d;
@@ -392,8 +391,10 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
 template<class type_t>
 void CTensorConv<type_t>::CreateBackDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,CTensor<type_t> &cTensor_Image,const CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
+ padding_x=dkernel_x-padding_x-1;
+ padding_y=dkernel_y-padding_y-1;
  CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel,dkernel_x,dkernel_y,dkernel_z,dkernel_amount,cTensor_dBias,cTensor_Delta,cTensor_Image,stride_x,stride_y,padding_x,padding_y);
- CTensorMath<type_t>::Fill(cTensor_dBias,0);//TODO: неясно, нужно ли использовать эти поправки
+ //CTensorMath<type_t>::Fill(cTensor_dBias,0);//TODO: неясно, нужно ли использовать эти поправки
 }
 
 #endif

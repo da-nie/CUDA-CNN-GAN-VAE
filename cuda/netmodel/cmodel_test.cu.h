@@ -376,12 +376,12 @@ void CModelTest<type_t>::Test(double &cost1,double &cost2)
  //корректируем веса
  {
   CTimeStamp cTimeStamp("Обновление весов кодировщика:");
-  for(uint32_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+  for(uint32_t n=0;n<CoderNet.size();n++) CoderNet[n]->TrainingUpdateWeight(speed,Iteration);
  }
  //корректируем веса генератора
  {
   CTimeStamp cTimeStamp("Обновление весов декодировщика:");
-  for(uint32_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+  for(uint32_t n=0;n<DecoderNet.size();n++) DecoderNet[n]->TrainingUpdateWeight(speed,Iteration);
  }
 
  cost1=cost;

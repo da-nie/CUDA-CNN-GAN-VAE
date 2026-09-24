@@ -648,7 +648,7 @@ void CModelBasicGAN<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов дискриминатора на фальшивых изображениях:");
     for(uint32_t n=0;n<DiscriminatorNet.size();n++)
     {
-     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1);
+     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration);
      //DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
@@ -657,7 +657,7 @@ void CModelBasicGAN<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов генератора:");
     for(uint32_t n=0;n<GeneratorNet.size();n++)
     {
-     GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration+1);
+     GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration);
      //GeneratorNet[n]->ClipWeight(-clip,clip);//не нужно делать для генератора!
     }
    }
@@ -671,7 +671,7 @@ void CModelBasicGAN<type_t>::Training(void)
     CTimeStamp cTimeStamp("Обновление весов дискриминатора на настоящих изображениях:");
     for(uint32_t n=0;n<DiscriminatorNet.size();n++)
     {
-     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1);
+     DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration);
      //DiscriminatorNet[n]->ClipWeight(-clip,clip);
     }
    }
@@ -774,7 +774,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
      CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
      for(uint32_t n=0;n<DiscriminatorNet.size();n++)
      {
-      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1,1);
+      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration,1);
       //DiscriminatorNet[n]->ClipWeight(-clip,clip);
      }
     }
@@ -786,7 +786,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
      CTimeStamp cTimeStamp("Обновление весов дискриминатора:");
      for(uint32_t n=0;n<DiscriminatorNet.size();n++)
      {
-      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration+1,1);
+      DiscriminatorNet[n]->TrainingUpdateWeight(disc_speed,Iteration,1);
       //DiscriminatorNet[n]->ClipWeight(-clip,clip);
      }
     }
@@ -801,7 +801,7 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
      CTimeStamp cTimeStamp("Обновление весов генератора:");
      for(uint32_t n=0;n<GeneratorNet.size();n++)
      {
-      GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration+1);
+      GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration);
       //GeneratorNet[n]->ClipWeight(-clip,clip);//не нужно делать для генератора!
      }
     }
@@ -1025,7 +1025,7 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
    CTimeStamp cTimeStamp("Обновление весов генератора:");
    for(uint32_t n=0;n<GeneratorNet.size();n++)
    {
-    GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration+1);
+    GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration);
    }
   }
   str="Ошибка генератора:";

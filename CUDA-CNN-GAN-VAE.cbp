@@ -372,6 +372,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayertimeembedding.cu.h" />
+		<Unit filename="netlayer/cnetlayertimeembeddingmlp.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayertimeembeddingmlp.cu.h" />
 		<Unit filename="netlayer/cnetlayerupsampling.cu">
 			<Option compile="1" />
 			<Option link="1" />

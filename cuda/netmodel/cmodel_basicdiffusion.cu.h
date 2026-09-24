@@ -171,6 +171,9 @@ class CModelBasicDiffusion:public CModelMain<type_t>
   void InitDiffusion(void);///<инициализация параметров диффузии
   void SetNoisyImage(CTensor<type_t> &cTensor_NoisyImage,CTensor<type_t> &cTensor_Noise,const CTensor<type_t> &cTensor_Image,const std::vector<uint32_t> &time_step_array);///<заполнить тензор зашумлённым изображением
   void GetNoiseTensor(CTensor<type_t> &cTensor);///<получить тензор шума
+
+  void DebugVarVsTime(void);///<диагностика: Var(eps_theta) как функция от t
+  void DebugVarVsTimeForImage(void);///<диагностика: Var(eps_theta) как функция от t для изображений
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -289,7 +292,7 @@ void CModelBasicDiffusion<type_t>::TrainingDiffusionNet(uint32_t mini_batch_inde
 
   //задаём массив времени
   time_step_array[b]=time_step;
-  //задаём тензор изрбражения
+  //задаём тензор изображения
   type_t *ptr=&RealImage[real_index][0];
   uint32_t size=RealImage[real_index].size();
   cTensor_Image.CopyItemLayerWToDevice(b,ptr,size);
@@ -463,11 +466,12 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDIM(int32_t step_counter)
 template<class type_t>
 void CModelBasicDiffusion<type_t>::SaveRandomImageDDPM(void)
 {
+/*
  //задаём сети начальный шум
  GetNoiseTensor(DiffusionNet[0]->GetOutputTensor());
  for(uint32_t layer=0;layer<DiffusionNet.size();layer++)
  {
-  DiffusionNet[layer]->SetUseEMA(true);
+  //DiffusionNet[layer]->SetUseEMA(true);
   DiffusionNet[layer]->SetInferenceMode(true);
  }
  CTensor<type_t> &input_noise=DiffusionNet[0]->GetOutputTensor();
@@ -485,24 +489,53 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDPM(void)
   sprintf(str,"Test/time-%03i.tga",static_cast<int>(t));
   SaveImage(cTensor_Image,str,0,IMAGE_WIDTH,IMAGE_HEIGHT,IMAGE_DEPTH);
  }
- /*
+ */
 
 
  //задаём сети начальный шум
  GetNoiseTensor(DiffusionNet[0]->GetOutputTensor());
+
+ //TODO: ДИАГНОСТИКА
+ SaveImage(DiffusionNet[0]->GetOutputTensor(), "Test/step_start.tga", 0, IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_DEPTH);
+ //TODO: ДИАГНОСТИКА
+
+
  for(uint32_t layer=0;layer<DiffusionNet.size();layer++)
  {
-  DiffusionNet[layer]->SetUseEMA(true);
+  //DiffusionNet[layer]->SetUseEMA(true);
   DiffusionNet[layer]->SetInferenceMode(true);
  }
+
 
  // Цикл от TIME_COUNTER-1 до 1 ВКЛЮЧИТЕЛЬНО. Шаг t=0 пропускается!
  for(int32_t t=TIME_COUNTER-1;t>=1;t--)
  {
+
   for(uint32_t b=0;b<BATCH_SIZE;b++)
   {
    for(uint32_t layer=0;layer<DiffusionNet.size();layer++) DiffusionNet[layer]->SetTimeStep(b,t);
   }
+
+
+    //TODO: ДИАГНОСТИКА
+  if (t % 100 == 0 || t==TIME_COUNTER-1) {
+    char str[256];
+    sprintf(str, "Test/step_t%03d.tga", t);
+    SaveImage(DiffusionNet[0]->GetOutputTensor(), str, 0, IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_DEPTH);
+    // вывести статистику
+    auto &x = DiffusionNet[0]->GetOutputTensor();
+    type_t mn=10000000000, mx=-10000000000, sum=0, sum2=0; uint64_t n=0;
+    for (uint32_t b=0;b<BATCH_SIZE;b++) for (uint32_t z=0;z<x.GetSizeZ();z++)
+     for (uint32_t y=0;y<x.GetSizeY();y++) for (uint32_t u=0;u<x.GetSizeX();u++){
+        type_t v = x.GetElement(b,z,y,u);
+        mn=std::min(mn,v); mx=std::max(mx,v); sum+=v; sum2+=v*v; n++;
+    }
+    printf("t=%d  x_t range=[%.3f, %.3f]  mean=%.3f  var=%.3f\n",
+           t, mn, mx, sum/n, sum2/n - (sum/n)*(sum/n));
+}
+
+  //TODO: ДИАГНОСТИКА
+
 
   for(uint32_t layer=0;layer<DiffusionNet.size();layer++) DiffusionNet[layer]->Forward();
 
@@ -519,17 +552,6 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDPM(void)
 
   //GetNoiseTensor(cTensor_Noise);
 
-  for(uint32_t b=0;b<BATCH_SIZE;b++)
-  {
-   uint32_t index=0;
-   for(uint32_t z=0;z<input_noise.GetSizeZ();z++)
-   {
-    for(uint32_t y=0;y<input_noise.GetSizeY();y++)
-    {
-     for(uint32_t x=0;x<input_noise.GetSizeX();x++,index++)
-     {
-
-// Внутри цикла по z, y, x:
 
 type_t alpha_t         = sDiffusion.Alpha[t];
 type_t alpha_bar_t     = sDiffusion.AlphaBar[t];
@@ -541,6 +563,18 @@ type_t sqrt_alpha_bar_t      = std::sqrt(alpha_bar_t);
 type_t sqrt_alpha_bar_prev   = std::sqrt(alpha_bar_prev);
 type_t sqrt_one_minus_alpha_bar_t = std::sqrt(std::max(0.0f, 1.0f - alpha_bar_t));
 
+
+  for(uint32_t b=0;b<BATCH_SIZE;b++)
+  {
+   uint32_t index=0;
+   for(uint32_t z=0;z<input_noise.GetSizeZ();z++)
+   {
+    for(uint32_t y=0;y<input_noise.GetSizeY();y++)
+    {
+     for(uint32_t x=0;x<input_noise.GetSizeX();x++,index++)
+     {
+
+/*
 type_t input  = input_noise.GetElement(b, z, y, x);
 type_t output = output_noise.GetElement(b, z, y, x);
 
@@ -569,12 +603,22 @@ if (t > 1) prev_noise += std::sqrt(beta_t) * noise;
 
 input_noise.SetElement(b, z, y, x, prev_noise);
 */
-/*
+
       type_t noise=0;//cTensor_Noise.GetElement(b,z,y,x);
 
       type_t input=input_noise.GetElement(b,z,y,x);
       type_t output=output_noise.GetElement(b,z,y,x);
 
+      type_t sqrt_alpha_t     = std::sqrt(alpha_t);
+      type_t sqrt_one_minus_ab = std::sqrt(std::max(0.0f, 1.0f - alpha_bar_t));
+
+      type_t eps_coef = (1.0f - alpha_t) / sqrt_one_minus_ab;   // β_t/√(1−ᾱ_t)
+      type_t prev_noise = (input - eps_coef * output) / sqrt_alpha_t;
+
+      if (prev_noise>5) prev_noise=5;
+      if (prev_noise<-5) prev_noise=-5;
+
+      /*
       // Это в точности: (beta / sqrt(1 - alpha_bar)) * epsilon
       type_t net_noise=output*(1.0-alpha)/sqrt_one_minus_alpha_bar;
 
@@ -584,17 +628,20 @@ input_noise.SetElement(b, z, y, x, prev_noise);
       // Добавляем случайный шум, если это не самый последний шаг (t=1)
       // При t=1 мы получаем x_0, и добавлять шум нельзя
       if (t>1) prev_noise+=std::sqrt(beta)*noise;
-
-      input_noise.SetElement(b,z,y,x,prev_noise);
 */
-/*
+      input_noise.SetElement(b,z,y,x,prev_noise);
+
      }
     }
    }
   }
+
+
  }
  //сохраняем изображения (они на входе сети)
  cTensor_Image=DiffusionNet[0]->GetOutputTensor();
+
+
 
  char str[STRING_BUFFER_SIZE];
  static uint32_t counter=0;
@@ -613,7 +660,7 @@ input_noise.SetElement(b, z, y, x, prev_noise);
   DiffusionNet[layer]->SetInferenceMode(false);
  }
  //counter++;
- */
+
 }
 
 
@@ -635,7 +682,7 @@ void CModelBasicDiffusion<type_t>::SaveKitImage(void)
   for(size_t b=0;b<BATCH_SIZE;b++)
   {
    time_step_array[b]=time_step;
-   //задаём тензор изрбражения
+   //задаём тензор изображения
    type_t *ptr=&RealImage[r_index][0];
    uint32_t size=RealImage[r_index].size();
    cTensor_Image.CopyItemLayerWToDevice(b,ptr,size);
@@ -672,19 +719,25 @@ void CModelBasicDiffusion<type_t>::Training(void)
 
   ExchangeImageIndex(TrainingImageIndex);
 
-  if (Iteration%ITERATION_OF_SAVE_IMAGE==0)
-  {
-   //SaveRandomImageDDIM(100);
-   SaveRandomImageDDPM();
-   SYSTEM::PutMessageToConsole("Save image.");
-  }
-
   if (Iteration%ITERATION_OF_SAVE_NET==0)
   {
-   SYSTEM::PutMessageToConsole("Save net.");
+   DebugVarVsTime();
+   DebugVarVsTimeForImage();
+   SYSTEM::PutMessageToConsole("Start save net.");
    SaveNet();
    SaveTrainingParam();
+   SYSTEM::PutMessageToConsole("Save net done.");
    SYSTEM::PutMessageToConsole("");
+  }
+
+  if (Iteration%ITERATION_OF_SAVE_IMAGE==0)
+  {
+   SYSTEM::PutMessageToConsole("Start save image.");
+   SaveRandomImageDDIM(10);
+   SYSTEM::PutMessageToConsole("Save image done.");
+   DebugVarVsTime();
+   DebugVarVsTimeForImage();
+   //SaveRandomImageDDPM();
   }
 
   double max_cost=0;
@@ -711,7 +764,7 @@ void CModelBasicDiffusion<type_t>::Training(void)
     //корректируем веса
     {
      CTimeStamp cTimeStamp("Обновление весов:");
-     for(uint32_t n=0;n<DiffusionNet.size();n++) DiffusionNet[n]->TrainingUpdateWeight(speed,Iteration+1);
+     for(uint32_t n=0;n<DiffusionNet.size();n++) DiffusionNet[n]->TrainingUpdateWeight(speed,Iteration);
     }
 
 
@@ -758,7 +811,6 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
  cTensor_Noise=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
  cTensor_SqrtAlphaBar=CTensor<type_t>(BATCH_SIZE,1,1,1);
  cTensor_OneMinusAlphaBar=CTensor<type_t>(BATCH_SIZE,1,1,1);
-
 
  CreateDiffusionNet();
 
@@ -944,6 +996,171 @@ void CModelBasicDiffusion<type_t>::GetNoiseTensor(CTensor<type_t> &cTensor)
  }
 }
 #endif
+
+//----------------------------------------------------------------------------------------------------
+// диагностика: Var(eps_theta) как функция от t
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelBasicDiffusion<type_t>::DebugVarVsTime(void)
+{
+    SYSTEM::PutMessageToConsole("=== Var(eps_theta) vs t ===");
+
+    // запоминаем текущий режим и переключаемся в инференс
+    bool prev_modes[4096];
+    uint32_t net_size = static_cast<uint32_t>(DiffusionNet.size());
+    for (uint32_t l = 0; l < net_size; l++)
+    {
+        DiffusionNet[l]->SetUseEMA(false);
+        DiffusionNet[l]->SetInferenceMode(true);
+    }
+
+    // фиксированный входной шум x_t
+    CTensor<type_t> x_test(BATCH_SIZE, IMAGE_DEPTH, IMAGE_HEIGHT, IMAGE_WIDTH);
+    GetNoiseTensor(x_test);
+    x_test.CopyToDevice();
+
+    // массив шагов, на которых проверяем
+    const uint32_t test_t[] = { 0, 100, 200, 300, 400, 499};
+
+    for (uint32_t ti = 0; ti < sizeof(test_t)/sizeof(test_t[0]); ti++)
+    {
+        uint32_t t = test_t[ti];
+
+        // подаём тот же самый вход
+        DiffusionNet[0]->GetOutputTensor() = x_test;
+
+        // задаём t всем слоям
+        for (uint32_t b = 0; b < BATCH_SIZE; b++)
+            for (uint32_t l = 0; l < net_size; l++)
+                DiffusionNet[l]->SetTimeStep(b, t);
+
+        // forward
+        for (uint32_t l = 0; l < net_size; l++)
+            DiffusionNet[l]->Forward();
+
+        // считаем Var(eps_theta)
+        CTensor<type_t> &out = DiffusionNet.back()->GetOutputTensor();
+        double sum = 0.0, sum2 = 0.0;
+        uint64_t cnt = 0;
+        for (uint32_t b = 0; b < BATCH_SIZE; b++)
+        {
+            for (uint32_t z = 0; z < out.GetSizeZ(); z++)
+                for (uint32_t y = 0; y < out.GetSizeY(); y++)
+                    for (uint32_t x = 0; x < out.GetSizeX(); x++)
+                    {
+                        double v = static_cast<double>(out.GetElement(b, z, y, x));
+                        sum  += v;
+                        sum2 += v * v;
+                        cnt++;
+                    }
+        }
+        double mean = sum / cnt;
+        double var  = sum2 / cnt - mean * mean;
+
+        char str[256];
+        sprintf(str, "t=%4u  mean=%+.5f  var=%.5f", t, mean, var);
+        SYSTEM::PutMessageToConsole(str);
+    }
+
+    // возвращаем обычный режим
+    for (uint32_t l = 0; l < net_size; l++)
+    {
+        DiffusionNet[l]->SetUseEMA(false);
+        DiffusionNet[l]->SetInferenceMode(false);
+    }
+
+    SYSTEM::PutMessageToConsole("===========================");
+}
+
+//----------------------------------------------------------------------------------------------------
+// диагностика: Var(eps_theta) как функция от t для изображений
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelBasicDiffusion<type_t>::DebugVarVsTimeForImage(void)
+{
+
+    SYSTEM::PutMessageToConsole("=== Var(eps_theta) vs t for image ===");
+
+    // запоминаем текущий режим и переключаемся в инференс, 600, 700, 800, 900, 999
+    bool prev_modes[4096];
+    uint32_t net_size = static_cast<uint32_t>(DiffusionNet.size());
+    for (uint32_t l = 0; l < net_size; l++)
+    {
+        DiffusionNet[l]->SetUseEMA(false);
+        DiffusionNet[l]->SetInferenceMode(true);
+    }
+    //берём реальное изображение
+    CTensor<type_t> x0(BATCH_SIZE, IMAGE_DEPTH, IMAGE_HEIGHT, IMAGE_WIDTH);
+    for(uint32_t b=0;b<BATCH_SIZE;b++)
+    {
+     uint32_t index=b%RealImage.size();
+     type_t *ptr=&RealImage[index][0];
+     uint32_t size=RealImage[index].size();
+     cTensor_Image.CopyItemLayerWToDevice(index,ptr,size);
+    }
+
+
+
+    // фиксированный входной шум x_t
+    CTensor<type_t> x_test(BATCH_SIZE, IMAGE_DEPTH, IMAGE_HEIGHT, IMAGE_WIDTH);
+    GetNoiseTensor(x_test);
+    x_test.CopyToDevice();
+
+    // массив шагов, на которых проверяем
+    const uint32_t test_t[] = { 0, 100, 200, 300, 400, 499};
+
+    for (uint32_t ti = 0; ti < sizeof(test_t)/sizeof(test_t[0]); ti++)
+    {
+     uint32_t t = test_t[ti];
+
+     // 3. Сгенерировать ε один раз
+     CTensor<type_t> eps(BATCH_SIZE, IMAGE_DEPTH, IMAGE_HEIGHT, IMAGE_WIDTH);
+     GetNoiseTensor(eps);
+    // 4. x_t = √ᾱ_t · x_0 + √(1-ᾱ_t) · ε
+    type_t a = std::sqrt(sDiffusion.AlphaBar[t]);
+    type_t b = std::sqrt(1.0f - sDiffusion.AlphaBar[t]);
+    CTensor<type_t> xt = a * x0 + b * eps;
+
+    // 5. Прогнать через сеть
+    DiffusionNet[0]->GetOutputTensor() = xt;
+    for (uint32_t bb=0; bb<BATCH_SIZE; bb++)
+      for (uint32_t l=0; l<net_size; l++)
+        DiffusionNet[l]->SetTimeStep(bb, t);
+    for (uint32_t l=0; l<net_size; l++) DiffusionNet[l]->Forward();
+
+        // считаем Var(eps_theta)
+        CTensor<type_t> &out = DiffusionNet.back()->GetOutputTensor();
+        double sum = 0.0, sum2 = 0.0;
+        uint64_t cnt = 0;
+        for (uint32_t b = 0; b < BATCH_SIZE; b++)
+        {
+            for (uint32_t z = 0; z < out.GetSizeZ(); z++)
+                for (uint32_t y = 0; y < out.GetSizeY(); y++)
+                    for (uint32_t x = 0; x < out.GetSizeX(); x++)
+                    {
+                        double v = static_cast<double>(out.GetElement(b, z, y, x));
+                        sum  += v;
+                        sum2 += v * v;
+                        cnt++;
+                    }
+        }
+        double mean = sum / cnt;
+        double var  = sum2 / cnt - mean * mean;
+
+        char str[256];
+        sprintf(str, "t=%4u  mean=%+.5f  var=%.5f", t, mean, var);
+        SYSTEM::PutMessageToConsole(str);
+    }
+
+    // возвращаем обычный режим
+    for (uint32_t l = 0; l < net_size; l++)
+    {
+        DiffusionNet[l]->SetUseEMA(false);
+        DiffusionNet[l]->SetInferenceMode(false);
+    }
+
+    SYSTEM::PutMessageToConsole("===========================");
+}
 
 
 //****************************************************************************************************
