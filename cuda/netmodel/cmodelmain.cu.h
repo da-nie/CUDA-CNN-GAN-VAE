@@ -58,6 +58,24 @@ class CModelMain
  public:
   //-перечисления---------------------------------------------------------------------------------------
   //-структуры------------------------------------------------------------------------------------------
+  //настройка преобразования изображения
+  struct SImageTransformation
+  {
+   static const int32_t CHANNEL_SIZE=3;//количество каналов
+
+   bool FlipHorizontal;///<требуется ли отражение по горизонтали (имеет высший приоритет)
+   int32_t OffsetX;///<смещение по X
+   int32_t OffsetY;///<смещение по Y
+   float ScaleZ[CHANNEL_SIZE];///<масштабирование каналов
+
+   SImageTransformation(void)///<конструктор
+   {
+    FlipHorizontal=false;
+    OffsetX=0;
+    OffsetY=0;
+    for(size_t n=0;n<CHANNEL_SIZE;n++) ScaleZ[n]=1;
+   }
+  };
   //-константы------------------------------------------------------------------------------------------
   static const uint32_t STRING_BUFFER_SIZE=1024;///<размер буфера строки
   static const uint32_t CUDA_PAUSE_MS=1;///<пауза для CUDA
@@ -93,6 +111,7 @@ class CModelMain
   void LoadNetLayersTrainingParam(IDataStream *iDataStream_Ptr,std::vector<std::shared_ptr<INetLayer<type_t> > > &net,uint32_t &iteration,bool backward=false);///<загрузить параметры обучения слоёв сети
   void ExchangeImageIndex(std::vector<uint32_t> &index);///<перемешать индексы изображений
   void SaveImage(CTensor<type_t> &cTensor,const std::string &name,uint32_t w,uint32_t output_image_width,uint32_t output_image_height,uint32_t output_image_depth);///<сохранить изображение
+  void TransformationImage(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const std::vector<SImageTransformation> &sImageTransformation_List);///<получение изображения с учётом его параметров
   void SpeedTest(void);///<тест скорости
 };
 
@@ -427,6 +446,60 @@ void CModelMain<type_t>::SaveImage(CTensor<type_t> &cTensor,const std::string &n
 {
  CImage<type_t>::SaveImage(cTensor,name,w,output_image_width,output_image_height,output_image_depth);
 }
+
+//----------------------------------------------------------------------------------------------------
+//получение изображения с учётом его параметров
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CModelMain<type_t>::TransformationImage(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const std::vector<SImageTransformation> &sImageTransformation_List)
+{
+ if (cTensor_Input.GetSizeX()!=cTensor_Output.GetSizeX() || cTensor_Input.GetSizeY()!=cTensor_Output.GetSizeY() || cTensor_Input.GetSizeZ()!=cTensor_Output.GetSizeZ() || cTensor_Input.GetSizeW()!=cTensor_Output.GetSizeW())
+ {
+  throw("Ошибка TransformationImage: входной и выходной тензоры должны быть идентичны по всем размерам.");
+ }
+ if (sImageTransformation_List.size()!=cTensor_Input.GetSizeW())
+ {
+  throw("Ошибка TransformationImage: количество трансформаций должно совпадать с размерностью W тензоров.");
+ }
+
+ int32_t size_w=cTensor_Input.GetSizeW();
+ int32_t size_z=cTensor_Input.GetSizeZ();
+ int32_t size_y=cTensor_Input.GetSizeY();
+ int32_t size_x=cTensor_Input.GetSizeX();
+
+ for(int32_t w=0;w<size_w;w++)
+ {
+  const SImageTransformation &sImageTransformation=sImageTransformation_List[w];
+  for(int32_t z=0;z<size_z;z++)
+  {
+   type_t *output_ptr=cTensor_Output.GetColumnPtr(w,z,0);
+   type_t scale=sImageTransformation.ScaleZ[z%SImageTransformation::CHANNEL_SIZE];//не более трёх каналов
+   for(int32_t y=0;y<size_y;y++)
+   {
+    int32_t input_y=y;
+    input_y+=sImageTransformation.OffsetY;
+    while (input_y<0) input_y+=size_y;
+    input_y%=size_y;
+
+    const type_t *input_ptr=cTensor_Input.GetColumnPtr(w,z,input_y);
+    for(int32_t x=0;x<size_x;x++,output_ptr++)
+    {
+     int32_t input_x=x;
+     if (sImageTransformation.FlipHorizontal==true) input_x=(size_x-input_x-1);
+     input_x+=sImageTransformation.OffsetX;
+     while (input_x<0) input_x+=size_x;
+     input_x%=size_x;
+
+     uint32_t input_offset=input_x;
+     type_t value=input_ptr[input_offset]*scale;
+     *output_ptr=value;
+    }
+   }
+  }
+ }
+ cTensor_Output.SetHostOnChange();
+}
+
 
 //****************************************************************************************************
 //открытые функции

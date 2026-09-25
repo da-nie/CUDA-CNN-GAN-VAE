@@ -91,10 +91,10 @@ template<class type_t>
 void CModelDiffusion<type_t>::CreateDiffusionNet(void)
 {
  const type_t time_scale=1;//множитель временной добавки
- const uint32_t NUM_BLOCKS=4;//количество блоков энкодера и декодера
+ const uint32_t NUM_BLOCKS=5;//количество блоков энкодера и декодера
  const uint32_t BOTTLENECK_CONVS=3;//количество свёрток "бутылочного горлышка"
  const type_t BN_MOMENTUM=0.9;//фильтр нормализаций
- uint32_t kernels=32;
+ uint32_t kernels=64;
 
  uint32_t mlp_time_size=128;
 
@@ -107,7 +107,7 @@ void CModelDiffusion<type_t>::CreateDiffusionNet(void)
  std::vector<uint32_t> split_indices(NUM_BLOCKS,0);
 
  //сжатие
- for (uint32_t block=0;block<NUM_BLOCKS;block++,kernels*=2)
+ for(uint32_t block=0;block<NUM_BLOCKS;block++,kernels*=2)
  {
   // Conv -> BN -> TimeEmb -> RELU
   DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerConvolution<type_t>(kernels,3,1,1,1,1,DiffusionNet.back().get(),BATCH_SIZE)));
@@ -126,7 +126,7 @@ void CModelDiffusion<type_t>::CreateDiffusionNet(void)
  uint32_t up_pos=DiffusionNet.size();
 
  //"бутылочное горлышко"
- for (uint32_t i=0;i<BOTTLENECK_CONVS;i++)
+ for(uint32_t i=0;i<BOTTLENECK_CONVS;i++)
  {
   DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerConvolution<type_t>(kernels,3,1,1,1,1,DiffusionNet.back().get(),BATCH_SIZE)));
   //DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerBatchNormalization<type_t>(BN_MOMENTUM,DiffusionNet.back().get(),BATCH_SIZE)));
@@ -140,7 +140,7 @@ void CModelDiffusion<type_t>::CreateDiffusionNet(void)
  kernels/=2;
 
  // ------------------------------ ДЕКОДЕР -------------------------------
- for (int32_t block=static_cast<int32_t>(NUM_BLOCKS)-1;block>=0;block--,kernels/=2)
+ for(int32_t block=static_cast<int32_t>(NUM_BLOCKS)-1;block>=0;block--,kernels/=2)
  {
   // Upsample x2
   DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerUpSampling<type_t>(2,2,DiffusionNet.back().get(),BATCH_SIZE)));
