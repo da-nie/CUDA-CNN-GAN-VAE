@@ -2255,24 +2255,23 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
  int32_t padded_N=tensor_output.Size_X;
  int32_t padded_M=tensor_output.Size_Y;
 
+ int32_t c_base=tx*2;
+ int32_t c_orig=tx*2;
  for(int32_t k_step=0;k_step<padded_K;k_step+=WMMA_BLOCK_DEPTH)
  {
   //заполнение матрицы A
+  int32_t r=ty*4;
   #pragma unroll
-  for(int32_t i=0;i<4;i++)
+  for(int32_t i=0;i<4;i++,r++)
   {
-   int32_t r=ty*4+i;
-   int32_t c_base=tx*2;
    sh_A[r][c_base]=__float2half(tensor_left.GetElement(block_row+r,k_step+c_base));
    sh_A[r][c_base+1]=__float2half(tensor_left.GetElement(block_row+r,k_step+c_base+1));
   }
   //заполнение матрицы B с транспонированием
+  int32_t r_orig=ty*2;
   #pragma unroll
-  for(int32_t i=0;i<2;i++)
+  for(int32_t i=0;i<2;i++,r_orig++)
   {
-   int32_t r_orig=ty*2+i;
-   int32_t c_orig=tx*2;
-
    half val0=__float2half(tensor_right.GetElement(k_step+r_orig,block_col+c_orig));
    half val1=__float2half(tensor_right.GetElement(k_step+r_orig,block_col+c_orig+1));
 
@@ -2298,6 +2297,7 @@ __global__ void CUDATensorMulTensorFunctionForTensorCoreGenerationOne(kernel_out
  for(int32_t idx=tid;idx<WMMA_BLOCK_ROWS*WMMA_BLOCK_COLS;idx+=256)
  {
   int32_t d=idx/WMMA_BLOCK_COLS;
+
   int32_t cy=block_row+(d);
   int32_t cx=block_col+(idx-d*WMMA_BLOCK_COLS);
 

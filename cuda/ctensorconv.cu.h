@@ -321,7 +321,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
 template<class type_t>
 struct STensorKernel_BackwardConvolution_Kernel
 {
- STensorKernel<type_t> sTensorKernel_Kernel;///<исходный тензорор ядра
+ STensorKernel<type_t> sTensorKernel_Kernel;///<исходный тензор ядра
 
  uint32_t Size_X;///<размер по x
  uint32_t Size_Y;///<размер по y
@@ -333,6 +333,7 @@ struct STensorKernel_BackwardConvolution_Kernel
  int32_t Offset_X;
  int32_t Offset_Y;
  int32_t Kernel_Amount;
+ int32_t Kernel_XYSize;
 
  __host__ __device__ STensorKernel_BackwardConvolution_Kernel(void)///<конструктор
  {
@@ -396,9 +397,11 @@ struct STensorKernel_BackwardConvolution_Kernel
   int32_t sy=y+Offset_Y;
 
   if (sy<0 || sy>=Kernel_Z) return(0);
-  if (sx<0 || sx>=Kernel_X*Kernel_Y*Kernel_Amount) return(0);
-  int32_t ki=sx/(Kernel_X*Kernel_Y);
-  sx-=ki*(Kernel_X*Kernel_Y);
+  if (sx<0 || sx>=Kernel_XYSize*Kernel_Amount) return(0);
+
+  int32_t ki=sx/Kernel_XYSize;
+  sx-=ki*Kernel_XYSize;
+  /*
   int32_t ky=sx/Kernel_X;
   sx-=ky*Kernel_X;
   int32_t kx=sx;
@@ -408,26 +411,40 @@ struct STensorKernel_BackwardConvolution_Kernel
   kx=Kernel_X-1-kx;
 
   return(sTensorKernel_Kernel.GetElement(ki,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y));
-
+  */
+  sy++;
+  int32_t pos=Kernel_XYSize*sy;
+  pos--;
+  pos-=sx;
+  return(sTensorKernel_Kernel.GetElement(ki,pos));
  }
  __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
  {
   int32_t sx=x+Offset_X;
   int32_t sy=y+Offset_Y;
 
-  if (sy<0 || sy>=Kernel_Amount) return;
-  if (sx<0 || sx>=Kernel_X*Kernel_Y*Kernel_Z) return;
-  int32_t kz=sx/(Kernel_X*Kernel_Y);
-  sx-=kz*(Kernel_X*Kernel_Y);
+  if (sy<0 || sy>=Kernel_Z) return;
+  if (sx<0 || sx>=Kernel_XYSize*Kernel_Amount) return;
+
+  int32_t ki=sx/Kernel_XYSize;
+  sx-=ki*Kernel_XYSize;
+  /*
   int32_t ky=sx/Kernel_X;
   sx-=ky*Kernel_X;
   int32_t kx=sx;
+  int32_t kz=sy;
 
   ky=Kernel_Y-1-ky;
   kx=Kernel_X-1-kx;
 
-  sTensorKernel_Kernel.SetElement(sy,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y,value);
+  sTensorKernel_Kernel.SetElement(ki,kx+ky*Kernel_X+kz*Kernel_X*Kernel_Y,value);
+  */
 
+  sy++;
+  int32_t pos=Kernel_XYSize*sy;
+  pos--;
+  pos-=sx;
+  sTensorKernel_Kernel.SetElement(ki,pos,value);
  }
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
@@ -453,6 +470,7 @@ struct STensorKernel_BackwardConvolution_Kernel
   Offset_X=0;
   Offset_Y=0;
   Kernel_Amount=0;
+  Kernel_XYSize=0;
  }
 
  __host__ __device__ void Set(const CTensor<type_t> &cTensor_Kernel,uint32_t kernel_x,uint32_t kernel_y,uint32_t kernel_z,uint32_t kernel_amount)
@@ -474,6 +492,7 @@ struct STensorKernel_BackwardConvolution_Kernel
   Offset_Y=0;
 
   Kernel_Amount=kernel_amount;
+  Kernel_XYSize=Kernel_X*Kernel_Y;
  }
 };
 
