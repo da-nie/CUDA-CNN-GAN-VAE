@@ -3541,9 +3541,14 @@ __global__ void CUDADropOut(STensorKernel<type_t> tensor_output,unsigned long lo
 
  uint32_t pos=(xp+yp*tensor_output.Size_X+z*tensor_output.Size_X*tensor_output.Size_Y)+w*tensor_output.Size_X*tensor_output.Size_Y*tensor_output.Size_Z;
 
+ curandStatePhilox4_32_10_t state;
+ curand_init(seed,pos,0,&state);
+ type_t random=curand_uniform(&state);
+ /*
  curandState state;
  curand_init(seed,pos,0,&state);
  type_t random=curand_uniform(&state);
+ */
 
  type_t mult=static_cast<type_t>(1.0/(1.0-drop_out));
  if (random>=drop_out) tensor_output.SetElement(w,z,yp,xp,mult);
@@ -3654,9 +3659,16 @@ __global__ void CUDAGetNoiseImageAndNoise(STensorKernel<type_t> tensor_noisy_ima
  if (xp>=tensor_noisy_image.GetSizeX() || yp>=tensor_noisy_image.GetSizeY()) return;
 
  uint32_t pos=(xp+yp*tensor_noisy_image.Size_X+z*tensor_noisy_image.Size_X*tensor_noisy_image.Size_Y)+w*tensor_noisy_image.Size_X*tensor_noisy_image.Size_Y*tensor_noisy_image.Size_Z;
- curandState state;
+
+
+ curandStatePhilox4_32_10_t state;
  curand_init(seed,pos,0,&state);
  type_t noise=curand_normal(&state);
+
+ /*curandState state;
+ curand_init(seed,pos,0,&state);
+ type_t noise=curand_normal(&state);*/
+
  tensor_noise.SetElement(w,z,yp,xp,noise);
 
  type_t image=tensor_image.GetElement(w,z,yp,xp);

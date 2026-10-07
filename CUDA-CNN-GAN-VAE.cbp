@@ -342,6 +342,8 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayerfunction.cu.h" />
+		<Unit filename="netlayer/cnetlayergroupnormalization.cu" />
+		<Unit filename="netlayer/cnetlayergroupnormalization.cu.h" />
 		<Unit filename="netlayer/cnetlayerlinear.cu">
 			<Option compile="1" />
 			<Option link="1" />
