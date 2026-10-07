@@ -68,7 +68,7 @@ class CTensorMath
   static void SumXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,type_t scale=1);///<вычислить сумму элементов по X и Y для каждого Z
   static void AddToXY(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_UnitWZ,type_t scale_input=1,type_t scale_unit_wz=1);///<прибавить одинаковые значения элементов по X и Y для каждого Z и W
   static void LayerNormalizeX(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_dGamma,CTensor<type_t> &cTensor_dBeta);///<выполнить нормализацию по слою X
-  static void LayerAddX(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_ValueX);///<добавить значеня по слою X
+  static void LayerAddX(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_ValueX);///<добавить значения по слою X
   static void SubTensor(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,int32_t w,int32_t z,int32_t y,int32_t x);///<скопировать один тензор в другой с позиции
   static void SplitKQVTensor(CTensor<type_t> &cTensor_Q,CTensor<type_t> &cTensor_K,CTensor<type_t> &cTensor_V,const CTensor<type_t> &cTensor_QKV,int32_t num_total_tokens,int32_t head_dim,int32_t arch_dim,int32_t q_split_index,int32_t k_split_index,int32_t v_split_index);//разделить тензор на Q,K,V
 
@@ -76,7 +76,8 @@ class CTensorMath
   static void MulAbstract(CTensor<type_t> &cTensor_Output,kernel_output_t &sTensorKernel_Output,const CTensor<type_t> &cTensor_Left,kernel_left_t &sTensorKernel_Left,const CTensor<type_t> &cTensor_Right,kernel_right_t &sTensorKernel_Right);///<умножить тензоры
 
   static void Mul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить тензоры
-  static void TransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить транспонированный левый тензор на правый
+  static void LeftTransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить транспонированный левый тензор на правый
+  static void RightTransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить левый тензор на транспонированный правый
   static void Mul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const type_t &value_right);///<умножить тензор на число
   static void Mul(CTensor<type_t> &cTensor_Output,const type_t &value_left,const CTensor<type_t> &cTensor_Right);///<умножить тензор на число
   static void Transpose(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<транспонировать тензор
@@ -857,54 +858,54 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
   throw "CTensor::Mul: Размерности тензоров не совпадают!";
  }
 
- uint32_t LY = cTensor_Left.Size_Y;
- uint32_t LX = cTensor_Left.Size_X;
- uint32_t RX = cTensor_Right.Size_X;
- uint32_t Z = cTensor_Left.Size_Z;
- uint32_t W = cTensor_Output.Size_W;
+ uint32_t LY=cTensor_Left.Size_Y;
+ uint32_t LX=cTensor_Left.Size_X;
+ uint32_t RX=cTensor_Right.Size_X;
+ uint32_t Z=cTensor_Left.Size_Z;
+ uint32_t W=cTensor_Output.Size_W;
 
  // Обязательно обнуляем выходной тензор перед накоплением суммы
  cTensor_Output.Zero();
 
  // Размер блока для кэширования. 32 - эмпирически хороший выбор для L1 кэша процессора
- const uint32_t BLOCK_SIZE = 32;
+ const uint32_t BLOCK_SIZE=32;
 
  for(uint32_t w=0;w<W;w++)
  {
   for(uint32_t z=0;z<Z;z++)
   {
-   uint32_t w_left = w % cTensor_Left.Size_W;
-   uint32_t w_right = w % cTensor_Right.Size_W;
+   uint32_t w_left=w % cTensor_Left.Size_W;
+   uint32_t w_right=w % cTensor_Right.Size_W;
 
    // Получаем сырые указатели на начало срезов матриц для конкретных w и z
-   const type_t* left_base = cTensor_Left.GetColumnPtr(w_left, z, 0);
-   const type_t* right_base = cTensor_Right.GetColumnPtr(w_right, z, 0);
-   type_t* out_base = cTensor_Output.GetColumnPtr(w, z, 0);
+   const type_t* left_base=cTensor_Left.GetColumnPtr(w_left, z, 0);
+   const type_t* right_base=cTensor_Right.GetColumnPtr(w_right, z, 0);
+   type_t* out_base=cTensor_Output.GetColumnPtr(w, z, 0);
 
    // Разбиваем умножение на блоки для оптимизации работы с кэшем
-   for(uint32_t yy = 0; yy < LY; yy += BLOCK_SIZE)
+   for(uint32_t yy=0; yy<LY; yy+=BLOCK_SIZE)
    {
-    for(uint32_t kk = 0; kk < LX; kk += BLOCK_SIZE)
+    for(uint32_t kk=0; kk<LX; kk+=BLOCK_SIZE)
     {
-     for(uint32_t xx = 0; xx < RX; xx += BLOCK_SIZE)
+     for(uint32_t xx=0; xx<RX; xx+=BLOCK_SIZE)
      {
       // Определяем границы текущего блока (с учетом неполных блоков по краям)
-      uint32_t y_end = std::min(yy + BLOCK_SIZE, LY);
-      uint32_t k_end = std::min(kk + BLOCK_SIZE, LX);
-      uint32_t x_end = std::min(xx + BLOCK_SIZE, RX);
+      uint32_t y_end=std::min(yy+BLOCK_SIZE, LY);
+      uint32_t k_end=std::min(kk+BLOCK_SIZE, LX);
+      uint32_t x_end=std::min(xx+BLOCK_SIZE, RX);
 
       // Вычисляем блок матрицы
-      for(uint32_t y = yy; y < y_end; y++)
+      for(uint32_t y=yy; y<y_end; y++)
       {
-       for(uint32_t k = kk; k < k_end; k++)
+       for(uint32_t k=kk; k<k_end; k++)
        {
         // Значение левой матрицы вычисляется один раз и мультиплексируется по X
-        type_t left_val = left_base[y * LX + k];
+        type_t left_val=left_base[y*LX+k];
 
         // Внутренний цикл идет строго по памяти последовательно для правой и выходной матрицы
-        for(uint32_t x = xx; x < x_end; x++)
+        for(uint32_t x=xx; x<x_end; x++)
         {
-         out_base[y * RX + x] += left_val * right_base[k * RX + x];
+         out_base[y*RX+x]+=left_val*right_base[k*RX+x];
         }
        }
       }
@@ -919,12 +920,12 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const CTensor<type
 //умножить транспонированный левый тензор на правый
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::TransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
+void CTensorMath<type_t>::LeftTransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
 {
  if (cTensor_Left.Size_Y!=cTensor_Right.Size_Y  || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_Y!=cTensor_Left.Size_X || cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
-  throw "CTensor::TransposeMul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
+  throw "CTensor::LeftTransposeMul(CTensor &cTensor_Output,const CTensor &cTensor_Left,const CTensor &cTensor_Right): Размерности тензоров не совпадают!";
  }
 
  uint32_t left_w=cTensor_Left.Size_W;
@@ -961,25 +962,25 @@ void CTensorMath<type_t>::TransposeMul(CTensor<type_t> &cTensor_Output,const CTe
 //умножить транспонированный левый тензор на правый (оптимизированная версия)
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CTensorMath<type_t>::TransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
+void CTensorMath<type_t>::LeftTransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
 {
  if (cTensor_Left.Size_Y!=cTensor_Right.Size_Y  || cTensor_Left.Size_Z!=cTensor_Right.Size_Z ||
      cTensor_Output.Size_Y!=cTensor_Left.Size_X || cTensor_Output.Size_X!=cTensor_Right.Size_X || cTensor_Output.Size_Z!=cTensor_Right.Size_Z)
  {
-  throw "CTensor::TransposeMul: Размерности тензоров не совпадают!";
+  throw "CTensor::LeftTransposeMul: Размерности тензоров не совпадают!";
  }
 
- uint32_t K_DIM = cTensor_Left.Size_Y; // Общая размерность (внутренняя)
- uint32_t L_X = cTensor_Left.Size_X;   // Выходная Y (строки транспонированной левой)
- uint32_t R_X = cTensor_Right.Size_X;  // Выходная X (столбцы правой)
- uint32_t Z = cTensor_Left.Size_Z;
- uint32_t W = cTensor_Output.Size_W;
+ uint32_t K_DIM=cTensor_Left.Size_Y; // Общая размерность (внутренняя)
+ uint32_t L_X=cTensor_Left.Size_X;   // Выходная Y (строки транспонированной левой)
+ uint32_t R_X=cTensor_Right.Size_X;  // Выходная X (столбцы правой)
+ uint32_t Z=cTensor_Left.Size_Z;
+ uint32_t W=cTensor_Output.Size_W;
 
  // Обязательно обнуляем выходной тензор перед накоплением суммы
  cTensor_Output.Zero();
 
  // Размер блока для кэширования
- const uint32_t BLOCK_SIZE = 32;
+ const uint32_t BLOCK_SIZE=32;
 
  #ifdef GOFAST
  #pragma omp parallel for collapse(2) schedule(static)
@@ -988,40 +989,40 @@ void CTensorMath<type_t>::TransposeMul(CTensor<type_t> &cTensor_Output,const CTe
  {
   for(uint32_t z=0;z<Z;z++)
   {
-   uint32_t w_left = w % cTensor_Left.Size_W;
-   uint32_t w_right = w % cTensor_Right.Size_W;
+   uint32_t w_left=w%cTensor_Left.Size_W;
+   uint32_t w_right=w%cTensor_Right.Size_W;
 
-   // Получаем сырые указатели на начало срезов матриц
-   const type_t* left_base = cTensor_Left.GetColumnPtr(w_left, z, 0);
-   const type_t* right_base = cTensor_Right.GetColumnPtr(w_right, z, 0);
-   type_t* out_base = cTensor_Output.GetColumnPtr(w, z, 0);
+   //получаем сырые указатели на начало срезов матриц
+   const type_t* left_base=cTensor_Left.GetColumnPtr(w_left,z,0);
+   const type_t* right_base=cTensor_Right.GetColumnPtr(w_right,z,0);
+   type_t* out_base=cTensor_Output.GetColumnPtr(w,z,0);
 
-   // Разбиваем умножение на блоки для оптимизации работы с кэшем
-   for(uint32_t kk = 0; kk < K_DIM; kk += BLOCK_SIZE)
+   //разбиваем умножение на блоки для оптимизации работы с кэшем
+   for(uint32_t kk=0;kk<K_DIM;kk+=BLOCK_SIZE)
    {
-    for(uint32_t yy = 0; yy < L_X; yy += BLOCK_SIZE)
+    for(uint32_t yy=0;yy<L_X;yy+=BLOCK_SIZE)
     {
-     for(uint32_t xx = 0; xx < R_X; xx += BLOCK_SIZE)
+     for(uint32_t xx=0;xx<R_X;xx+=BLOCK_SIZE)
      {
-      // Определяем границы текущего блока (с учетом неполных блоков по краям)
-      uint32_t k_end = std::min(kk + BLOCK_SIZE, K_DIM);
-      uint32_t y_end = std::min(yy + BLOCK_SIZE, L_X);
-      uint32_t x_end = std::min(xx + BLOCK_SIZE, R_X);
+      //определяем границы текущего блока (с учетом неполных блоков по краям)
+      uint32_t k_end=std::min(kk+BLOCK_SIZE,K_DIM);
+      uint32_t y_end=std::min(yy+BLOCK_SIZE,L_X);
+      uint32_t x_end=std::min(xx+BLOCK_SIZE,R_X);
 
       // Вычисляем блок матрицы
-      // Порядок K -> Y -> X оптимален для A^T * B, так как обеспечивает
-      // последовательное чтение элементов из левой матрицы (по столбцу исходной = по строке транспонированной)
-      for(uint32_t k = kk; k < k_end; k++)
+      // Порядок K -> Y -> X оптимален для A^T*B, так как обеспечивает
+      // последовательное чтение элементов из левой матрицы (по столбцу исходной=по строке транспонированной)
+      for(uint32_t k=kk;k<k_end;k++)
       {
-       for(uint32_t y = yy; y < y_end; y++)
+       for(uint32_t y=yy;y<y_end;y++)
        {
         // Читаем элемент левой матрицы. При переходе по Y мы двигаемся по памяти последовательно!
-        type_t left_val = left_base[k * L_X + y];
+        type_t left_val=left_base[k*L_X+y];
 
         // Внутренний цикл идет строго последовательно по памяти для правой и выходной матрицы
-        for(uint32_t x = xx; x < x_end; x++)
+        for(uint32_t x=xx;x<x_end;x++)
         {
-         out_base[y * R_X + x] += left_val * right_base[k * R_X + x];
+         out_base[y*R_X+x]+=left_val*right_base[k*R_X+x];
         }
        }
       }

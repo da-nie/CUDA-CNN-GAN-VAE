@@ -52,7 +52,7 @@ class CNetLayerLinear:public INetLayer<type_t>
   CTensor<type_t> cTensor_W_EMA;///<тензор весов слоя
   CTensor<type_t> cTensor_B_EMA;///<тензор сдвигов слоя
 
-  CTensor<type_t> cTensor_H;///<тензор значений нейронов до функции активации
+  CTensor<type_t> cTensor_H;///<тензор значений нейронов
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_dW;///<тензор поправок весов слоя
@@ -186,6 +186,7 @@ void CNetLayerLinear<type_t>::Create(uint32_t neurons,INetLayer<type_t> *prev_la
 
   cTensor_W=CTensor<type_t>(1,1,neurons,size_x*size_y*size_z);
   cTensor_B=CTensor<type_t>(1,1,neurons,1);
+
   //задаём предшествующему слою, что мы его последующий слой
   prev_layer_ptr->SetNextLayerPtr(this);
  }
@@ -427,7 +428,7 @@ void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
  uint32_t size_z=cTensor_PrevLayerError.GetSizeZ();
 
  cTensor_PrevLayerError.ReinterpretSize(BatchSize,1,size_x*size_y*size_z,1);
- CTensorMath<type_t>::TransposeMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta);
+ CTensorMath<type_t>::LeftTransposeMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta);
  cTensor_PrevLayerError.RestoreSize();
  //задаём ошибку предыдущего слоя
 

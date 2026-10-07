@@ -93,6 +93,36 @@
 		</Unit>
 		<Unit filename="cuda/cuda.cu.h" />
 		<Unit filename="cuda/handle_error.cu.h" />
+		<Unit filename="cuda/math/gemm_cudacore_typea.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/math/gemm_cudacore_typea.cu.h" />
+		<Unit filename="cuda/math/gemm_cudacore_typeb.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/math/gemm_cudacore_typeb.cu.h" />
+		<Unit filename="cuda/math/gemm_tensorcoregenone_typea.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/math/gemm_tensorcoregenone_typea.cu.h" />
+		<Unit filename="cuda/math/gemm_tensorcoregenone_typeb.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/math/gemm_tensorcoregenone_typeb.cu.h" />
+		<Unit filename="cuda/math/gemm_tensorcoregenone_typec.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/math/gemm_tensorcoregenone_typec.cu.h" />
+		<Unit filename="cuda/math/tensorkernel.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/math/tensorkernel.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicdiffusion.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicgan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicsrgan.cu.h" />

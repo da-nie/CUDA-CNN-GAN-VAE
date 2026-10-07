@@ -43,7 +43,7 @@
 #include "../../netlayer/cnetlayerconcatenator.cu.h"
 #include "../../netlayer/cnetlayervaecoderoutput.cu.h"
 #include "../../netlayer/cnetlayersoftmax.cu.h"
-//#include "../../netlayer/cnetlayerselfattention.cu.h"
+#include "../../netlayer/cnetlayerselfattention.cu.h"
 
 #include "../tensor.cu.h"
 

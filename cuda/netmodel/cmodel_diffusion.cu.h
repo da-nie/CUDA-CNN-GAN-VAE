@@ -94,7 +94,7 @@ void CModelDiffusion<type_t>::CreateDiffusionNet(void)
  const uint32_t NUM_BLOCKS=4;//количество блоков энкодера и декодера
  const uint32_t BOTTLENECK_CONVS=3;//количество свёрток "бутылочного горлышка"
  const type_t BN_MOMENTUM=0.9;//фильтр нормализаций
- uint32_t kernels=64;
+ uint32_t kernels=128;
  uint32_t groups=8;
 
  uint32_t mlp_time_size=128;

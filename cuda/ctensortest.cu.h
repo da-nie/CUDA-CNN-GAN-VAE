@@ -59,6 +59,8 @@ class CTensorTest
   static bool TestCreateDeltaWeightAndBiasWithStepAndPadding(void);///<протестировать создание поправок c шагом и дополнением
   static bool TestCreateDeltaWeightAndBias(void);///<протестировать создание поправок
   static bool TestBackwardConvolutionWithStepAndPadding(void);///<протестировать обратную свёртку с шагом и дополнением
+  static void MulCUDACore(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить тензоры на ядрах CUDA
+  static void MulTensorCore(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right);///<умножить тензоры на тензорных ядрах
   static bool TestTensorCoreMulMatrix(void);///<протестировать умножение матриц через тензорные ядра
 };
 
@@ -652,6 +654,32 @@ bool CTensorTest<type_t>::TestBackwardConvolutionWithStepAndPadding(void)
 }
 
 //----------------------------------------------------------------------------------------------------
+//умножить тензоры на ядрах CUDA
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__host__ void CTensorTest<type_t>::MulCUDACore(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
+{
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Left(cTensor_Left);
+ STensorKernel<type_t> sTensorKernel_Right(cTensor_Right);
+ NSCUDACoreTypeA::MulAbstract<type_t,STensorKernel<type_t>,STensorKernel<type_t>,STensorKernel<type_t>>(cTensor_Output,sTensorKernel_Output,cTensor_Left,sTensorKernel_Left,cTensor_Right,sTensorKernel_Right);
+}
+
+//----------------------------------------------------------------------------------------------------
+//умножить тензоры на тензорных ядрах
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__host__ void CTensorTest<type_t>::MulTensorCore(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
+{
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Left(cTensor_Left);
+ STensorKernel<type_t> sTensorKernel_Right(cTensor_Right);
+ #ifdef USE_TENSOR_CORE_GENERATION_ONE
+ NSTensorCoreGenOneTypeB::MulAbstract<type_t,STensorKernel<type_t>,STensorKernel<type_t>,STensorKernel<type_t>>(cTensor_Output,sTensorKernel_Output,cTensor_Left,sTensorKernel_Left,cTensor_Right,sTensorKernel_Right);
+ #endif
+}
+
+//----------------------------------------------------------------------------------------------------
 //протестировать умножение матриц через тензорные ядра
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
@@ -672,8 +700,8 @@ bool CTensorTest<type_t>::TestTensorCoreMulMatrix(void)
   CRandom<type_t>::SetRandomNormal(cTensor_A,-1,1);
   CRandom<type_t>::SetRandomNormal(cTensor_B,-1,1);
 
-  CTensorMath<type_t>::Mul(cTensor_TensorCore,cTensor_A,cTensor_B,true);
-  CTensorMath<type_t>::Mul(cTensor_CUDACore,cTensor_A,cTensor_B,false);
+  MulTensorCore(cTensor_TensorCore,cTensor_A,cTensor_B);
+  MulCUDACore(cTensor_CUDACore,cTensor_A,cTensor_B);
   CTensorMath<type_t>::Sub(cTensor_Delta,cTensor_CUDACore,cTensor_TensorCore);
 
   if (s%100==0) printf("N:%i\r\n",(int)s);

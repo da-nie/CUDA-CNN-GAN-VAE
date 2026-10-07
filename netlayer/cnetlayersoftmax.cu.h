@@ -2,14 +2,14 @@
 #define C_NET_LAYER_SOFT_MAX_H
 
 //****************************************************************************************************
-//\file Слой SoftMax
+//\file Слой SoftMax (работает по оси X)
 //****************************************************************************************************
 
 //****************************************************************************************************
 //подключаемые библиотеки
 //****************************************************************************************************
 #include <stdio.h>
-#include <fstream>      // исправлено: стандартный заголовок для файловых потоков
+#include <fstream>
 #include <vector>
 #include <math.h>
 
@@ -31,7 +31,7 @@
 //****************************************************************************************************
 
 //****************************************************************************************************
-//!Слой SoftMax
+//!Слой SoftMax (работает по оси X)
 //****************************************************************************************************
 template<class type_t>
 class CNetLayerSoftMax:public INetLayer<type_t>
@@ -48,6 +48,7 @@ class CNetLayerSoftMax:public INetLayer<type_t>
   uint32_t BatchSize;///<размер пакета для обучения
 
   CTensor<type_t> cTensor_H;///<выходной тензор значений нейронов
+  CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
 
   uint32_t InputSize_X;///<размер входного тензора по X
   uint32_t InputSize_Y;///<размер входного тензора по Y
@@ -230,42 +231,29 @@ void CNetLayerSoftMax<type_t>::Forward(void)
 
  for(size_t w=0;w<input_w;w++)
  {
-  // === ИСПРАВЛЕНИЕ: численная стабилизация — находим максимум ===
-  type_t max_val = input.GetElement(w,0,0,0);
   for(size_t z=0;z<input_z;z++)
   {
    for(size_t y=0;y<input_y;y++)
    {
+    //численная стабилизация — находим максимум
+    type_t max_val = input.GetElement(w,z,y,0);
     for(size_t x=0;x<input_x;x++)
     {
-     type_t val = input.GetElement(w,z,y,x);
-     if (val > max_val) max_val = val;
+     type_t val=input.GetElement(w,z,y,x);
+     if (val>max_val) max_val=val;
     }
-   }
-  }
-
-  //считаем сумму стабилизированных экспонент
-  double summ=0;
-  for(size_t z=0;z<input_z;z++)
-  {
-   for(size_t y=0;y<input_y;y++)
-   {
+    //считаем сумму стабилизированных экспонент
+    double summ=0;
     for(size_t x=0;x<input_x;x++)
     {
-     type_t e = input.GetElement(w,z,y,x);
-     summ += exp(e - max_val);
+     type_t e=input.GetElement(w,z,y,x);
+     summ+=exp(e-max_val);
     }
-   }
-  }
-  //делим каждый элемент на сумму
-  for(size_t z=0;z<input_z;z++)
-  {
-   for(size_t y=0;y<input_y;y++)
-   {
+    //делим каждый элемент на сумму
     for(size_t x=0;x<input_x;x++)
     {
-     type_t e = input.GetElement(w,z,y,x);
-     e = exp(e - max_val) / summ;
+     type_t e=input.GetElement(w,z,y,x);
+     e=exp(e-max_val)/summ;
      cTensor_H.SetElement(w,z,y,x,e);
     }
    }
@@ -346,6 +334,7 @@ void CNetLayerSoftMax<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
+ cTensor_PrevLayerError=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -356,6 +345,7 @@ void CNetLayerSoftMax<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
+ cTensor_PrevLayerError=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -365,7 +355,7 @@ template<class type_t>
 void CNetLayerSoftMax<type_t>::TrainingBackward(bool create_delta_weight)
 {
  //задаём ошибку предыдущего слоя
- PrevLayerPtr->SetOutputError(cTensor_Delta);
+ PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -404,38 +394,31 @@ void CNetLayerSoftMax<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  // Используем уже вычисленные выходы softmax из Forward (cTensor_H)
  // Это даёт максимальную эффективность и численную стабильность.
- CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();   // оставлено для совместимости, не используется
+ CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();//оставлено для совместимости, не используется
 
- uint32_t input_x = cTensor_H.GetSizeX();
- uint32_t input_y = cTensor_H.GetSizeY();
- uint32_t input_z = cTensor_H.GetSizeZ();
- uint32_t input_w = cTensor_H.GetSizeW();
+ uint32_t input_x=cTensor_H.GetSizeX();
+ uint32_t input_y=cTensor_H.GetSizeY();
+ uint32_t input_z=cTensor_H.GetSizeZ();
+ uint32_t input_w=cTensor_H.GetSizeW();
 
- for(size_t w=0; w<input_w; w++)
+ for(size_t w=0;w<input_w;w++)
  {
-  // 1) Вычисляем взвешенную сумму ошибок: sum_j (p_j * error_j)
-  type_t weighted_error_sum = 0;
-  for(size_t z=0; z<input_z; z++)
+  for(size_t z=0;z<input_z;z++)
   {
-   for(size_t y=0; y<input_y; y++)
+   for(size_t y=0;y<input_y;y++)
    {
-    for(size_t x=0; x<input_x; x++)
+    // 1) Вычисляем взвешенную сумму ошибок: sum_j (p_j * error_j)
+    type_t weighted_error_sum=0;
+    for(size_t x=0;x<input_x;x++)
     {
-     weighted_error_sum += cTensor_H.GetElement(w,z,y,x) * error.GetElement(w,z,y,x);
+     weighted_error_sum+=cTensor_H.GetElement(w,z,y,x)*error.GetElement(w,z,y,x);
     }
-   }
-  }
-
-  // 2) Дельта: delta_i = p_i * (error_i - weighted_error_sum)
-  for(size_t z=0; z<input_z; z++)
-  {
-   for(size_t y=0; y<input_y; y++)
-   {
-    for(size_t x=0; x<input_x; x++)
+    // 2) Дельта: delta_i = p_i * (error_i - weighted_error_sum)
+    for(size_t x=0;x<input_x;x++)
     {
-     type_t p = cTensor_H.GetElement(w,z,y,x);
-     type_t delta = p * (error.GetElement(w,z,y,x) - weighted_error_sum);
-     cTensor_Delta.SetElement(w,z,y,x, delta);
+     type_t p=cTensor_H.GetElement(w,z,y,x);
+     type_t delta=p*(error.GetElement(w,z,y,x)-weighted_error_sum);
+     cTensor_PrevLayerError.SetElement(w,z,y,x,delta);
     }
    }
   }
