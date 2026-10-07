@@ -279,7 +279,7 @@ void CTensorConv<type_t>::ForwardConvolution(CTensor<type_t> &cTensor_Output,con
  int32_t output_z=kernel_amount;
  int32_t output_w=cTensor_Output.Size_W;
  if (output_z==0) throw("Для прямой свёртки требуется хотя бы одно ядро свёртки");
- if (output_z!=cTensor_Bias.GetSizeZ()) throw("Для прямой свёртки требуется чтобы количество ядер и смещений совпадало");
+ if (output_z!=cTensor_Bias.Size_Z) throw("Для прямой свёртки требуется чтобы количество ядер и смещений совпадало");
 
  int32_t input_y=cTensor_Image.Size_Y;
  int32_t input_x=cTensor_Image.Size_X;
@@ -684,7 +684,7 @@ void CTensorConv<type_t>::BackwardConvolution(CTensor<type_t> &cTensor_OutputDel
 {
  //вычисляем размеры выходного тензора
  if (kernel_amount==0) throw("Для обратной свёртки требуется хотя бы одно ядро свёртки");
- if (kernel_amount!=cTensor_Bias.GetSizeZ()) throw("Для обратной свёртки требуется чтобы количество ядер и смещений совпадало");
+ if (kernel_amount!=cTensor_Bias.Size_Z) throw("Для обратной свёртки требуется чтобы количество ядер и смещений совпадало");
 
  int32_t input_y=cTensor_Delta.Size_Y;
  int32_t input_x=cTensor_Delta.Size_X;
@@ -1168,7 +1168,7 @@ template<class type_t>
 void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKernel,int32_t dkernel_x,int32_t dkernel_y,int32_t dkernel_z,uint32_t dkernel_amount,CTensor<type_t> &cTensor_dBias,const CTensor<type_t> &cTensor_Image,CTensor<type_t> &cTensor_Delta,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y)
 {
  if (dkernel_amount==0) throw("Для создания поправок весов и смещений требуется не пустой вектор поправок к ядрам");
- if (cTensor_dBias.GetSizeZ()!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы количество поправок фильтров и поправок сдвигов совпадало");
+ if (cTensor_dBias.Size_Z!=dkernel_amount) throw("Для создания поправок весов и смещений требуется чтобы количество поправок фильтров и поправок сдвигов совпадало");
 
  int32_t image_x=cTensor_Image.Size_X;
  int32_t image_y=cTensor_Image.Size_Y;

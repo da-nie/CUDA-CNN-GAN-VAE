@@ -1091,7 +1091,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
   }
  }
  throw("Stop");
- */
+*/
 
 
  //загружаем параметры обучения
