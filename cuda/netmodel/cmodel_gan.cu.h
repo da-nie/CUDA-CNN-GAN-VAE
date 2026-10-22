@@ -74,7 +74,7 @@ CModelGAN<type_t>::CModelGAN(void)
 {
  INPUT_NOISE_MIN=-1;
  INPUT_NOISE_MAX=1;
-
+/*
  IMAGE_HEIGHT=192;//128;//192;
  IMAGE_WIDTH=256;//128;//256;
  IMAGE_DEPTH=3;
@@ -82,14 +82,25 @@ CModelGAN<type_t>::CModelGAN(void)
  NOISE_LAYER_SIDE_Y=32;
  NOISE_LAYER_SIDE_Z=1;
  NOISE_LAYER_SIZE=NOISE_LAYER_SIDE_X*NOISE_LAYER_SIDE_Y*NOISE_LAYER_SIDE_Z;
+*/
 
- SPEED_DISCRIMINATOR=0.00001;
- SPEED_GENERATOR=0.00001;
+
+ IMAGE_HEIGHT=32;//128;//192;
+ IMAGE_WIDTH=32;//128;//256;
+ IMAGE_DEPTH=3;
+ NOISE_LAYER_SIDE_X=4;
+ NOISE_LAYER_SIDE_Y=4;
+ NOISE_LAYER_SIDE_Z=1;
+ NOISE_LAYER_SIZE=NOISE_LAYER_SIDE_X*NOISE_LAYER_SIDE_Y*NOISE_LAYER_SIDE_Z;
+
+
+ SPEED_DISCRIMINATOR=0.001;
+ SPEED_GENERATOR=0.001;
 
  ITERATION_OF_SAVE_IMAGE=1;
  ITERATION_OF_SAVE_NET=1;
 
- BATCH_SIZE=32;
+ BATCH_SIZE=1;
 
 /*
  //ZX
@@ -131,7 +142,28 @@ template<class type_t>
 void CModelGAN<type_t>::CreateGenerator(void)
 {
  GeneratorNet.clear();
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NULL,BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(8*8,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(16*16,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(32*32,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(32*32,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(32*32*3,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_TANGENCE,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerView<type_t>(IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
 
+ for(size_t n=0;n<GeneratorNet.size();n++)
+ {
+  GeneratorNet[n].get()->PrintInputTensorSize("GeneratorNet");
+  GeneratorNet[n].get()->PrintOutputTensorSize("GeneratorNet");
+  printf("\r\n");
+ }
+
+/*
+ GeneratorNet.clear();
  //1
  GeneratorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(NOISE_LAYER_SIZE,NULL,BATCH_SIZE)));
  //2
@@ -226,6 +258,9 @@ void CModelGAN<type_t>::CreateGenerator(void)
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().Print("Output tensor",false);
 
  GeneratorNet[convert]->GetOutputTensor().RestoreSize();
+ */
+
+
 
 }
 //----------------------------------------------------------------------------------------------------
@@ -235,7 +270,24 @@ template<class type_t>
 void CModelGAN<type_t>::CreateDiscriminator(void)
 {
  DiscriminatorNet.clear();
+ DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerView<type_t>(1,1,IMAGE_DEPTH*IMAGE_HEIGHT*IMAGE_WIDTH,GeneratorNet[GeneratorNet.size()-1].get(),BATCH_SIZE)));
+ DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(16*16,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
+ DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
+ DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(8*8,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
+ DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
+ DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(4*4,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
+ DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
+ DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
 
+ for(size_t n=0;n<DiscriminatorNet.size();n++)
+ {
+  DiscriminatorNet[n].get()->PrintInputTensorSize("DiscriminatorNet");
+  DiscriminatorNet[n].get()->PrintOutputTensorSize("DiscriminatorNet");
+  printf("\r\n");
+ }
+
+/*
+ DiscriminatorNet.clear();
  //1
  GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor().ReinterpretSize(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
  //2
@@ -285,6 +337,7 @@ void CModelGAN<type_t>::CreateDiscriminator(void)
  //7
  DiscriminatorNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerLinear<type_t>(1,DiscriminatorNet[DiscriminatorNet.size()-1].get(),BATCH_SIZE)));
  DiscriminatorNet[DiscriminatorNet.size()-1]->GetOutputTensor().Print("Disc Output tensor",false);
+ */
 }
 
 //----------------------------------------------------------------------------------------------------

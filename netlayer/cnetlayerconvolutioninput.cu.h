@@ -44,7 +44,9 @@ class CNetLayerConvolutionInput:public INetLayer<type_t>
 
   uint32_t BatchSize;///<размер пакета для обучения
 
-  CTensor<type_t> cTensor_H;///<тензоры значений нейронов после функции активации
+  CTensor<type_t> cTensor_H;///<тензор значений нейронов
+  CTensor<type_t> cTensor_Delta;///<тензор ошибки
+
   //режим усреднения
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
@@ -163,6 +165,7 @@ void CNetLayerConvolutionInput<type_t>::Reset(type_t scale)
 template<class type_t>
 void CNetLayerConvolutionInput<type_t>::SetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  cTensor_H=output;
 }
 //----------------------------------------------------------------------------------------------------
@@ -174,6 +177,7 @@ void CNetLayerConvolutionInput<type_t>::SetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -186,6 +190,7 @@ void CNetLayerConvolutionInput<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerConvolutionInput<type_t>::Forward(void)
 {
+ cTensor_H.RestoreSize();
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -195,6 +200,7 @@ void CNetLayerConvolutionInput<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerConvolutionInput<type_t>::GetOutputTensor(void)
 {
+ cTensor_H.RestoreSize();
  return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
@@ -259,6 +265,8 @@ bool CNetLayerConvolutionInput<type_t>::LoadTrainingParam(IDataStream *iDataStre
 template<class type_t>
 void CNetLayerConvolutionInput<type_t>::TrainingStart(void)
 {
+ cTensor_H.RestoreSize();
+ cTensor_Delta=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -267,6 +275,7 @@ void CNetLayerConvolutionInput<type_t>::TrainingStart(void)
 template<class type_t>
 void CNetLayerConvolutionInput<type_t>::TrainingStop(void)
 {
+ cTensor_Delta=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -301,7 +310,7 @@ void CNetLayerConvolutionInput<type_t>::TrainingUpdateWeight(double speed,double
 template<class type_t>
 CTensor<type_t>& CNetLayerConvolutionInput<type_t>::GetDeltaTensor(void)
 {
- return(cTensor_H);//TODO: возвращаем H, так как больше возвращать нечего
+ return(cTensor_Delta);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать ошибку и расчитать дельту
@@ -311,6 +320,7 @@ CTensor<type_t>& CNetLayerConvolutionInput<type_t>::GetDeltaTensor(void)
 template<class type_t>
 void CNetLayerConvolutionInput<type_t>::SetOutputError(CTensor<type_t>& error)
 {
+ cTensor_Delta=error;
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон
@@ -350,6 +360,7 @@ void CNetLayerConvolutionInput<type_t>::PrintInputTensorSize(const std::string &
 template<class type_t>
 void CNetLayerConvolutionInput<type_t>::PrintOutputTensorSize(const std::string &name)
 {
+ cTensor_H.RestoreSize();
  GetOutputTensor().Print(name+" ConvolutionInput: output",false);
 }
 //----------------------------------------------------------------------------------------------------

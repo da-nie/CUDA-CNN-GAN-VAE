@@ -218,6 +218,7 @@ void CNetLayerVAECoderOutput<type_t>::Reset(type_t scale)
 template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -233,6 +234,7 @@ void CNetLayerVAECoderOutput<type_t>::SetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -245,6 +247,7 @@ void CNetLayerVAECoderOutput<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::Forward(void)
 {
+ cTensor_H.RestoreSize();
  //считаем выход слоя
  type_t mean=0;
  type_t stddev=1;
@@ -295,6 +298,7 @@ void CNetLayerVAECoderOutput<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerVAECoderOutput<type_t>::GetOutputTensor(void)
 {
+ cTensor_H.RestoreSize();
  return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
@@ -501,6 +505,7 @@ void CNetLayerVAECoderOutput<type_t>::PrintInputTensorSize(const std::string &na
 template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::PrintOutputTensorSize(const std::string &name)
 {
+ cTensor_H.RestoreSize();
  GetOutputTensor().Print(name+" VAECoderOutput: output",false);
 }
 //----------------------------------------------------------------------------------------------------

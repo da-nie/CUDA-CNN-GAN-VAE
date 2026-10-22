@@ -180,6 +180,7 @@ void CNetLayerFunction<type_t>::Reset(type_t scale)
 template<class type_t>
 void CNetLayerFunction<type_t>::SetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  cTensor_H.CopyItem(output);
 }
 //----------------------------------------------------------------------------------------------------
@@ -191,6 +192,7 @@ void CNetLayerFunction<type_t>::SetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerFunction<type_t>::GetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerFunction<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerFunction<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerFunction<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
@@ -203,6 +205,8 @@ void CNetLayerFunction<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerFunction<type_t>::Forward(void)
 {
+ cTensor_H.RestoreSize();
+
  //применим функцию активации
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_SIGMOID) CTensorApplyFunc<type_t>::ApplySigmoid(cTensor_H,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_RELU) CTensorApplyFunc<type_t>::ApplyReLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
@@ -210,7 +214,6 @@ void CNetLayerFunction<type_t>::Forward(void)
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_LEAKY_RELU) CTensorApplyFunc<type_t>::ApplyLeakyReLU(cTensor_H,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_LINEAR) CTensorApplyFunc<type_t>::ApplyLinear(cTensor_H,PrevLayerPtr->GetOutputTensor());
  if (NeuronFunction==NNeuron::NEURON_FUNCTION_TANGENCE) CTensorApplyFunc<type_t>::ApplyTangence(cTensor_H,PrevLayerPtr->GetOutputTensor());
- //if (NeuronFunction==NNeuron::NEURON_FUNCTION_SOFTMAX) CTensorApplyFunc<type_t>::ApplySoftMax(cTensor_H,PrevLayerPtr->GetOutputTensor());
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -220,6 +223,7 @@ void CNetLayerFunction<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerFunction<type_t>::GetOutputTensor(void)
 {
+ cTensor_H.RestoreSize();
  return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
@@ -287,6 +291,7 @@ bool CNetLayerFunction<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
 template<class type_t>
 void CNetLayerFunction<type_t>::TrainingStart(void)
 {
+ cTensor_H.RestoreSize();
  cTensor_Delta=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
@@ -398,6 +403,7 @@ void CNetLayerFunction<type_t>::PrintInputTensorSize(const std::string &name)
 template<class type_t>
 void CNetLayerFunction<type_t>::PrintOutputTensorSize(const std::string &name)
 {
+ cTensor_H.RestoreSize();
  GetOutputTensor().Print(name+" Function: output",false);
 }
 //----------------------------------------------------------------------------------------------------

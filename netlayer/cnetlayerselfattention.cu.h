@@ -50,16 +50,6 @@ class CNetLayerSelfAttention:public INetLayer<type_t>
   INetLayer<type_t> *PrevLayerPtr;///<указатель на предшествующий слой (либо NULL)
   INetLayer<type_t> *NextLayerPtr;///<указатель на последующий слой (либо NULL)
 
-  /*
-  //структура слоя самовнимания
-  std::shared_ptr<INetLayer<type_t> > iNetLayer_Q;
-  std::shared_ptr<INetLayer<type_t> > iNetLayer_K;
-  std::shared_ptr<INetLayer<type_t> > iNetLayer_V;
-  std::shared_ptr<INetLayer<type_t> > iNetLayer_Splitter;
-  std::shared_ptr<INetLayer<type_t> > iNetLayer_Concatenator;
-  std::shared_ptr<INetLayer<type_t> > iNetLayer_Output;
-  */
-
   uint32_t BatchSize;///<размер пакета для обучения
 
   uint32_t InputSize_X;///<размер входного тензора по X
@@ -280,15 +270,6 @@ void CNetLayerSelfAttention<type_t>::Create(uint32_t head,INetLayer<type_t> *pre
  HeadDimension=InputSize_X/head;//размер одной головы внимания
 
  NextLayerPtr=NULL;
-/*
- iNetLayer_Splitter=std::shared_ptr<INetLayer<type_t>>(new CNetLayerSplitter<type_t>(2,prev_layer_ptr,BatchSize));
- iNetLayer_Q=std::shared_ptr<INetLayer<type_t>>(new CNetLayerConvolution<type_t>(1,1,1,1,0,0,iNetLayer_Splitter.get(),BatchSize));
- iNetLayer_K;
- iNetLayer_V;
- iNetLayer_Softmax;
- iNetLayer_Output;
- iNetLayer_Concatenator;
- */
 
  //размер выходного тензора
  OutputSize_X=InputSize_X;
@@ -371,6 +352,7 @@ void CNetLayerSelfAttention<type_t>::Reset(type_t scale)
 template<class type_t>
 void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -386,6 +368,7 @@ void CNetLayerSelfAttention<type_t>::SetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -398,36 +381,65 @@ void CNetLayerSelfAttention<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerSelfAttention<type_t>::Forward(void)
 {
+ cTensor_H.RestoreSize();
+ //CCUDATimeSpent cCUDATimeSpent;
  //считаем внимание
+
+ //cCUDATimeSpent.Start();
+
+ //8 мс
  if (UseEMA==true)
  {
   CTensorMath<type_t>::Mul(cTensor_Q,PrevLayerPtr->GetOutputTensor(),cTensor_Wq_EMA);
   CTensorMath<type_t>::Mul(cTensor_K,PrevLayerPtr->GetOutputTensor(),cTensor_Wk_EMA);
   CTensorMath<type_t>::Mul(cTensor_V,PrevLayerPtr->GetOutputTensor(),cTensor_Wv_EMA);
+  /*
   //размножаем [1,1,1,D] → [Batch,1,1,D]: Mod-трюк в Set копирует срез w=0 во все w
-  CTensorMath<type_t>::Set(cTensor_Bq_Batch,cTensor_Bq,1,0);
-  CTensorMath<type_t>::Set(cTensor_Bk_Batch,cTensor_Bk,1,0);
-  CTensorMath<type_t>::Set(cTensor_Bv_Batch,cTensor_Bv,1,0);
-  //прибавляем вектор смещения к каждой строке-токену
-  CTensorMath<type_t>::LayerAddX(cTensor_Q,cTensor_Q,cTensor_Bq_Batch);
-  CTensorMath<type_t>::LayerAddX(cTensor_K,cTensor_K,cTensor_Bk_Batch);
-  CTensorMath<type_t>::LayerAddX(cTensor_V,cTensor_V,cTensor_Bv_Batch); }
- else
- {
-  CTensorMath<type_t>::Mul(cTensor_Q,PrevLayerPtr->GetOutputTensor(),cTensor_Wq);
-  CTensorMath<type_t>::Mul(cTensor_K,PrevLayerPtr->GetOutputTensor(),cTensor_Wk);
-  CTensorMath<type_t>::Mul(cTensor_V,PrevLayerPtr->GetOutputTensor(),cTensor_Wv);
   CTensorMath<type_t>::Set(cTensor_Bq_Batch,cTensor_Bq_EMA,1,0);
   CTensorMath<type_t>::Set(cTensor_Bk_Batch,cTensor_Bk_EMA,1,0);
   CTensorMath<type_t>::Set(cTensor_Bv_Batch,cTensor_Bv_EMA,1,0);
-  CTensorMath<type_t>::LayerAddX(cTensor_Q,cTensor_Q,cTensor_Bq_Batch);
-  CTensorMath<type_t>::LayerAddX(cTensor_K,cTensor_K,cTensor_Bk_Batch);
-  CTensorMath<type_t>::LayerAddX(cTensor_V,cTensor_V,cTensor_Bv_Batch);
+  */
+  //прибавляем вектор смещения к каждой строке-токену
+  CTensorMath<type_t>::LayerAddX(cTensor_Q,cTensor_Q,cTensor_Bq_EMA);
+  CTensorMath<type_t>::LayerAddX(cTensor_K,cTensor_K,cTensor_Bk_EMA);
+  CTensorMath<type_t>::LayerAddX(cTensor_V,cTensor_V,cTensor_Bv_EMA);
  }
+ else
+ {
+  //CTensorMath<type_t>::Mul(cTensor_Q,PrevLayerPtr->GetOutputTensor(),cTensor_Wq);
+  //CTensorMath<type_t>::Mul(cTensor_K,PrevLayerPtr->GetOutputTensor(),cTensor_Wk);
+  //CTensorMath<type_t>::Mul(cTensor_V,PrevLayerPtr->GetOutputTensor(),cTensor_Wv);
+
+
+  CTensorMath<type_t>::MulAttentionTranspose(cTensor_Qh,PrevLayerPtr->GetOutputTensor(),cTensor_Wq,cTensor_Bq);
+  CTensorMath<type_t>::MulAttentionTranspose(cTensor_Kh,PrevLayerPtr->GetOutputTensor(),cTensor_Wk,cTensor_Bk);
+  CTensorMath<type_t>::MulAttentionTranspose(cTensor_Vh,PrevLayerPtr->GetOutputTensor(),cTensor_Wv,cTensor_Bv);
+
+  /*
+  CTensorMath<type_t>::Set(cTensor_Bq_Batch,cTensor_Bq,1,0);
+  CTensorMath<type_t>::Set(cTensor_Bk_Batch,cTensor_Bk,1,0);
+  CTensorMath<type_t>::Set(cTensor_Bv_Batch,cTensor_Bv,1,0);
+  */
+  //CTensorMath<type_t>::LayerAddX(cTensor_Q,cTensor_Q,cTensor_Bq);
+  //CTensorMath<type_t>::LayerAddX(cTensor_K,cTensor_K,cTensor_Bk);
+  //CTensorMath<type_t>::LayerAddX(cTensor_V,cTensor_V,cTensor_Bv);
+ }
+
  //каждую голову нужно обрабатывать отдельно
  //заполняем матрицы с перестановкой осей Z и Y и изменением размерности
- //TODO: требуется ввести новую функцию в тензорную библиотеку!
 
+ //CTensorMath<type_t>::AttentionTranspose(cTensor_Qh,cTensor_Q,cTensor_Kh,cTensor_K,cTensor_Vh,cTensor_V);
+
+ //cTensor_Q=CTensor<type_t> (BatchSize,1,           TSize,NumberOfHead*HeadDimension);
+ //cTensor_Qh=CTensor<type_t>(BatchSize,NumberOfHead,TSize,HeadDimension);
+
+
+//  type_t value_q=tensor_input_q.GetElement(w,0,yp,z*tensor_output_q.Size_X+xp);
+// tensor_output_q.SetElement(w,z,yp,xp,value_q);
+
+
+ /*
+ //16 мс
  for(uint32_t w=0;w<BatchSize;w++)
  {
   for(uint32_t z=0;z<NumberOfHead;z++)//голова
@@ -447,37 +459,54 @@ void CNetLayerSelfAttention<type_t>::Forward(void)
    }
   }
  }
+ */
 
- CTensorMath<type_t>::RightTranposeMul(cTensor_Sh,cTensor_Qh,cTensor_Kh);
+ //5 мс
+ CTensorMath<type_t>::RightTransposeMul(cTensor_Sh,cTensor_Qh,cTensor_Kh);
  CTensorMath<type_t>::Mul(iNetLayer_SoftMaxInput->GetOutputTensor(),cTensor_Sh,1.0/sqrt(HeadDimension));
- //здесь можно прибавить каузальную маску, если она нужна
- /*
-  CTensor<type_t>& s=iNetLayer_SoftMaxInput->GetOutputTensor();
- for(uint32_t w=0;w<s.Size_W;w++)
-  for(uint32_t z=0;z<s.Size_Z;z++)
-   for(uint32_t y=0;y<s.Size_Y;y++)
-    for(uint32_t x=y+1;x<s.Size_X;x++)
+
+ //здесь можно задать каузальную маску, если она нужна
+ CTensorMath<type_t>::SetCausalMask(iNetLayer_SoftMaxInput->GetOutputTensor());
+/*
+ //37 мс
+ CTensor<type_t>& s=iNetLayer_SoftMaxInput->GetOutputTensor();
+ for(uint32_t w=0;w<s.GetSizeW();w++)
+  for(uint32_t z=0;z<s.GetSizeZ();z++)
+   for(uint32_t y=0;y<s.GetSizeY();y++)
+    for(uint32_t x=y+1;x<s.GetSizeX();x++)
      s.SetElement(w,z,y,x,static_cast<type_t>(-1e9));
-     */
+*/
 
  iNetLayer_SoftMaxInput->Forward();
  iNetLayer_SoftMax->Forward();
+ /*
+ cCUDATimeSpent.Start();
+ float gpu_time=cCUDATimeSpent.Stop();
+ printf("На слой ушло:%.2f мс.\r\n",gpu_time);
+ */
+
  CTensorMath<type_t>::Mul(cTensor_Oh,iNetLayer_SoftMax->GetOutputTensor(),cTensor_Vh);
  //переворачиваем обратно
- //TODO: требуется ввести новую функцию в тензорную библиотеку!
- for(uint32_t w=0;w<cTensor_Oh.Size_W;w++)
+
+ CTensorMath<type_t>::AttentionUnion(cTensor_H,cTensor_Oh);
+/*
+ for(uint32_t w=0;w<cTensor_Oh.GetSizeW();w++)
  {
-  for(uint32_t z=0;z<cTensor_Oh.Size_Z;z++)
+  for(uint32_t z=0;z<cTensor_Oh.GetSizeZ();z++)
   {
-   for(uint32_t y=0;y<cTensor_Oh.Size_Y;y++)
+   for(uint32_t y=0;y<cTensor_Oh.GetSizeY();y++)
    {
-    for(uint32_t x=0;x<cTensor_Oh.Size_X;x++)
+    for(uint32_t x=0;x<cTensor_Oh.GetSizeX();x++)
     {
      cTensor_H.SetElement(w,0,y,z*HeadDimension+x,cTensor_Oh.GetElement(w,z,y,x));
     }
    }
   }
  }
+ */
+ //float gpu_time=cCUDATimeSpent.Stop();
+ //printf("На слой ушло:%.2f мс.\r\n",gpu_time);
+
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -487,6 +516,7 @@ void CNetLayerSelfAttention<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerSelfAttention<type_t>::GetOutputTensor(void)
 {
+ cTensor_H.RestoreSize();
  return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
@@ -509,6 +539,12 @@ void CNetLayerSelfAttention<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_lay
 template<class type_t>
 bool CNetLayerSelfAttention<type_t>::Save(IDataStream *iDataStream_Ptr)
 {
+ cTensor_Wq.Save(iDataStream_Ptr);
+ cTensor_Wk.Save(iDataStream_Ptr);
+ cTensor_Wv.Save(iDataStream_Ptr);
+ cTensor_Bq.Save(iDataStream_Ptr);
+ cTensor_Bk.Save(iDataStream_Ptr);
+ cTensor_Bv.Save(iDataStream_Ptr);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -520,6 +556,12 @@ bool CNetLayerSelfAttention<type_t>::Save(IDataStream *iDataStream_Ptr)
 template<class type_t>
 bool CNetLayerSelfAttention<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
+ cTensor_Wq.Load(iDataStream_Ptr,check_size);
+ cTensor_Wk.Load(iDataStream_Ptr,check_size);
+ cTensor_Wv.Load(iDataStream_Ptr,check_size);
+ cTensor_Bq.Load(iDataStream_Ptr,check_size);
+ cTensor_Bk.Load(iDataStream_Ptr,check_size);
+ cTensor_Bv.Load(iDataStream_Ptr,check_size);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -531,6 +573,19 @@ bool CNetLayerSelfAttention<type_t>::Load(IDataStream *iDataStream_Ptr,bool chec
 template<class type_t>
 bool CNetLayerSelfAttention<type_t>::SaveTrainingParam(IDataStream *iDataStream_Ptr)
 {
+ cTensor_M_Wq.Save(iDataStream_Ptr);
+ cTensor_V_Wq.Save(iDataStream_Ptr);
+ cTensor_M_Wk.Save(iDataStream_Ptr);
+ cTensor_V_Wk.Save(iDataStream_Ptr);
+ cTensor_M_Wv.Save(iDataStream_Ptr);
+ cTensor_V_Wv.Save(iDataStream_Ptr);
+
+ cTensor_M_Bq.Save(iDataStream_Ptr);
+ cTensor_V_Bq.Save(iDataStream_Ptr);
+ cTensor_M_Bk.Save(iDataStream_Ptr);
+ cTensor_V_Bk.Save(iDataStream_Ptr);
+ cTensor_M_Bv.Save(iDataStream_Ptr);
+ cTensor_V_Bv.Save(iDataStream_Ptr);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -542,6 +597,19 @@ bool CNetLayerSelfAttention<type_t>::SaveTrainingParam(IDataStream *iDataStream_
 template<class type_t>
 bool CNetLayerSelfAttention<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
 {
+ cTensor_M_Wq.Load(iDataStream_Ptr);
+ cTensor_V_Wq.Load(iDataStream_Ptr);
+ cTensor_M_Wk.Load(iDataStream_Ptr);
+ cTensor_V_Wk.Load(iDataStream_Ptr);
+ cTensor_M_Wv.Load(iDataStream_Ptr);
+ cTensor_V_Wv.Load(iDataStream_Ptr);
+
+ cTensor_M_Bq.Load(iDataStream_Ptr);
+ cTensor_V_Bq.Load(iDataStream_Ptr);
+ cTensor_M_Bk.Load(iDataStream_Ptr);
+ cTensor_V_Bk.Load(iDataStream_Ptr);
+ cTensor_M_Bv.Load(iDataStream_Ptr);
+ cTensor_V_Bv.Load(iDataStream_Ptr);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -551,6 +619,7 @@ bool CNetLayerSelfAttention<type_t>::LoadTrainingParam(IDataStream *iDataStream_
 template<class type_t>
 void CNetLayerSelfAttention<type_t>::TrainingStart(void)
 {
+ cTensor_H.RestoreSize();
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
  cTensor_PrevLayerError=cTensor_H;
@@ -696,23 +765,25 @@ void CNetLayerSelfAttention<type_t>::TrainingBackward(bool create_delta_weight)
  //7. Градиенты весов и смещений
  if (create_delta_weight)
  {
-  //7.1 dWq = Σ_батч X.T @ dQ: батчевое умножение даёт [Batch,1,D,D], затем сумма по W
+  //7.1 dWq += Σ_батч X.T @ dQ: батчевое умножение даёт [Batch,1,D,D], затем сумма по W
+  //    в аккумулятор dWq: dWq = 1*sum_W(dWq) + 1*sum_W(dWq_Batch)
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dWq_Batch,cTensor_X,cTensor_dQ);
-  CTensorMath<type_t>::AddSumW(cTensor_dWq,cTensor_dWq_Batch,cTensor_dWq_Batch,1,0);//right_scale=0: вторая сумма не используется
-  CTensorMath<type_t>::LeftTransposeMul(cTensor_dWk_Batch,cTensor_X,cTensor_dK);
-  CTensorMath<type_t>::AddSumW(cTensor_dWk,cTensor_dWk_Batch,cTensor_dWk_Batch,1,0);
-  CTensorMath<type_t>::LeftTransposeMul(cTensor_dWv_Batch,cTensor_X,cTensor_dV);
-  CTensorMath<type_t>::AddSumW(cTensor_dWv,cTensor_dWv_Batch,cTensor_dWv_Batch,1,0);
+  CTensorMath<type_t>::AddSumW(cTensor_dWq,cTensor_dWq,cTensor_dWq_Batch,1,1);
 
-  //7.2 градиенты смещений: dBq[x] = Σ_w Σ_t dQ[w,0,t,x]
-  //шаг 1: сумма по токенам (Y) — Ones.T @ dQ → [Batch,1,1,D]
+  CTensorMath<type_t>::LeftTransposeMul(cTensor_dWk_Batch,cTensor_X,cTensor_dK);
+  CTensorMath<type_t>::AddSumW(cTensor_dWk,cTensor_dWk,cTensor_dWk_Batch,1,1);
+
+  CTensorMath<type_t>::LeftTransposeMul(cTensor_dWv_Batch,cTensor_X,cTensor_dV);
+  CTensorMath<type_t>::AddSumW(cTensor_dWv,cTensor_dWv,cTensor_dWv_Batch,1,1);
+
+  //7.2 градиенты смещений: dBq[x] = Σ_w Σ_t dQ[w,0,t,x], накопление в dBq
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dBq_Batch,cTensor_Ones,cTensor_dQ);
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dBk_Batch,cTensor_Ones,cTensor_dK);
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dBv_Batch,cTensor_Ones,cTensor_dV);
-  //шаг 2: сумма по батчу (W) → [1,1,1,D]
-  CTensorMath<type_t>::AddSumW(cTensor_dBq,cTensor_dBq_Batch,cTensor_dBq_Batch,1,0);
-  CTensorMath<type_t>::AddSumW(cTensor_dBk,cTensor_dBk_Batch,cTensor_dBk_Batch,1,0);
-  CTensorMath<type_t>::AddSumW(cTensor_dBv,cTensor_dBv_Batch,cTensor_dBv_Batch,1,0);
+
+  CTensorMath<type_t>::AddSumW(cTensor_dBq,cTensor_dBq,cTensor_dBq_Batch,1,1);
+  CTensorMath<type_t>::AddSumW(cTensor_dBk,cTensor_dBk,cTensor_dBk_Batch,1,1);
+  CTensorMath<type_t>::AddSumW(cTensor_dBv,cTensor_dBv,cTensor_dBv_Batch,1,1);
  }
 
  //8. Градиент входа: dX = dQ@Wq.T + dK@Wk.T + dV@Wv.T
@@ -737,6 +808,12 @@ void CNetLayerSelfAttention<type_t>::TrainingBackward(bool create_delta_weight)
 template<class type_t>
 void CNetLayerSelfAttention<type_t>::TrainingResetDeltaWeight(void)
 {
+ CTensorMath<type_t>::Fill(cTensor_dWq,0);
+ CTensorMath<type_t>::Fill(cTensor_dWk,0);
+ CTensorMath<type_t>::Fill(cTensor_dWv,0);
+ CTensorMath<type_t>::Fill(cTensor_dBq,0);
+ CTensorMath<type_t>::Fill(cTensor_dBk,0);
+ CTensorMath<type_t>::Fill(cTensor_dBv,0);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обновления весов
@@ -824,6 +901,7 @@ void CNetLayerSelfAttention<type_t>::PrintInputTensorSize(const std::string &nam
 template<class type_t>
 void CNetLayerSelfAttention<type_t>::PrintOutputTensorSize(const std::string &name)
 {
+ cTensor_H.RestoreSize();
  GetOutputTensor().Print(name+" SelfAttention: output",false);
 }
 //----------------------------------------------------------------------------------------------------
@@ -837,12 +915,21 @@ void CNetLayerSelfAttention<type_t>::EnableEMA(bool state)
  EMAEnabled=state;
  if (state==true)
  {
+  cTensor_Wq_EMA=cTensor_Wq;
+  cTensor_Wk_EMA=cTensor_Wk;
+  cTensor_Wv_EMA=cTensor_Wv;
   cTensor_Bq_EMA=cTensor_Bq;
   cTensor_Bk_EMA=cTensor_Bk;
   cTensor_Bv_EMA=cTensor_Bv;
  }
  else
  {
+  cTensor_Wq_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_Wk_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_Wv_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_Bq_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_Bk_EMA=CTensor<type_t>(1,1,1,1);
+  cTensor_Bv_EMA=CTensor<type_t>(1,1,1,1);
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -854,6 +941,12 @@ void CNetLayerSelfAttention<type_t>::EnableEMA(bool state)
 template<class type_t>
 bool CNetLayerSelfAttention<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
 {
+ cTensor_Wq_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Wk_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Wv_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Bq_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Bk_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Bv_EMA.Load(iDataStream_Ptr,check_size);
  return(true);
 }
 //----------------------------------------------------------------------------------------------------
@@ -865,6 +958,12 @@ bool CNetLayerSelfAttention<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,
 template<class type_t>
 bool CNetLayerSelfAttention<type_t>::SaveEMAWeight(IDataStream *iDataStream_Ptr)
 {
+ cTensor_Wq_EMA.Save(iDataStream_Ptr);
+ cTensor_Wk_EMA.Save(iDataStream_Ptr);
+ cTensor_Wv_EMA.Save(iDataStream_Ptr);
+ cTensor_Bq_EMA.Save(iDataStream_Ptr);
+ cTensor_Bk_EMA.Save(iDataStream_Ptr);
+ cTensor_Bv_EMA.Save(iDataStream_Ptr);
  return(true);
 }
 

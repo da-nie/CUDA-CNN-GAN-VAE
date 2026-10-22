@@ -70,7 +70,6 @@ class CModelBasicGAN:public CModelMain<type_t>
   std::vector<uint32_t> RealImageIndex;///<индексы изображений в обучающем наборе
 
   using CModelMain<type_t>::STRING_BUFFER_SIZE;
-  using CModelMain<type_t>::CUDA_PAUSE_MS;
 
   using CModelMain<type_t>::SafeLog;
   using CModelMain<type_t>::CrossEntropy;
@@ -239,7 +238,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
  CTimeStamp cTimeStamp_Main("Обучение дискриминатора и генератора на фальшивых изображениях:",true);
  char str[STRING_BUFFER_SIZE];
  double fake_output=0;
- static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(1,NOISE_LAYER_SIZE,1);
+ static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(1,1,NOISE_LAYER_SIZE);
 
  for(uint32_t b=0;b<BATCH_SIZE;b++)
  {
@@ -329,7 +328,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFake(double &disc_cost)
  CTimeStamp cTimeStamp_Main("Обучение дискриминатора на фальшивых изображениях:",true);
  char str[STRING_BUFFER_SIZE];
  double fake_output=0;
- static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
+ static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,1,NOISE_LAYER_SIZE);
 
  CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
 
@@ -469,7 +468,7 @@ void CModelBasicGAN<type_t>::TrainingGenerator(double &cost,double &middle_answe
 
  char str[STRING_BUFFER_SIZE];
  double fake_output=0;
- static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
+ static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,1,NOISE_LAYER_SIZE);
 
  CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
@@ -542,7 +541,7 @@ void CModelBasicGAN<type_t>::SaveRandomImage(void)
 {
  for(uint32_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->SetInferenceMode(true);
 
- static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
+ static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,1,NOISE_LAYER_SIZE);
  CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
  GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
  //выполняем прямой проход по сети
@@ -604,8 +603,8 @@ void CModelBasicGAN<type_t>::Training(void)
 
   if (Iteration%ITERATION_OF_SAVE_IMAGE==0)
   {
-   SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
+   SaveRandomImage();
   }
 
   if (Iteration%ITERATION_OF_SAVE_NET==0)
@@ -724,8 +723,8 @@ void CModelBasicGAN<type_t>::TrainingSeparable(void)
 
   if (Iteration%ITERATION_OF_SAVE_IMAGE==0)
   {
-   SaveRandomImage();
    SYSTEM::PutMessageToConsole("Save image.");
+   SaveRandomImage();
   }
 
   if (Iteration%ITERATION_OF_SAVE_NET==0)
@@ -917,14 +916,14 @@ SYSTEM::PutMessageToConsole("Загружаем изображения");
 template<class type_t>
 void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
 {
- static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
+ static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,1,NOISE_LAYER_SIZE);
  static CTensor<type_t> cTensor_Generator_Error=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
 
  //учим первомым изображениям
  CTensor<type_t> cTensor_Generator_Etalon=CTensor<type_t>(BATCH_SIZE,IMAGE_DEPTH,IMAGE_HEIGHT,IMAGE_WIDTH);
  for(size_t n=0;n<BATCH_SIZE;n++)
  {
-  uint32_t index=RealImageIndex[n];
+  uint32_t index=RealImageIndex[n];//даём много РАЗНЫХ изображений
   uint32_t size=RealImage[index].size();
   type_t *ptr=&RealImage[index][0];
   cTensor_Generator_Etalon.CopyItemLayerWToDevice(n,ptr,size);
@@ -954,7 +953,7 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   if (Iteration%ITERATION_OF_SAVE_IMAGE==0)
   {
    SYSTEM::PutMessageToConsole("Save image.");
-   //SaveRandomImage();
+   SaveRandomImage();
    CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
    GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
 
@@ -971,7 +970,6 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
    {
     GeneratorNet[layer]->SetInferenceMode(false);
    }
-
    SYSTEM::PutMessageToConsole("");
   }
 
@@ -988,8 +986,12 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   //выполняем прямой проход по сети генератора
   {
    CTimeStamp cTimeStamp("Вычисление генератора:");
-   for(uint32_t layer=0;layer<GeneratorNet.size();layer++) GeneratorNet[layer]->Forward();
+   for(uint32_t layer=0;layer<GeneratorNet.size();layer++)
+   {
+    GeneratorNet[layer]->Forward();
+   }
   }
+
   //вычисляем ошибку
   {
    CTimeStamp cTimeStamp("Расчёт ошибки генератора:");
@@ -1017,7 +1019,10 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   //выполняем вычисление весов генератора
   {
    CTimeStamp cTimeStamp("Обучение генератора:");
-   for(uint32_t m=0,n=GeneratorNet.size()-1;m<GeneratorNet.size();m++,n--) GeneratorNet[n]->TrainingBackward();
+   for(uint32_t m=0,n=GeneratorNet.size()-1;m<GeneratorNet.size();m++,n--)
+   {
+    GeneratorNet[n]->TrainingBackward();
+   }
   }
 
   //корректируем веса генератора
@@ -1028,6 +1033,7 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
     GeneratorNet[n]->TrainingUpdateWeight(gen_speed,Iteration);
    }
   }
+
   str="Ошибка генератора:";
   str+=std::to_string((long double)gen_cost);
   SYSTEM::PutMessageToConsole(str);
@@ -1144,7 +1150,6 @@ void CModelBasicGAN<type_t>::TestTrainingGeneratorNet(bool mnist)
 
  //загружаем параметры обучения
  LoadTrainingParam();
-
  TestTrainingGenerator();
 
  //отключаем обучение
@@ -1180,7 +1185,7 @@ void CModelBasicGAN<type_t>::Inference(uint32_t size)
 
  for(uint32_t m=0;m<max_m;m++)
  {
-  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,NOISE_LAYER_SIZE,1);
+  static CTensor<type_t> cTensor_Generator_Input=CTensor<type_t>(BATCH_SIZE,1,1,NOISE_LAYER_SIZE);
   CRandom<type_t>::SetRandom(cTensor_Generator_Input,INPUT_NOISE_MIN,INPUT_NOISE_MAX);
   GeneratorNet[0]->SetOutput(cTensor_Generator_Input);//входной вектор
   //выполняем прямой проход по сети
@@ -1210,9 +1215,8 @@ void CModelBasicGAN<type_t>::Execute(void)
 {
  //зададим размер динамической памяти на стороне устройства (1М по-умолчанию)
  //cudaDeviceSetLimit(cudaLimitMallocHeapSize,1024*1024*512);
- //if (CTensorTest<type_t>::Test()==false) throw("Класс тензоров провалил тестирование!");
- //TestTrainingGeneratorNet(true);
- TrainingNet(true);
+ TestTrainingGeneratorNet(false);
+ //TrainingNet(true);
 
  //Inference(100);
 }

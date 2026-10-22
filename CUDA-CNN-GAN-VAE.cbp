@@ -12,17 +12,15 @@
 				<Option type="1" />
 				<Option compiler="nvcc" />
 				<Compiler>
+					<Add option="-O3" />
 					<Add option="-std=c++11" />
 					<Add option="-ccbin=g++" />
 					<Add option="-gencode=arch=compute_70,code=sm_70" />
-					<Add option="-I /usr/local/cuda/include" />
-					<Add option="-L /usr/local/cuda/lib64" />
+					<Add option="-I /usr/local/cuda-12.4/include" />
+					<Add option="-L /usr/local/cuda-12.4/lib64" />
 					<Add option="--fmad=true" />
 					<Add option="--use_fast_math" />
 				</Compiler>
-				<Linker>
-					<Add option="-O3" />
-				</Linker>
 			</Target>
 		</Build>
 		<Unit filename="common/ccolormodel.cpp" />
@@ -123,6 +121,13 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="cuda/math/tensorkernel.cu.h" />
+		<Unit filename="cuda/netmodel/LLM/cgpt2tokenizer.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/netmodel/LLM/cgpt2tokenizer.cu.h" />
+		<Unit filename="cuda/netmodel/LLM/cmodel_basicllm.cu.h" />
+		<Unit filename="cuda/netmodel/LLM/cmodel_llm.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicdiffusion.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicgan.cu.h" />
 		<Unit filename="cuda/netmodel/cmodel_basicsrgan.cu.h" />
@@ -332,6 +337,11 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="main.cpp" />
+		<Unit filename="netlayer/cnetlayeradder.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayeradder.cu.h" />
 		<Unit filename="netlayer/cnetlayeraveragepooling.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -372,8 +382,21 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayerfunction.cu.h" />
-		<Unit filename="netlayer/cnetlayergroupnormalization.cu" />
+		<Unit filename="netlayer/cnetlayergroupnormalization.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
 		<Unit filename="netlayer/cnetlayergroupnormalization.cu.h" />
+		<Unit filename="netlayer/cnetlayerlayernormalization.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerlayernormalization.cu.h" />
+		<Unit filename="netlayer/cnetlayerlayernormalizationgpt2.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerlayernormalizationgpt2.cu.h" />
 		<Unit filename="netlayer/cnetlayerlinear.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -389,6 +412,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayermaxpooling.cu.h" />
+		<Unit filename="netlayer/cnetlayerselfattention.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerselfattention.cu.h" />
 		<Unit filename="netlayer/cnetlayersoftmax.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -419,6 +447,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayervaecoderoutput.cu.h" />
+		<Unit filename="netlayer/cnetlayerview.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerview.cu.h" />
 		<Unit filename="netlayer/inetlayer.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -432,6 +465,8 @@
 		<Unit filename="settings.h" />
 		<Unit filename="system/system.cpp" />
 		<Unit filename="system/system.h" />
-		<Extensions />
+		<Extensions>
+			<code_completion />
+		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

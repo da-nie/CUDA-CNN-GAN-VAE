@@ -255,6 +255,7 @@ void CNetLayerTimeEmbeddingMLP<type_t>::SetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerTimeEmbeddingMLP<type_t>::GetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerTimeEmbeddingMLP<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerTimeEmbeddingMLP<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerTimeEmbeddingMLP<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -267,6 +268,7 @@ void CNetLayerTimeEmbeddingMLP<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerTimeEmbeddingMLP<type_t>::Forward(void)
 {
+ cTensor_H.RestoreSize();
  //выполняем встроенную сеть
  LocalNet[0]->GetOutputTensor()=cTensor_TimeLine;//задаём время
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->Forward();
@@ -275,8 +277,6 @@ void CNetLayerTimeEmbeddingMLP<type_t>::Forward(void)
  if (UseEMA==true) scale=emb_scale_EMA;
  //прибавляем ко всем значениям (y,x) одно и то же значение
  CTensorMath<type_t>::AddToXY(cTensor_H,PrevLayerPtr->GetOutputTensor(),LocalNet.back()->GetOutputTensor(),1,scale);
-
- //printf("%i Scale:%f\r\n",InputSize_Z,scale);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -286,6 +286,7 @@ void CNetLayerTimeEmbeddingMLP<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerTimeEmbeddingMLP<type_t>::GetOutputTensor(void)
 {
+ cTensor_H.RestoreSize();
  return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
@@ -374,6 +375,7 @@ bool CNetLayerTimeEmbeddingMLP<type_t>::LoadTrainingParam(IDataStream *iDataStre
 template<class type_t>
 void CNetLayerTimeEmbeddingMLP<type_t>::TrainingStart(void)
 {
+ cTensor_H.RestoreSize();
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
  uint32_t x=LocalNet.back().get()->GetOutputTensor().GetSizeX();
@@ -549,6 +551,7 @@ void CNetLayerTimeEmbeddingMLP<type_t>::PrintInputTensorSize(const std::string &
 template<class type_t>
 void CNetLayerTimeEmbeddingMLP<type_t>::PrintOutputTensorSize(const std::string &name)
 {
+ cTensor_H.RestoreSize();
  GetOutputTensor().Print(name+" TimeEmbeddingMLP: output",false);
 }
 //----------------------------------------------------------------------------------------------------

@@ -207,6 +207,7 @@ void CNetLayerUpSampling<type_t>::Reset(type_t scale)
 template<class type_t>
 void CNetLayerUpSampling<type_t>::SetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerUpSampling<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerUpSampling<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerUpSampling<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -222,6 +223,7 @@ void CNetLayerUpSampling<type_t>::SetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerUpSampling<type_t>::GetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerUpSampling<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerUpSampling<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerUpSampling<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -234,6 +236,7 @@ void CNetLayerUpSampling<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerUpSampling<type_t>::Forward(void)
 {
+ cTensor_H.RestoreSize();
  //размер выходного тензора
  uint32_t output_x=cTensor_H.GetSizeX();
  uint32_t output_y=cTensor_H.GetSizeY();
@@ -260,6 +263,7 @@ void CNetLayerUpSampling<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerUpSampling<type_t>::GetOutputTensor(void)
 {
+ cTensor_H.RestoreSize();
  return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
@@ -336,6 +340,7 @@ bool CNetLayerUpSampling<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr
 template<class type_t>
 void CNetLayerUpSampling<type_t>::TrainingStart(void)
 {
+ cTensor_H.RestoreSize();
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
  cTensor_PrevLayerError=PrevLayerPtr->GetOutputTensor();
@@ -449,6 +454,7 @@ void CNetLayerUpSampling<type_t>::PrintInputTensorSize(const std::string &name)
 template<class type_t>
 void CNetLayerUpSampling<type_t>::PrintOutputTensorSize(const std::string &name)
 {
+ cTensor_H.RestoreSize();
  GetOutputTensor().Print(name+" UpSampling: output",false);
 }
 //----------------------------------------------------------------------------------------------------

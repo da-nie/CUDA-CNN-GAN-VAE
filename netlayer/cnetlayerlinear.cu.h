@@ -171,21 +171,23 @@ void CNetLayerLinear<type_t>::Create(uint32_t neurons,INetLayer<type_t> *prev_la
 
  BatchSize=batch_size;
 
- cTensor_H=CTensor<type_t>(BatchSize,1,neurons,1);
-
  if (prev_layer_ptr==NULL)//слой без предшествующего считается входным
  {
   cTensor_W=CTensor<type_t>(1,1,1,1);
   cTensor_B=CTensor<type_t>(1,1,1,1);
+  cTensor_H=CTensor<type_t>(BatchSize,1,1,neurons);
  }
  else
  {
-  uint32_t size_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
-  uint32_t size_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
-  uint32_t size_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+  uint32_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
+  uint32_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+  uint32_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
 
-  cTensor_W=CTensor<type_t>(1,1,neurons,size_x*size_y*size_z);
-  cTensor_B=CTensor<type_t>(1,1,neurons,1);
+  if (input_z!=1) throw("Для линейного слоя размерность входного слоя по Z должна быть равна 1!");
+
+  cTensor_W=CTensor<type_t>(1,1,input_x,neurons);
+  cTensor_B=CTensor<type_t>(1,1,1,neurons);
+  cTensor_H=CTensor<type_t>(BatchSize,input_z,input_y,neurons);
 
   //задаём предшествующему слою, что мы его последующий слой
   prev_layer_ptr->SetNextLayerPtr(this);
@@ -219,15 +221,15 @@ void CNetLayerLinear<type_t>::Reset(type_t scale)
   }
  }
  //сдвиги
- size=static_cast<type_t>(cTensor_B.GetSizeY());
+ size=static_cast<type_t>(cTensor_B.GetSizeX());
  koeff=static_cast<type_t>(sqrt(2.0/size));
- for(uint32_t y=0;y<cTensor_B.GetSizeY();y++)
+ for(uint32_t x=0;x<cTensor_B.GetSizeX();x++)
  {
   //используем метод инициализации He (Ге)
   //type_t rnd=static_cast<type_t>(GetRandValue(2.0)-1.0);
   type_t init=0;//rnd*koeff;
   init*=scale;
-  cTensor_B.SetElement(0,0,y,0,init);
+  cTensor_B.SetElement(0,0,0,x,init);
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -268,20 +270,13 @@ void CNetLayerLinear<type_t>::Forward(void)
 {
  if (PrevLayerPtr==NULL) return;//для входного слоя ничего делать не нужно
 
- //Z=WxZprev
- //приводим входной тензор к линии по X*Y*Z
- uint32_t size_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
- uint32_t size_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
- uint32_t size_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
- PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,1,size_x*size_y*size_z,1);
+ cTensor_H.RestoreSize();
 
- if (UseEMA==false) CTensorMath<type_t>::Mul(cTensor_H,cTensor_W,PrevLayerPtr->GetOutputTensor());
-               else CTensorMath<type_t>::Mul(cTensor_H,cTensor_W_EMA,PrevLayerPtr->GetOutputTensor());
-
- PrevLayerPtr->GetOutputTensor().RestoreSize();
-
- if (UseEMA==false) CTensorMath<type_t>::Add(cTensor_H,cTensor_H,cTensor_B);
-               else CTensorMath<type_t>::Add(cTensor_H,cTensor_H,cTensor_B_EMA);
+ //Z=Zprev@W
+ if (UseEMA==false) CTensorMath<type_t>::Mul(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_W);
+               else CTensorMath<type_t>::Mul(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_W_EMA);
+ if (UseEMA==false) CTensorMath<type_t>::LayerAddX(cTensor_H,cTensor_H,cTensor_B);
+               else CTensorMath<type_t>::LayerAddX(cTensor_H,cTensor_H,cTensor_B_EMA);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -368,6 +363,8 @@ bool CNetLayerLinear<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
 template<class type_t>
 void CNetLayerLinear<type_t>::TrainingStart(void)
 {
+ cTensor_H.RestoreSize();
+
  //создаём все вспомогательные тензоры
  cTensor_dW=CTensor<type_t>(1,1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
  cTensor_TmpdW=CTensor<type_t>(BatchSize,1,cTensor_W.GetSizeY(),cTensor_W.GetSizeX());
@@ -421,33 +418,17 @@ void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
 {
  if (PrevLayerPtr==NULL) return;//это входной слой
 
- //вычисляем ошибку предыдущего слоя (D=tr(W)xDnext)
+ //вычисляем ошибку предыдущего слоя (D=Dnext@tr(W))
  //считаем ошибку предыдущего слоя
- uint32_t size_x=cTensor_PrevLayerError.GetSizeX();
- uint32_t size_y=cTensor_PrevLayerError.GetSizeY();
- uint32_t size_z=cTensor_PrevLayerError.GetSizeZ();
-
- cTensor_PrevLayerError.ReinterpretSize(BatchSize,1,size_x*size_y*size_z,1);
- CTensorMath<type_t>::LeftTransposeMul(cTensor_PrevLayerError,cTensor_W,cTensor_Delta);
- cTensor_PrevLayerError.RestoreSize();
- //задаём ошибку предыдущего слоя
-
+ CTensorMath<type_t>::RightTransposeMul(cTensor_PrevLayerError,cTensor_Delta,cTensor_W);
  PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
-
+ //считаем поправки
  if (create_delta_weight==true)
  {
   CTensor<type_t> &h=PrevLayerPtr->GetOutputTensor();
-  size_x=h.GetSizeX();
-  size_y=h.GetSizeY();
-  size_z=h.GetSizeZ();
-  h.ReinterpretSize(BatchSize,1,1,size_x*size_y*size_z);
-
-  CTensorMath<type_t>::Mul(cTensor_TmpdW,cTensor_Delta,h);
-
-  h.RestoreSize();
-
+  CTensorMath<type_t>::LeftTransposeMul(cTensor_TmpdW,h,cTensor_Delta);
   CTensorMath<type_t>::AddSumW(cTensor_dW,cTensor_dW,cTensor_TmpdW);
-  CTensorMath<type_t>::AddSumW(cTensor_dB,cTensor_dB,cTensor_Delta);
+  CTensorMath<type_t>::AddSumX(cTensor_dB,cTensor_dB,cTensor_Delta);
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -468,7 +449,7 @@ void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
- CTensorMath<type_t>::ClipByNormXY(cTensor_dW,cTensor_dW,ClipByNormThresHold);
+ CTensorMath<type_t>::ClipByNormXY(cTensor_dW,cTensor_dW,ClipByNormThresHold);//TODO: возможно, в линейном слое ограничивать не нужно
  CTensorMath<type_t>::ClipByNormXY(cTensor_dB,cTensor_dB,ClipByNormThresHold);
 
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
@@ -508,7 +489,6 @@ template<class type_t>
 void CNetLayerLinear<type_t>::SetOutputError(CTensor<type_t>& error)
 {
  cTensor_Delta=error;
- //cTensor_Delta.Print("Delta");
 }
 
 //----------------------------------------------------------------------------------------------------

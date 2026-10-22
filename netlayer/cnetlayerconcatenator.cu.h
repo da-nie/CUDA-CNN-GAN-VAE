@@ -209,6 +209,7 @@ void CNetLayerConcatenator<type_t>::Reset(type_t scale)
 template<class type_t>
 void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -224,6 +225,7 @@ void CNetLayerConcatenator<type_t>::SetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output)
 {
+ cTensor_H.RestoreSize();
  if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
@@ -236,6 +238,7 @@ void CNetLayerConcatenator<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerConcatenator<type_t>::Forward(void)
 {
+ cTensor_H.RestoreSize();
  CTensorMath<type_t>::ConcatecationZ(cTensor_H,PrevLayerAPtr->GetOutputTensor(),PrevLayerBPtr->GetOutputTensor());
 }
 //----------------------------------------------------------------------------------------------------
@@ -246,6 +249,7 @@ void CNetLayerConcatenator<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerConcatenator<type_t>::GetOutputTensor(void)
 {
+ cTensor_H.RestoreSize();
  return(cTensor_H);
 }
 //----------------------------------------------------------------------------------------------------
@@ -310,6 +314,7 @@ bool CNetLayerConcatenator<type_t>::LoadTrainingParam(IDataStream *iDataStream_P
 template<class type_t>
 void CNetLayerConcatenator<type_t>::TrainingStart(void)
 {
+ cTensor_H.RestoreSize();
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
  cTensor_PrevLayerAError=CTensor<type_t>(BatchSize,OutputSizeA_Z,OutputSize_Y,OutputSize_X);

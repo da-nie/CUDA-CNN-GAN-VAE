@@ -72,6 +72,8 @@ class CTensorMath
   static const uint32_t TENSOR_MUL_TILE_SIZE_SCALE=2;///<размер множителя блока операции умножения с тензорами
   static const uint32_t TENSOR_MUL_TILE_BLOCK_SIZE=16;///<размер блока операции умножения с тензорами
   static const uint32_t TILE_BLOCK_SIZE=16;///<размер блока операций с тензорами
+
+   static const uint32_t LAYER_NORM_BLOCK_SIZE=256;///<размер CUDA-блока для функций LayerNorm
  private:
   //-переменные-----------------------------------------------------------------------------------------
  public:
@@ -136,6 +138,23 @@ class CTensorMath
 
   static void GroupNormForward(CTensor<type_t> &cTensor_Output, CTensor<type_t> &cTensor_Input, CTensor<type_t> &cTensor_Gamma, CTensor<type_t> &cTensor_Beta, CTensor<type_t> &cTensor_XHAT, CTensor<type_t> &cTensor_InvStd, uint32_t num_groups, uint32_t channels_per_group,type_t epsilon);///<прямой проход GroupNorm
   static void GroupNormBackward(CTensor<type_t> &cTensor_Delta_Array, CTensor<type_t> &cTensor_XHAT_Array, CTensor<type_t> &cTensor_Gamma, CTensor<type_t> &cTensor_InvStd_Array, CTensor<type_t> &cTensor_PrevLayerError_Array, CTensor<type_t> &cTensor_dGamma, CTensor<type_t> &cTensor_dBeta, uint32_t num_groups, uint32_t channels_per_group, bool calc_weights);///<обратный проход GroupNorm
+
+  static void LayerNormForward(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<type_t> &cTensor_Gamma,const CTensor<type_t> &cTensor_Beta,CTensor<type_t> &cTensor_XHAT,CTensor<type_t> &cTensor_InvStd,type_t epsilon);///<прямой проход LayerNorm (статистики по Z*Y*X для каждого элемента пакета)
+  static void LayerNormBackward(const CTensor<type_t> &cTensor_Delta,const CTensor<type_t> &cTensor_XHAT,const CTensor<type_t> &cTensor_Gamma,const CTensor<type_t> &cTensor_InvStd,CTensor<type_t> &cTensor_PrevLayerError,CTensor<type_t> &cTensor_dGamma,CTensor<type_t> &cTensor_dBeta);///<обратный проход LayerNorm (градиенты гаммы и беты НАКАПЛИВАЮТСЯ)
+
+  static void LayerNormForwardGPT2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<type_t> &cTensor_Gamma,const CTensor<type_t> &cTensor_Beta,CTensor<type_t> &cTensor_XHAT,CTensor<type_t> &cTensor_InvStd,type_t epsilon);///<прямой проход LayerNorm: статистики по Z для каждой позиции (w,y,x)
+  static void LayerNormBackwardGPT2(const CTensor<type_t> &cTensor_Delta,const CTensor<type_t> &cTensor_XHAT,const CTensor<type_t> &cTensor_Gamma,const CTensor<type_t> &cTensor_InvStd,CTensor<type_t> &cTensor_PrevLayerError,CTensor<type_t> &cTensor_dGamma,CTensor<type_t> &cTensor_dBeta);///<обратный проход LayerNorm (dGamma и dBeta НАКАПЛИВАЮТСЯ)
+
+  static void SoftMaxX(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<SoftMax по оси X
+
+  static void SetCausalMask(CTensor<type_t> &cTensor);///<нанести каузальную маску на тензор
+  static void AttentionTranspose(CTensor<type_t> &cTensor_Output_Q,const CTensor<type_t> &cTensor_Input_Q,CTensor<type_t> &cTensor_Output_K,const CTensor<type_t> &cTensor_Input_K,CTensor<type_t> &cTensor_Output_V,const CTensor<type_t> &cTensor_Input_V);///<перестановка осей для слоя внимания
+  static void AttentionUnion(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<объединение для слоя внимания
+
+  static void AddSumX(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input_A,CTensor<type_t> &cTensor_Input_B);///<сложить в слой X слои Y,Z,W
+
+  static void MulAttentionTranspose(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_X,const CTensor<type_t> &cTensor_W,const CTensor<type_t> &cTensor_B);///<умножить тензоры для слоя внимания
+
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -1342,13 +1361,15 @@ __global__ void CUDATensorLayerAddXTensorFunction(STensorKernel<type_t> tensor_o
 {
  uint32_t w_in=Mod(blockIdx.x,tensor_input.Size_W);
  uint32_t w_out=Mod(blockIdx.x,tensor_output.Size_W);
+ uint32_t w_in_x=Mod(blockIdx.x,tensor_valuex.Size_W);
  uint32_t z=Mod(blockIdx.y,tensor_output.Size_Z);
  uint32_t y=Mod(blockIdx.z,tensor_output.Size_Y);
+
 
  type_t *d_xin=tensor_input.GetTensorDataPtr(w_in,z)+y*tensor_input.Size_X;
  type_t *d_xout=tensor_output.GetTensorDataPtr(w_out,z)+y*tensor_input.Size_X;
 
- type_t *d_valuex=tensor_valuex.GetTensorDataPtr(w_in,z);
+ type_t *d_valuex=tensor_valuex.GetTensorDataPtr(w_in_x,z);
  for(uint32_t x=0;x<tensor_input.Size_X;x++,d_xin++,d_xout++,d_valuex++)
  {
   type_t v=(*d_xin);
@@ -1364,7 +1385,7 @@ template<class type_t>
 void CTensorMath<type_t>::LayerAddX(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input,CTensor<type_t> &cTensor_ValueX)
 {
  if (cTensor_Input.Size_Z!=cTensor_Output.Size_Z || cTensor_Input.Size_X!=cTensor_Output.Size_X || cTensor_Input.Size_Y!=cTensor_Output.Size_Y || cTensor_Input.Size_W!=cTensor_Output.Size_W ||
-     cTensor_Input.Size_Z!=cTensor_ValueX.Size_Z || cTensor_Input.Size_X!=cTensor_ValueX.Size_X || cTensor_Input.Size_W!=cTensor_ValueX.Size_W || cTensor_ValueX.Size_Y!=1)
+     cTensor_Input.Size_Z!=cTensor_ValueX.Size_Z || cTensor_Input.Size_X!=cTensor_ValueX.Size_X || cTensor_ValueX.Size_Y!=1)
  {
   throw "CTensor::LayerAddX: Размерности тензоров не совпадают!";
  }
@@ -1811,8 +1832,40 @@ void CTensorMath<type_t>::Mul(CTensor<type_t> &cTensor_Output,const type_t &valu
 
  cTensor_Output.SetDeviceOnChange();
 }
+
+
+
+
+
+
+
 //----------------------------------------------------------------------------------------------------
-//транспонировать тензор
+//функция CUDA для транспонирования тензора
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATranspose(STensorKernel<type_t> tensor_output,const STensorKernel<type_t> tensor_input)
+{
+ uint32_t blockCol=blockIdx.z;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=Mod(blockIdx.x,tensor_input.Size_Z);
+ uint32_t w=Mod((blockIdx.x/tensor_input.Size_Z),tensor_input.Size_W);
+ //координаты элементов блока в выходном тензоре
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
+ //получаем подтензоры
+ uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
+
+ if (xp>=tensor_input.Size_X || yp>=tensor_input.Size_Y) return;
+
+ type_t value=tensor_input.GetElement(w,z,yp,xp);
+ tensor_output.SetElement(w,z,xp,yp,value);
+
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+///!транспонировать тензор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
 void CTensorMath<type_t>::Transpose(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
@@ -1821,25 +1874,30 @@ void CTensorMath<type_t>::Transpose(CTensor<type_t> &cTensor_Output,const CTenso
  {
   throw "void CTensor::Transpose: Размерности матриц не совпадают!";
  }
- cTensor_Input.CopyFromDevice();
 
- for(uint32_t w=0;w<cTensor_Output.Size_W;w++)
- {
-  for(uint32_t z=0;z<cTensor_Input.Size_Z;z++)
-  {
-   const type_t *i_ptr=cTensor_Input.GetColumnPtr(w,z,0);
-   type_t *o_ptr=cTensor_Output.GetColumnPtr(w,z,0);
-   for(uint32_t y=0;y<cTensor_Input.Size_Y;y++,o_ptr++)
-   {
-    type_t *o_ptr_local=o_ptr;
-    for(uint32_t x=0;x<cTensor_Input.Size_X;x++,o_ptr_local+=cTensor_Input.Size_Y,i_ptr++)
-    {
-     *o_ptr_local=*i_ptr;
-    }
-   }
-  }
- }
- cTensor_Output.SetHostOnChange();
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TILE_BLOCK_SIZE,CTensorMath<type_t>::TILE_BLOCK_SIZE);
+
+ uint32_t block_z=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_z++;
+ uint32_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ uint32_t block_x=cTensor_Input.Size_Z*cTensor_Input.Size_W;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDATranspose<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -3123,6 +3181,1148 @@ void CTensorMath<type_t>::GroupNormBackward(CTensor<type_t> &cTensor_Delta_Array
   cTensor_dGamma.SetDeviceOnChange();
   cTensor_dBeta.SetDeviceOnChange();
  }
+}
+
+
+//****************************************************************************************************
+//функция CUDA для прямого прохода LayerNorm
+//----------------------------------------------------------------------------------------------------
+//Для каждого элемента пакета w статистики считаются по всем Z*Y*X элементам.
+//Один CUDA-блок обрабатывает один элемент пакета (blockDim.x==LAYER_NORM_BLOCK_SIZE).
+//****************************************************************************************************
+template<class type_t>
+__global__ void CUDALayerNormForwardFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,STensorKernel<type_t> tensor_gamma,STensorKernel<type_t> tensor_beta,STensorKernel<type_t> tensor_xhat,STensorKernel<type_t> tensor_invstd,type_t epsilon)
+{
+ uint32_t w=blockIdx.x;///<номер элемента пакета
+ uint32_t size_z=tensor_input.Size_Z;
+ uint32_t size_y=tensor_input.Size_Y;
+ uint32_t size_x=tensor_input.Size_X;
+ uint64_t amount_xy=static_cast<uint64_t>(size_y)*size_x;
+ uint64_t amount=static_cast<uint64_t>(size_z)*amount_xy;///<размер нормализации Z*Y*X
+
+ __shared__ type_t s_sum[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];///<для редукции суммы
+ __shared__ type_t s_sum2[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];///<для редукции суммы квадратов
+ __shared__ type_t s_mean;
+ __shared__ type_t s_invstd;
+
+ uint32_t tid=threadIdx.x;
+ uint32_t step=blockDim.x;
+
+ //первый проход: сумма и сумма квадратов
+ type_t sum=0;
+ type_t sum2=0;
+ for(uint64_t k=tid;k<amount;k+=step)
+ {
+  uint32_t x=static_cast<uint32_t>(k%size_x);
+  uint32_t y=static_cast<uint32_t>((k/size_x)%size_y);
+  uint32_t z=static_cast<uint32_t>(k/amount_xy);
+  type_t value=tensor_input.GetElement(w,z,y,x);
+  sum+=value;
+  sum2+=value*value;
+ }
+ s_sum[tid]=sum;
+ s_sum2[tid]=sum2;
+ __syncthreads();
+
+ for(uint32_t s=blockDim.x/2;s>0;s>>=1)
+ {
+  if (tid<s)
+  {
+   s_sum[tid]+=s_sum[tid+s];
+   s_sum2[tid]+=s_sum2[tid+s];
+  }
+  __syncthreads();
+ }
+
+ if (tid==0)
+ {
+  type_t mean=s_sum[0]/static_cast<type_t>(amount);
+  type_t variance=s_sum2[0]/static_cast<type_t>(amount)-mean*mean;
+  if (variance<0) variance=0;//защита от отрицательной дисперсии из-за ошибок округления
+  type_t invstd=static_cast<type_t>(1)/sqrt(variance+epsilon);
+  s_mean=mean;
+  s_invstd=invstd;
+  tensor_invstd.SetElement(w,0,0,0,invstd);
+ }
+ __syncthreads();
+
+ type_t mean=s_mean;
+ type_t invstd=s_invstd;
+
+ //второй проход: нормализация и применение Gamma и Beta
+ for(uint64_t k=tid;k<amount;k+=step)
+ {
+  uint32_t x=static_cast<uint32_t>(k%size_x);
+  uint32_t y=static_cast<uint32_t>((k/size_x)%size_y);
+  uint32_t z=static_cast<uint32_t>(k/amount_xy);
+  type_t value=tensor_input.GetElement(w,z,y,x);
+  type_t xhat=(value-mean)*invstd;
+  tensor_xhat.SetElement(w,z,y,x,xhat);
+  type_t gamma=tensor_gamma.GetElement(0,z,0,0);
+  type_t beta=tensor_beta.GetElement(0,z,0,0);
+  tensor_output.SetElement(w,z,y,x,gamma*xhat+beta);
+ }
+}
+
+//****************************************************************************************************
+//функция CUDA для обратного прохода LayerNorm (ошибка для предыдущего слоя)
+//----------------------------------------------------------------------------------------------------
+//dInput = invstd*( dOut*Gamma - mean(dOut*Gamma) - XHAT*mean(dOut*Gamma*XHAT) )
+//****************************************************************************************************
+template<class type_t>
+__global__ void CUDALayerNormBackwardDataFunction(STensorKernel<type_t> tensor_prev_error,STensorKernel<type_t> tensor_delta,STensorKernel<type_t> tensor_xhat,STensorKernel<type_t> tensor_gamma,STensorKernel<type_t> tensor_invstd)
+{
+ uint32_t w=blockIdx.x;
+ uint32_t size_z=tensor_delta.Size_Z;
+ uint32_t size_y=tensor_delta.Size_Y;
+ uint32_t size_x=tensor_delta.Size_X;
+ uint64_t amount_xy=static_cast<uint64_t>(size_y)*size_x;
+ uint64_t amount=static_cast<uint64_t>(size_z)*amount_xy;
+
+ __shared__ type_t s_sum[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+ __shared__ type_t s_sumx[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+ __shared__ type_t s_sum_dxhat;
+ __shared__ type_t s_sum_dxhat_xhat;
+
+ uint32_t tid=threadIdx.x;
+ uint32_t step=blockDim.x;
+
+ type_t sum=0;
+ type_t sumx=0;
+ for(uint64_t k=tid;k<amount;k+=step)
+ {
+  uint32_t x=static_cast<uint32_t>(k%size_x);
+  uint32_t y=static_cast<uint32_t>((k/size_x)%size_y);
+  uint32_t z=static_cast<uint32_t>(k/amount_xy);
+  type_t dxhat=tensor_delta.GetElement(w,z,y,x)*tensor_gamma.GetElement(0,z,0,0);
+  sum+=dxhat;
+  sumx+=dxhat*tensor_xhat.GetElement(w,z,y,x);
+ }
+ s_sum[tid]=sum;
+ s_sumx[tid]=sumx;
+ __syncthreads();
+
+ for(uint32_t s=blockDim.x/2;s>0;s>>=1)
+ {
+  if (tid<s)
+  {
+   s_sum[tid]+=s_sum[tid+s];
+   s_sumx[tid]+=s_sumx[tid+s];
+  }
+  __syncthreads();
+ }
+
+ if (tid==0)
+ {
+  s_sum_dxhat=s_sum[0];
+  s_sum_dxhat_xhat=s_sumx[0];
+ }
+ __syncthreads();
+
+ type_t scale=tensor_invstd.GetElement(w,0,0,0)/static_cast<type_t>(amount);
+ type_t sum_dxhat=s_sum_dxhat;
+ type_t sum_dxhat_xhat=s_sum_dxhat_xhat;
+
+ for(uint64_t k=tid;k<amount;k+=step)
+ {
+  uint32_t x=static_cast<uint32_t>(k%size_x);
+  uint32_t y=static_cast<uint32_t>((k/size_x)%size_y);
+  uint32_t z=static_cast<uint32_t>(k/amount_xy);
+  type_t dxhat=tensor_delta.GetElement(w,z,y,x)*tensor_gamma.GetElement(0,z,0,0);
+  type_t xhat=tensor_xhat.GetElement(w,z,y,x);
+  tensor_prev_error.SetElement(w,z,y,x,scale*(static_cast<type_t>(amount)*dxhat-sum_dxhat-xhat*sum_dxhat_xhat));
+ }
+}
+
+//****************************************************************************************************
+//функция CUDA для обратного прохода LayerNorm (градиенты Gamma и Beta)
+//----------------------------------------------------------------------------------------------------
+//dGamma(z) += SUM(dOut*XHAT); dBeta(z) += SUM(dOut) — суммы по всем w,y,x.
+//Один CUDA-блок обрабатывает один канал z. Градиенты НАКАПЛИВАЮТСЯ.
+//****************************************************************************************************
+template<class type_t>
+__global__ void CUDALayerNormBackwardParamFunction(STensorKernel<type_t> tensor_dgamma,STensorKernel<type_t> tensor_dbeta,STensorKernel<type_t> tensor_delta,STensorKernel<type_t> tensor_xhat)
+{
+ uint32_t z=blockIdx.x;///<номер канала
+ uint32_t size_w=tensor_delta.Size_W;
+ uint32_t size_y=tensor_delta.Size_Y;
+ uint32_t size_x=tensor_delta.Size_X;
+ uint64_t amount_xy=static_cast<uint64_t>(size_y)*size_x;
+ uint64_t amount=static_cast<uint64_t>(size_w)*amount_xy;
+
+ __shared__ type_t s_sum[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+ __shared__ type_t s_sumx[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+
+ uint32_t tid=threadIdx.x;
+ uint32_t step=blockDim.x;
+
+ type_t sum=0;///<сумма dOut (для dBeta)
+ type_t sumx=0;///<сумма dOut*XHAT (для dGamma)
+ for(uint64_t k=tid;k<amount;k+=step)
+ {
+  uint32_t x=static_cast<uint32_t>(k%size_x);
+  uint32_t y=static_cast<uint32_t>((k/size_x)%size_y);
+  uint32_t w=static_cast<uint32_t>(k/amount_xy);
+  type_t dout=tensor_delta.GetElement(w,z,y,x);
+  sum+=dout;
+  sumx+=dout*tensor_xhat.GetElement(w,z,y,x);
+ }
+ s_sum[tid]=sum;
+ s_sumx[tid]=sumx;
+ __syncthreads();
+
+ for(uint32_t s=blockDim.x/2;s>0;s>>=1)
+ {
+  if (tid<s)
+  {
+   s_sum[tid]+=s_sum[tid+s];
+   s_sumx[tid]+=s_sumx[tid+s];
+  }
+  __syncthreads();
+ }
+
+ if (tid==0)
+ {
+  tensor_dbeta.SetElement(0,z,0,0,tensor_dbeta.GetElement(0,z,0,0)+s_sum[0]);
+  tensor_dgamma.SetElement(0,z,0,0,tensor_dgamma.GetElement(0,z,0,0)+s_sumx[0]);
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//прямой проход LayerNorm
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::LayerNormForward(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<type_t> &cTensor_Gamma,const CTensor<type_t> &cTensor_Beta,CTensor<type_t> &cTensor_XHAT,CTensor<type_t> &cTensor_InvStd,type_t epsilon)
+{
+ if (cTensor_Output.Size_W!=cTensor_Input.Size_W || cTensor_Output.Size_Z!=cTensor_Input.Size_Z ||
+     cTensor_Output.Size_Y!=cTensor_Input.Size_Y || cTensor_Output.Size_X!=cTensor_Input.Size_X ||
+     cTensor_XHAT.Size_W!=cTensor_Input.Size_W || cTensor_XHAT.Size_Z!=cTensor_Input.Size_Z ||
+     cTensor_XHAT.Size_Y!=cTensor_Input.Size_Y || cTensor_XHAT.Size_X!=cTensor_Input.Size_X)
+ {
+  throw "CTensorMath::LayerNormForward: Размерности входа, выхода и XHAT не совпадают!";
+ }
+ if (cTensor_Gamma.Size_W!=1 || cTensor_Gamma.Size_Z!=cTensor_Input.Size_Z || cTensor_Gamma.Size_Y!=1 || cTensor_Gamma.Size_X!=1 ||
+     cTensor_Beta.Size_W!=1 || cTensor_Beta.Size_Z!=cTensor_Input.Size_Z || cTensor_Beta.Size_Y!=1 || cTensor_Beta.Size_X!=1)
+ {
+  throw "CTensorMath::LayerNormForward: Тензоры Gamma и Beta должны иметь размерность 1xZx1x1!";
+ }
+ if (cTensor_InvStd.Size_W!=cTensor_Input.Size_W || cTensor_InvStd.Size_Z!=1 || cTensor_InvStd.Size_Y!=1 || cTensor_InvStd.Size_X!=1)
+ {
+  throw "CTensorMath::LayerNormForward: Тензор InvStd должен иметь размерность BatchSize x 1 x 1 x 1!";
+ }
+
+ cTensor_Input.CopyToDevice();
+ cTensor_Gamma.CopyToDevice();
+ cTensor_Beta.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+ STensorKernel<type_t> sTensorKernel_Gamma(cTensor_Gamma);
+ STensorKernel<type_t> sTensorKernel_Beta(cTensor_Beta);
+ STensorKernel<type_t> sTensorKernel_XHAT(cTensor_XHAT);
+ STensorKernel<type_t> sTensorKernel_InvStd(cTensor_InvStd);
+
+ dim3 thread(LAYER_NORM_BLOCK_SIZE,1,1);
+ dim3 blocks(cTensor_Input.Size_W,1,1);
+ if (blocks.x==0) blocks.x=1;
+
+ CUDALayerNormForwardFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,sTensorKernel_Gamma,sTensorKernel_Beta,sTensorKernel_XHAT,sTensorKernel_InvStd,epsilon);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+ cTensor_XHAT.SetDeviceOnChange();
+ cTensor_InvStd.SetDeviceOnChange();
+}
+
+//----------------------------------------------------------------------------------------------------
+//обратный проход LayerNorm
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::LayerNormBackward(const CTensor<type_t> &cTensor_Delta,const CTensor<type_t> &cTensor_XHAT,const CTensor<type_t> &cTensor_Gamma,const CTensor<type_t> &cTensor_InvStd,CTensor<type_t> &cTensor_PrevLayerError,CTensor<type_t> &cTensor_dGamma,CTensor<type_t> &cTensor_dBeta)
+{
+ if (cTensor_PrevLayerError.Size_W!=cTensor_Delta.Size_W || cTensor_PrevLayerError.Size_Z!=cTensor_Delta.Size_Z ||
+     cTensor_PrevLayerError.Size_Y!=cTensor_Delta.Size_Y || cTensor_PrevLayerError.Size_X!=cTensor_Delta.Size_X ||
+     cTensor_XHAT.Size_W!=cTensor_Delta.Size_W || cTensor_XHAT.Size_Z!=cTensor_Delta.Size_Z ||
+     cTensor_XHAT.Size_Y!=cTensor_Delta.Size_Y || cTensor_XHAT.Size_X!=cTensor_Delta.Size_X)
+ {
+  throw "CTensorMath::LayerNormBackward: Размерности дельты, XHAT и ошибки предыдущего слоя не совпадают!";
+ }
+ if (cTensor_Gamma.Size_W!=1 || cTensor_Gamma.Size_Z!=cTensor_Delta.Size_Z || cTensor_Gamma.Size_Y!=1 || cTensor_Gamma.Size_X!=1 ||
+     cTensor_dGamma.Size_W!=1 || cTensor_dGamma.Size_Z!=cTensor_Delta.Size_Z || cTensor_dGamma.Size_Y!=1 || cTensor_dGamma.Size_X!=1 ||
+     cTensor_dBeta.Size_W!=1 || cTensor_dBeta.Size_Z!=cTensor_Delta.Size_Z || cTensor_dBeta.Size_Y!=1 || cTensor_dBeta.Size_X!=1)
+ {
+  throw "CTensorMath::LayerNormBackward: Тензоры Gamma, dGamma и dBeta должны иметь размерность 1xZx1x1!";
+ }
+ if (cTensor_InvStd.Size_W!=cTensor_Delta.Size_W || cTensor_InvStd.Size_Z!=1 || cTensor_InvStd.Size_Y!=1 || cTensor_InvStd.Size_X!=1)
+ {
+  throw "CTensorMath::LayerNormBackward: Тензор InvStd должен иметь размерность BatchSize x 1 x 1 x 1!";
+ }
+
+ cTensor_Delta.CopyToDevice();
+ cTensor_XHAT.CopyToDevice();
+ cTensor_Gamma.CopyToDevice();
+ cTensor_InvStd.CopyToDevice();
+ cTensor_dGamma.CopyToDevice();//важно: градиенты накапливаются, текущие значения должны быть на устройстве
+ cTensor_dBeta.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_PrevLayerError(cTensor_PrevLayerError);
+ STensorKernel<type_t> sTensorKernel_Delta(cTensor_Delta);
+ STensorKernel<type_t> sTensorKernel_XHAT(cTensor_XHAT);
+ STensorKernel<type_t> sTensorKernel_Gamma(cTensor_Gamma);
+ STensorKernel<type_t> sTensorKernel_InvStd(cTensor_InvStd);
+ STensorKernel<type_t> sTensorKernel_dGamma(cTensor_dGamma);
+ STensorKernel<type_t> sTensorKernel_dBeta(cTensor_dBeta);
+
+ dim3 thread(LAYER_NORM_BLOCK_SIZE,1,1);
+
+ //ошибка для предыдущего слоя: один CUDA-блок на элемент пакета
+ dim3 blocks_data(cTensor_Delta.Size_W,1,1);
+ if (blocks_data.x==0) blocks_data.x=1;
+ CUDALayerNormBackwardDataFunction<type_t><<<blocks_data,thread>>>(sTensorKernel_PrevLayerError,sTensorKernel_Delta,sTensorKernel_XHAT,sTensorKernel_Gamma,sTensorKernel_InvStd);
+
+ //градиенты параметров: один CUDA-блок на канал
+ dim3 blocks_param(cTensor_Delta.Size_Z,1,1);
+ if (blocks_param.x==0) blocks_param.x=1;
+ CUDALayerNormBackwardParamFunction<type_t><<<blocks_param,thread>>>(sTensorKernel_dGamma,sTensorKernel_dBeta,sTensorKernel_Delta,sTensorKernel_XHAT);
+
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_PrevLayerError.SetDeviceOnChange();
+ cTensor_dGamma.SetDeviceOnChange();
+ cTensor_dBeta.SetDeviceOnChange();
+}
+
+
+//****************************************************************************************************
+//Функция CUDA прямого прохода LayerNorm (вариант GPT-2)
+//----------------------------------------------------------------------------------------------------
+//Статистики вычисляются по всем каналам Z независимо для каждой позиции (w,y,x).
+//Для GPT-2: W-пакет, Z-эмбеддинг, Y-токены, X=1.
+//Один CUDA-блок обрабатывает одну позицию (w,y,x).
+//****************************************************************************************************
+template<class type_t>
+__global__ void CUDALayerNormForwardFunctionGTP2(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input,STensorKernel<type_t> tensor_gamma,STensorKernel<type_t> tensor_beta,STensorKernel<type_t> tensor_xhat,STensorKernel<type_t> tensor_invstd,type_t epsilon)
+{
+ uint32_t x=blockIdx.x;
+ uint32_t y=blockIdx.y;
+ uint32_t w=blockIdx.z;
+ uint32_t size_z=tensor_input.Size_Z;
+
+ __shared__ type_t s_sum[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+ __shared__ type_t s_sum2[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+ __shared__ type_t s_mean;
+ __shared__ type_t s_invstd;
+
+ uint32_t tid=threadIdx.x;
+ uint32_t step=blockDim.x;
+
+ //первый проход: сумма и сумма квадратов по Z
+ type_t sum=0;
+ type_t sum2=0;
+ for(uint32_t z=tid;z<size_z;z+=step)
+ {
+  type_t v=static_cast<type_t>(tensor_input.GetElement(w,z,y,x));
+  sum+=v;
+  sum2+=v*v;
+ }
+ s_sum[tid]=sum;
+ s_sum2[tid]=sum2;
+ __syncthreads();
+
+ for(uint32_t s=blockDim.x/2;s>0;s>>=1)
+ {
+  if (tid<s)
+  {
+   s_sum[tid]+=s_sum[tid+s];
+   s_sum2[tid]+=s_sum2[tid+s];
+  }
+  __syncthreads();
+ }
+
+ if (tid==0)
+ {
+  type_t mean=s_sum[0]/static_cast<type_t>(size_z);
+  type_t variance=s_sum2[0]/static_cast<type_t>(size_z)-mean*mean;
+  if (variance<0) variance=0;//защита от отрицательной дисперсии из-за ошибок округления
+  type_t invstd=1.0/sqrt(variance+static_cast<type_t>(epsilon));
+  s_mean=mean;
+  s_invstd=invstd;
+  tensor_invstd.SetElement(w,0,y,x,static_cast<type_t>(invstd));
+ }
+ __syncthreads();
+
+ type_t mean=s_mean;
+ type_t invstd=s_invstd;
+
+ //второй проход: нормализация, применение Gamma и Beta
+ for(uint32_t z=tid;z<size_z;z+=step)
+ {
+  type_t v=static_cast<type_t>(tensor_input.GetElement(w,z,y,x));
+  type_t xhat=static_cast<type_t>((v-mean)*invstd);
+  tensor_xhat.SetElement(w,z,y,x,xhat);
+  type_t gamma=tensor_gamma.GetElement(0,z,0,0);
+  type_t beta=tensor_beta.GetElement(0,z,0,0);
+  tensor_output.SetElement(w,z,y,x,gamma*xhat+beta);
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//прямой проход LayerNorm (вариант GPT-2)
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::LayerNormForwardGPT2(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input,const CTensor<type_t> &cTensor_Gamma,const CTensor<type_t> &cTensor_Beta,CTensor<type_t> &cTensor_XHAT,CTensor<type_t> &cTensor_InvStd,type_t epsilon)
+{
+ if (cTensor_Output.Size_W!=cTensor_Input.Size_W || cTensor_Output.Size_Z!=cTensor_Input.Size_Z ||
+     cTensor_Output.Size_Y!=cTensor_Input.Size_Y || cTensor_Output.Size_X!=cTensor_Input.Size_X ||
+     cTensor_XHAT.Size_W!=cTensor_Input.Size_W || cTensor_XHAT.Size_Z!=cTensor_Input.Size_Z ||
+     cTensor_XHAT.Size_Y!=cTensor_Input.Size_Y || cTensor_XHAT.Size_X!=cTensor_Input.Size_X)
+ {
+  throw "CTensorMath::LayerNormForward: Размерности входа, выхода и XHAT не совпадают!";
+ }
+ if (cTensor_Gamma.Size_W!=1 || cTensor_Gamma.Size_Z!=cTensor_Input.Size_Z || cTensor_Gamma.Size_Y!=1 || cTensor_Gamma.Size_X!=1 ||
+     cTensor_Beta.Size_W!=1 || cTensor_Beta.Size_Z!=cTensor_Input.Size_Z || cTensor_Beta.Size_Y!=1 || cTensor_Beta.Size_X!=1)
+ {
+  throw "CTensorMath::LayerNormForward: Тензоры Gamma и Beta должны иметь размерность 1xZx1x1!";
+ }
+ if (cTensor_InvStd.Size_W!=cTensor_Input.Size_W || cTensor_InvStd.Size_Z!=1 ||
+     cTensor_InvStd.Size_Y!=cTensor_Input.Size_Y || cTensor_InvStd.Size_X!=cTensor_Input.Size_X)
+ {
+  throw "CTensorMath::LayerNormForward: Тензор InvStd должен иметь размерность BatchSize x 1 x Y x X!";
+ }
+
+ cTensor_Input.CopyToDevice();
+ cTensor_Gamma.CopyToDevice();
+ cTensor_Beta.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+ STensorKernel<type_t> sTensorKernel_Gamma(cTensor_Gamma);
+ STensorKernel<type_t> sTensorKernel_Beta(cTensor_Beta);
+ STensorKernel<type_t> sTensorKernel_XHAT(cTensor_XHAT);
+ STensorKernel<type_t> sTensorKernel_InvStd(cTensor_InvStd);
+
+ dim3 thread(LAYER_NORM_BLOCK_SIZE,1,1);
+ dim3 blocks(cTensor_Input.Size_X,cTensor_Input.Size_Y,cTensor_Input.Size_W);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+
+ CUDALayerNormForwardFunctionGTP2<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input,sTensorKernel_Gamma,sTensorKernel_Beta,sTensorKernel_XHAT,sTensorKernel_InvStd,epsilon);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+ cTensor_XHAT.SetDeviceOnChange();
+ cTensor_InvStd.SetDeviceOnChange();
+}
+
+
+//****************************************************************************************************
+//Функция CUDA обратного прохода LayerNorm: ошибка для предыдущего слоя
+//----------------------------------------------------------------------------------------------------
+//dInput = invstd*( dOut*Gamma - mean(dOut*Gamma) - XHAT*mean(dOut*Gamma*XHAT) )
+//Средние берутся по Z для каждой позиции (w,y,x).
+//****************************************************************************************************
+template<class type_t>
+__global__ void CUDALayerNormBackwardDataFunctionGTP2(STensorKernel<type_t> tensor_prev_error,STensorKernel<type_t> tensor_delta,STensorKernel<type_t> tensor_xhat,STensorKernel<type_t> tensor_gamma,STensorKernel<type_t> tensor_invstd)
+{
+ uint32_t x=blockIdx.x;
+ uint32_t y=blockIdx.y;
+ uint32_t w=blockIdx.z;
+ uint32_t size_z=tensor_delta.Size_Z;
+
+ __shared__ type_t s_sum[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+ __shared__ type_t s_sumx[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+ __shared__ type_t s_mean_dxhat;
+ __shared__ type_t s_mean_dxhat_xhat;
+
+ uint32_t tid=threadIdx.x;
+ uint32_t step=blockDim.x;
+
+ type_t sum=0;
+ type_t sumx=0;
+ for(uint32_t z=tid;z<size_z;z+=step)
+ {
+  type_t dxhat=static_cast<type_t>(tensor_delta.GetElement(w,z,y,x))*static_cast<type_t>(tensor_gamma.GetElement(0,z,0,0));
+  sum+=dxhat;
+  sumx+=dxhat*static_cast<type_t>(tensor_xhat.GetElement(w,z,y,x));
+ }
+ s_sum[tid]=sum;
+ s_sumx[tid]=sumx;
+ __syncthreads();
+
+ for(uint32_t s=blockDim.x/2;s>0;s>>=1)
+ {
+  if (tid<s)
+  {
+   s_sum[tid]+=s_sum[tid+s];
+   s_sumx[tid]+=s_sumx[tid+s];
+  }
+  __syncthreads();
+ }
+
+ if (tid==0)
+ {
+  s_mean_dxhat=s_sum[0]/static_cast<type_t>(size_z);
+  s_mean_dxhat_xhat=s_sumx[0]/static_cast<type_t>(size_z);
+ }
+ __syncthreads();
+
+ type_t invstd=static_cast<type_t>(tensor_invstd.GetElement(w,0,y,x));
+ type_t mean_dxhat=s_mean_dxhat;
+ type_t mean_dxhat_xhat=s_mean_dxhat_xhat;
+
+ for(uint32_t z=tid;z<size_z;z+=step)
+ {
+  type_t dxhat=static_cast<type_t>(tensor_delta.GetElement(w,z,y,x))*static_cast<type_t>(tensor_gamma.GetElement(0,z,0,0));
+  type_t xhat=static_cast<type_t>(tensor_xhat.GetElement(w,z,y,x));
+  tensor_prev_error.SetElement(w,z,y,x,static_cast<type_t>(invstd*(dxhat-mean_dxhat-xhat*mean_dxhat_xhat)));
+ }
+}
+
+//****************************************************************************************************
+//Функция CUDA обратного прохода LayerNorm: градиенты Gamma и Beta
+//----------------------------------------------------------------------------------------------------
+//dGamma(z) += SUM(dOut*XHAT); dBeta(z) += SUM(dOut) — суммы по всем w,y,x.
+//Один CUDA-блок обрабатывает один канал z. Градиенты НАКАПЛИВАЮТСЯ.
+//****************************************************************************************************
+template<class type_t>
+__global__ void CUDALayerNormBackwardParamFunctionGTP2(STensorKernel<type_t> tensor_dgamma,STensorKernel<type_t> tensor_dbeta,STensorKernel<type_t> tensor_delta,STensorKernel<type_t> tensor_xhat)
+{
+ uint32_t z=blockIdx.x;
+ uint32_t size_w=tensor_delta.Size_W;
+ uint32_t size_y=tensor_delta.Size_Y;
+ uint32_t size_x=tensor_delta.Size_X;
+ uint64_t amount_xy=static_cast<uint64_t>(size_y)*size_x;
+ uint64_t amount=static_cast<uint64_t>(size_w)*amount_xy;
+
+ __shared__ type_t s_sum[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+ __shared__ type_t s_sumx[CTensorMath<type_t>::LAYER_NORM_BLOCK_SIZE];
+
+ uint32_t tid=threadIdx.x;
+ uint32_t step=blockDim.x;
+
+ type_t sum=0;///<сумма dOut (для dBeta)
+ type_t sumx=0;///<сумма dOut*XHAT (для dGamma)
+ for(uint64_t k=tid;k<amount;k+=step)
+ {
+  uint32_t x=static_cast<uint32_t>(k%size_x);
+  uint32_t y=static_cast<uint32_t>((k/size_x)%size_y);
+  uint32_t w=static_cast<uint32_t>(k/amount_xy);
+  type_t dout=static_cast<type_t>(tensor_delta.GetElement(w,z,y,x));
+  sum+=dout;
+  sumx+=dout*static_cast<type_t>(tensor_xhat.GetElement(w,z,y,x));
+ }
+ s_sum[tid]=sum;
+ s_sumx[tid]=sumx;
+ __syncthreads();
+
+ for(uint32_t s=blockDim.x/2;s>0;s>>=1)
+ {
+  if (tid<s)
+  {
+   s_sum[tid]+=s_sum[tid+s];
+   s_sumx[tid]+=s_sumx[tid+s];
+  }
+  __syncthreads();
+ }
+
+ if (tid==0)
+ {
+  tensor_dbeta.SetElement(0,z,0,0,tensor_dbeta.GetElement(0,z,0,0)+static_cast<type_t>(s_sum[0]));
+  tensor_dgamma.SetElement(0,z,0,0,tensor_dgamma.GetElement(0,z,0,0)+static_cast<type_t>(s_sumx[0]));
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//обратный проход LayerNorm (вариант GPT-2)
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::LayerNormBackwardGPT2(const CTensor<type_t> &cTensor_Delta,const CTensor<type_t> &cTensor_XHAT,const CTensor<type_t> &cTensor_Gamma,const CTensor<type_t> &cTensor_InvStd,CTensor<type_t> &cTensor_PrevLayerError,CTensor<type_t> &cTensor_dGamma,CTensor<type_t> &cTensor_dBeta)
+{
+ if (cTensor_PrevLayerError.Size_W!=cTensor_Delta.Size_W || cTensor_PrevLayerError.Size_Z!=cTensor_Delta.Size_Z ||
+     cTensor_PrevLayerError.Size_Y!=cTensor_Delta.Size_Y || cTensor_PrevLayerError.Size_X!=cTensor_Delta.Size_X ||
+     cTensor_XHAT.Size_W!=cTensor_Delta.Size_W || cTensor_XHAT.Size_Z!=cTensor_Delta.Size_Z ||
+     cTensor_XHAT.Size_Y!=cTensor_Delta.Size_Y || cTensor_XHAT.Size_X!=cTensor_Delta.Size_X)
+ {
+  throw "CTensorMath::LayerNormBackward: Размерности дельты, XHAT и ошибки предыдущего слоя не совпадают!";
+ }
+ if (cTensor_Gamma.Size_W!=1 || cTensor_Gamma.Size_Z!=cTensor_Delta.Size_Z || cTensor_Gamma.Size_Y!=1 || cTensor_Gamma.Size_X!=1 ||
+     cTensor_dGamma.Size_W!=1 || cTensor_dGamma.Size_Z!=cTensor_Delta.Size_Z || cTensor_dGamma.Size_Y!=1 || cTensor_dGamma.Size_X!=1 ||
+     cTensor_dBeta.Size_W!=1 || cTensor_dBeta.Size_Z!=cTensor_Delta.Size_Z || cTensor_dBeta.Size_Y!=1 || cTensor_dBeta.Size_X!=1)
+ {
+  throw "CTensorMath::LayerNormBackward: Тензоры Gamma, dGamma и dBeta должны иметь размерность 1xZx1x1!";
+ }
+ if (cTensor_InvStd.Size_W!=cTensor_Delta.Size_W || cTensor_InvStd.Size_Z!=1 ||
+     cTensor_InvStd.Size_Y!=cTensor_Delta.Size_Y || cTensor_InvStd.Size_X!=cTensor_Delta.Size_X)
+ {
+  throw "CTensorMath::LayerNormBackward: Тензор InvStd должен иметь размерность BatchSize x 1 x Y x X!";
+ }
+
+ cTensor_Delta.CopyToDevice();
+ cTensor_XHAT.CopyToDevice();
+ cTensor_Gamma.CopyToDevice();
+ cTensor_InvStd.CopyToDevice();
+ cTensor_dGamma.CopyToDevice();//градиенты накапливаются: текущие значения должны быть на устройстве
+ cTensor_dBeta.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_PrevLayerError(cTensor_PrevLayerError);
+ STensorKernel<type_t> sTensorKernel_Delta(cTensor_Delta);
+ STensorKernel<type_t> sTensorKernel_XHAT(cTensor_XHAT);
+ STensorKernel<type_t> sTensorKernel_Gamma(cTensor_Gamma);
+ STensorKernel<type_t> sTensorKernel_InvStd(cTensor_InvStd);
+ STensorKernel<type_t> sTensorKernel_dGamma(cTensor_dGamma);
+ STensorKernel<type_t> sTensorKernel_dBeta(cTensor_dBeta);
+
+ dim3 thread(LAYER_NORM_BLOCK_SIZE,1,1);
+
+ //ошибка для предыдущего слоя: один блок на позицию (w,y,x)
+ dim3 blocks_data(cTensor_Delta.Size_X,cTensor_Delta.Size_Y,cTensor_Delta.Size_W);
+ if (blocks_data.x==0) blocks_data.x=1;
+ if (blocks_data.y==0) blocks_data.y=1;
+ if (blocks_data.z==0) blocks_data.z=1;
+ CUDALayerNormBackwardDataFunctionGTP2<type_t><<<blocks_data,thread>>>(sTensorKernel_PrevLayerError,sTensorKernel_Delta,sTensorKernel_XHAT,sTensorKernel_Gamma,sTensorKernel_InvStd);
+ HANDLE_ERROR(cudaGetLastError());
+
+ //градиенты параметров: один блок на канал z
+ dim3 blocks_param(cTensor_Delta.Size_Z,1,1);
+ if (blocks_param.x==0) blocks_param.x=1;
+ CUDALayerNormBackwardParamFunctionGTP2<type_t><<<blocks_param,thread>>>(sTensorKernel_dGamma,sTensorKernel_dBeta,sTensorKernel_Delta,sTensorKernel_XHAT);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_PrevLayerError.SetDeviceOnChange();
+ cTensor_dGamma.SetDeviceOnChange();
+ cTensor_dBeta.SetDeviceOnChange();
+}
+
+
+//----------------------------------------------------------------------------------------------------
+// device-функции для exp и блочной редукции
+//----------------------------------------------------------------------------------------------------
+__device__ __forceinline__ float exp_op(float x)
+{
+    return __expf(x); // быстрая экспонента; если нужна повышенная точность — expf(x)
+}
+
+__device__ __forceinline__ double exp_op(double x)
+{
+    return exp(x);
+}
+
+template<class type_t>
+__device__ __forceinline__ type_t blockReduceMax(type_t val, type_t *shared)
+{
+    const int32_t tid = threadIdx.x;
+    shared[tid] = val;
+    __syncthreads();
+
+    for (int32_t s = blockDim.x >> 1; s > 0; s >>= 1)
+    {
+        if (tid < s)
+        {
+            type_t other = shared[tid + s];
+            if (other > shared[tid])
+                shared[tid] = other;
+        }
+        __syncthreads();
+    }
+
+    return shared[0];
+}
+
+template<class type_t>
+__device__ __forceinline__ type_t blockReduceSum(type_t val, type_t *shared)
+{
+    const int32_t tid = threadIdx.x;
+    shared[tid] = val;
+    __syncthreads();
+
+    for (int32_t s = blockDim.x >> 1; s > 0; s >>= 1)
+    {
+        if (tid < s)
+        {
+            shared[tid] += shared[tid + s];
+        }
+        __syncthreads();
+    }
+
+    return shared[0];
+}
+
+//----------------------------------------------------------------------------------------------------
+// функция CUDA для вычисления softmax по слою X
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorSoftMaxXTensorFunction(
+    STensorKernel<type_t> tensor_output,
+    STensorKernel<type_t> tensor_input)
+{
+    const int32_t w = blockIdx.x;
+    const int32_t z = blockIdx.y;
+    const int32_t y = blockIdx.z;
+
+    type_t *d_xin  = tensor_input.GetTensorDataPtr(w, z)  + y * tensor_input.Size_X;
+    type_t *d_xout = tensor_output.GetTensorDataPtr(w, z) + y * tensor_output.Size_X;
+
+    const int32_t n       = tensor_input.Size_X;
+    const int32_t tid     = threadIdx.x;
+    const int32_t nthreads = blockDim.x;
+
+    extern __shared__ type_t sdata[];
+    type_t *s_max = sdata;
+    type_t *s_sum = sdata + nthreads;
+
+    //------------------------------------------------------------------
+    // 1. Поиск максимума по строке
+    //------------------------------------------------------------------
+    type_t local_max = d_xin[0];
+    for (int32_t i = tid; i < n; i += nthreads)
+    {
+        type_t v = d_xin[i];
+        if (v > local_max)
+            local_max = v;
+    }
+
+    type_t max_val = blockReduceMax(local_max, s_max);
+
+    //------------------------------------------------------------------
+    // 2. Сумма экспонент и запись exp в выходной тензор
+    //------------------------------------------------------------------
+    type_t local_sum = type_t(0);
+    for (int32_t i = tid; i < n; i += nthreads)
+    {
+        type_t v = exp_op(d_xin[i] - max_val);
+        d_xout[i] = v;
+        local_sum += v;
+    }
+
+    type_t sum = blockReduceSum(local_sum, s_sum);
+
+    //------------------------------------------------------------------
+    // 3. Нормировка
+    //------------------------------------------------------------------
+    type_t inv_sum = type_t(1) / sum;
+    for (int32_t i = tid; i < n; i += nthreads)
+    {
+        d_xout[i] *= inv_sum;
+    }
+}
+
+//----------------------------------------------------------------------------------------------------
+// SoftMax по оси X
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SoftMaxX(
+    CTensor<type_t> &cTensor_Output,
+    const CTensor<type_t> &cTensor_Input)
+{
+    if (cTensor_Output.Size_W != cTensor_Input.Size_W ||
+        cTensor_Output.Size_Z != cTensor_Input.Size_Z ||
+        cTensor_Output.Size_Y != cTensor_Input.Size_Y ||
+        cTensor_Output.Size_X != cTensor_Input.Size_X)
+    {
+        throw "CTensorMath::SoftMaxX: Размерности тензоров входа и выхода не совпадают!";
+    }
+
+    cTensor_Input.CopyToDevice();
+
+    STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+    STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+    // Выбираем число потоков: 256 или ближайшую степень двойки от Size_X
+    int threads = 256;
+    if (cTensor_Input.Size_X < threads)
+    {
+        threads = 1;
+        while (threads < cTensor_Input.Size_X)
+            threads <<= 1;
+        if (threads < 32)
+            threads = 32;
+    }
+
+    dim3 thread(threads, 1, 1);
+    dim3 blocks(cTensor_Input.Size_W, cTensor_Input.Size_Z, cTensor_Input.Size_Y);
+
+    const size_t shared_mem = 2 * threads * sizeof(type_t);
+
+    CUDATensorSoftMaxXTensorFunction<type_t><<<blocks, thread, shared_mem>>>(
+        sTensorKernel_Output,
+        sTensorKernel_Input);
+
+    HANDLE_ERROR(cudaGetLastError());
+    HANDLE_ERROR(cudaDeviceSynchronize());
+
+    cTensor_Output.SetDeviceOnChange();
+}
+
+
+/*
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для вычисления softmax по слою X
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorSoftMaxXTensorFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input)
+{
+ uint32_t w_in=Mod(blockIdx.x,tensor_input.Size_W);
+ uint32_t w_out=Mod(blockIdx.x,tensor_output.Size_W);
+ uint32_t z=Mod(blockIdx.y,tensor_output.Size_Z);
+ uint32_t y=Mod(blockIdx.z,tensor_output.Size_Y);
+
+ //выполняем softmax
+ type_t *d_xin=tensor_input.GetTensorDataPtr(w_in,z)+y*tensor_input.Size_X;
+ type_t *d_xout=tensor_output.GetTensorDataPtr(w_out,z)+y*tensor_input.Size_X;
+
+ //численная стабилизация — находим максимум
+ type_t max_val=*d_xin;
+
+ type_t *d_xin_local=d_xin;
+ for(int32_t x=0;x<tensor_input.Size_X;x++,d_xin_local++)
+ {
+  type_t val=*d_xin_local;
+  if (val>max_val) max_val=val;
+ }
+ //считаем сумму стабилизированных экспонент
+ double summ=0;
+ d_xin_local=d_xin;
+ type_t *d_xout_local=d_xout;
+ for(int32_t x=0;x<tensor_input.Size_X;x++,d_xin_local++,d_xout_local++)
+ {
+  type_t e=*d_xin_local;
+  e-=max_val;
+  type_t v=exp(e);
+  summ+=v;
+  *d_xout_local=v;
+ }
+ //делим каждый элемент на сумму
+ for(int32_t x=0;x<tensor_input.Size_X;x++,d_xout++) *d_xout/=summ;
+}
+
+//----------------------------------------------------------------------------------------------------
+//SoftMax по оси X
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SoftMaxX(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
+{
+ if (cTensor_Output.Size_W!=cTensor_Input.Size_W || cTensor_Output.Size_Z!=cTensor_Input.Size_Z ||
+     cTensor_Output.Size_Y!=cTensor_Input.Size_Y || cTensor_Output.Size_X!=cTensor_Input.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности тензоров входа и выхода не совпадают!";
+ }
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+
+ dim3 thread(1,1,1);
+
+ dim3 blocks(cTensor_Input.Size_W,cTensor_Input.Size_Z,cTensor_Input.Size_Y);
+
+ CUDATensorSoftMaxXTensorFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+*/
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для нанесения каузальной маски на тензор
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDASetCausalMask(STensorKernel<type_t> tensor)
+{
+ uint32_t blockCol=blockIdx.z;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=Mod(blockIdx.x,tensor.Size_Z);
+ uint32_t w=Mod((blockIdx.x/tensor.Size_Z),tensor.Size_W);
+ //координаты элементов блока в выходном тензоре
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
+ //получаем подтензоры
+ uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
+
+ if (xp>=tensor.Size_X || yp>=tensor.Size_Y) return;
+
+ if (xp>=yp+1) tensor.SetElement(w,z,yp,xp,static_cast<type_t>(-1e9));
+
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+///!нанести каузальную маску на тензор
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SetCausalMask(CTensor<type_t> &cTensor)
+{
+ cTensor.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel(cTensor);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TILE_BLOCK_SIZE,CTensorMath<type_t>::TILE_BLOCK_SIZE);
+
+ uint32_t block_z=cTensor.Size_X/thread.x;
+ if (cTensor.Size_X%thread.x) block_z++;
+ uint32_t block_y=cTensor.Size_Y/thread.y;
+ if (cTensor.Size_Y%thread.y) block_y++;
+ uint32_t block_x=cTensor.Size_Z*cTensor.Size_W;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDASetCausalMask<type_t><<<blocks,thread>>>(sTensorKernel);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor.SetDeviceOnChange();
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для перестановки осей для слоя внимания
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDAAttentionTranspose(STensorKernel<type_t> tensor_output_q,const STensorKernel<type_t> tensor_input_q,STensorKernel<type_t> tensor_output_k,const STensorKernel<type_t> tensor_input_k,STensorKernel<type_t> tensor_output_v,const STensorKernel<type_t> tensor_input_v)
+{
+ uint32_t blockCol=blockIdx.z;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=Mod(blockIdx.x,tensor_output_q.Size_Z);
+ uint32_t w=Mod((blockIdx.x/tensor_output_q.Size_Z),tensor_output_q.Size_W);
+ //координаты элементов блока в выходном тензоре
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
+ //получаем подтензоры
+ uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
+
+ if (xp>=tensor_output_q.Size_X || yp>=tensor_output_q.Size_Y) return;
+ if (xp>=tensor_output_k.Size_X || yp>=tensor_output_k.Size_Y) return;
+ if (xp>=tensor_output_v.Size_X || yp>=tensor_output_v.Size_Y) return;
+
+ type_t value_q=tensor_input_q.GetElement(w,0,yp,z*tensor_output_q.Size_X+xp);
+ tensor_output_q.SetElement(w,z,yp,xp,value_q);
+
+ type_t value_k=tensor_input_k.GetElement(w,0,yp,z*tensor_output_k.Size_X+xp);
+ tensor_output_k.SetElement(w,z,yp,xp,value_k);
+
+ type_t value_v=tensor_input_v.GetElement(w,0,yp,z*tensor_output_v.Size_X+xp);
+ tensor_output_v.SetElement(w,z,yp,xp,value_v);
+
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+///!перестановка осей для слоя внимания
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::AttentionTranspose(CTensor<type_t> &cTensor_Output_Q,const CTensor<type_t> &cTensor_Input_Q,CTensor<type_t> &cTensor_Output_K,const CTensor<type_t> &cTensor_Input_K,CTensor<type_t> &cTensor_Output_V,const CTensor<type_t> &cTensor_Input_V)
+{
+ if (cTensor_Output_Q.Size_W!=cTensor_Output_K.Size_W || cTensor_Output_Q.Size_Z!=cTensor_Output_K.Size_Z ||
+     cTensor_Output_Q.Size_Y!=cTensor_Output_K.Size_Y || cTensor_Output_Q.Size_X!=cTensor_Output_K.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности выходных тензоров Q и K не совпадают!";
+ }
+ if (cTensor_Output_Q.Size_W!=cTensor_Output_V.Size_W || cTensor_Output_Q.Size_Z!=cTensor_Output_V.Size_Z ||
+     cTensor_Output_Q.Size_Y!=cTensor_Output_V.Size_Y || cTensor_Output_Q.Size_X!=cTensor_Output_V.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности выходных тензоров Q и V не совпадают!";
+ }
+
+ if (cTensor_Input_Q.Size_W!=cTensor_Input_K.Size_W || cTensor_Input_Q.Size_Z!=cTensor_Input_K.Size_Z ||
+     cTensor_Input_Q.Size_Y!=cTensor_Input_K.Size_Y || cTensor_Input_Q.Size_X!=cTensor_Input_K.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности входных тензоров Q и K не совпадают!";
+ }
+ if (cTensor_Input_Q.Size_W!=cTensor_Input_V.Size_W || cTensor_Input_Q.Size_Z!=cTensor_Input_V.Size_Z ||
+     cTensor_Input_Q.Size_Y!=cTensor_Input_V.Size_Y || cTensor_Input_Q.Size_X!=cTensor_Input_V.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности входных тензоров Q и V не совпадают!";
+ }
+
+ if (cTensor_Output_Q.Size_W!=cTensor_Input_Q.Size_W) throw("Размерность w входных и выходных тензоров не совпадает!");
+ if (cTensor_Input_Q.Size_Z!=1) throw("Размерность z входных тензоров должна быть единичной!");
+ if (cTensor_Output_Q.Size_Y!=cTensor_Input_Q.Size_Y) throw("Размерность y входных и выходных тензоров не совпадает!");
+ if (cTensor_Input_Q.Size_X!=cTensor_Output_Q.Size_X*cTensor_Output_Q.Size_Z) throw("Размерность x входного тензора должна быть равно размерности z*x выходного тензора!");
+
+ cTensor_Input_Q.CopyToDevice();
+ cTensor_Input_K.CopyToDevice();
+ cTensor_Input_V.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Input_Q(cTensor_Input_Q);
+ STensorKernel<type_t> sTensorKernel_Output_Q(cTensor_Output_Q);
+
+ STensorKernel<type_t> sTensorKernel_Input_K(cTensor_Input_K);
+ STensorKernel<type_t> sTensorKernel_Output_K(cTensor_Output_K);
+
+ STensorKernel<type_t> sTensorKernel_Input_V(cTensor_Input_V);
+ STensorKernel<type_t> sTensorKernel_Output_V(cTensor_Output_V);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TILE_BLOCK_SIZE,CTensorMath<type_t>::TILE_BLOCK_SIZE);
+
+ uint32_t block_z=cTensor_Output_Q.Size_X/thread.x;
+ if (cTensor_Output_Q.Size_X%thread.x) block_z++;
+ uint32_t block_y=cTensor_Output_Q.Size_Y/thread.y;
+ if (cTensor_Output_Q.Size_Y%thread.y) block_y++;
+ uint32_t block_x=cTensor_Output_Q.Size_Z*cTensor_Output_Q.Size_W;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDAAttentionTranspose<type_t><<<blocks,thread>>>(sTensorKernel_Output_Q,sTensorKernel_Input_Q,sTensorKernel_Output_K,sTensorKernel_Input_K,sTensorKernel_Output_V,sTensorKernel_Input_V);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output_Q.SetDeviceOnChange();
+ cTensor_Output_K.SetDeviceOnChange();
+ cTensor_Output_V.SetDeviceOnChange();
+}
+
+
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для объединения для слоя внимания
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDAAttentionUnion(STensorKernel<type_t> tensor_output,const STensorKernel<type_t> tensor_input)
+{
+ uint32_t blockCol=blockIdx.z;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=Mod(blockIdx.x,tensor_input.Size_Z);
+ uint32_t w=Mod((blockIdx.x/tensor_input.Size_Z),tensor_input.Size_W);
+ //координаты элементов блока в выходном тензоре
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
+ //получаем подтензоры
+ uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
+
+ if (xp>=tensor_input.Size_X || yp>=tensor_input.Size_Y) return;
+
+ type_t value=tensor_input.GetElement(w,z,yp,xp);
+ tensor_output.SetElement(w,0,yp,xp+z*tensor_input.Size_X,value);
+
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+///!объединение для слоя внимания
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::AttentionUnion(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input)
+{
+ /*
+ if (cTensor_Output_Q.Size_W!=cTensor_Output_K.Size_W || cTensor_Output_Q.Size_Z!=cTensor_Output_K.Size_Z ||
+     cTensor_Output_Q.Size_Y!=cTensor_Output_K.Size_Y || cTensor_Output_Q.Size_X!=cTensor_Output_K.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности выходных тензоров Q и K не совпадают!";
+ }
+ */
+ cTensor_Input.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TILE_BLOCK_SIZE,CTensorMath<type_t>::TILE_BLOCK_SIZE);
+
+ uint32_t block_z=cTensor_Input.Size_X/thread.x;
+ if (cTensor_Input.Size_X%thread.x) block_z++;
+ uint32_t block_y=cTensor_Input.Size_Y/thread.y;
+ if (cTensor_Input.Size_Y%thread.y) block_y++;
+ uint32_t block_x=cTensor_Input.Size_Z*cTensor_Input.Size_W;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDAAttentionUnion<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+
+
+//----------------------------------------------------------------------------------------------------
+///функция CUDA для сложения в слой X значений по X, Y и Z
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorAddSumXFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_input_a,STensorKernel<type_t> tensor_input_b)
+{
+ uint32_t x=blockIdx.x;
+ type_t summ=tensor_input_a.GetElement(0,0,0,x);
+ for(uint32_t w=0;w<tensor_input_b.Size_W;w++)
+ {
+  for(uint32_t y=0;y<tensor_input_b.Size_Y;y++)
+  {
+   for(uint32_t z=0;z<tensor_input_b.Size_Z;z++)
+   {
+    summ+=tensor_input_b.GetElement(w,z,y,x);
+   }
+  }
+ }
+ tensor_output.SetElement(0,0,0,x,summ);
+}
+//----------------------------------------------------------------------------------------------------
+///!сложить в слой X слои Y,Z,W
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::AddSumX(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input_A,CTensor<type_t> &cTensor_Input_B)
+{
+ if (cTensor_Output.Size_Z!=1) throw "CTensorMath::AddSumX: Размерность выходного тензора по Z должна быть равна единице!";
+ if (cTensor_Output.Size_W!=1) throw "CTensorMath::AddSumX: Размерность выходного тензора по W должна быть равна единице!";
+ if (cTensor_Output.Size_Y!=1) throw "CTensorMath::AddSumX: Размерность выходного тензора по Y должна быть равна единице!";
+
+ if (cTensor_Input_A.Size_Z!=1) throw "CTensorMath::AddSumX: Размерность первого sвходного тензора по Z должна быть равна единице!";
+ if (cTensor_Input_A.Size_W!=1) throw "CTensorMath::AddSumX: Размерность первого sвходного тензора по W должна быть равна единице!";
+ if (cTensor_Input_A.Size_Y!=1) throw "CTensorMath::AddSumX: Размерность первого sвходного тензора по Y должна быть равна единице!";
+
+ if (cTensor_Input_A.Size_X!=cTensor_Output.Size_X || cTensor_Input_A.Size_X!=cTensor_Input_B.Size_X)
+ {
+  throw "CTensorMath::AddSumX: Размерности тензоров не совпадают!";
+ }
+
+ cTensor_Input_A.CopyToDevice();
+ cTensor_Input_B.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input_A(cTensor_Input_A);
+ STensorKernel<type_t> sTensorKernel_Input_B(cTensor_Input_B);
+
+ //запускаем процесс
+ dim3 thread(1,1,1);
+
+ dim3 blocks(cTensor_Input_B.Size_X,1,1);
+
+ CUDATensorAddSumXFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Input_A,sTensorKernel_Input_B);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
+}
+
+//----------------------------------------------------------------------------------------------------
+//!умножить тензоры для слоя внимания
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::MulAttentionTranspose(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_X,const CTensor<type_t> &cTensor_W,const CTensor<type_t> &cTensor_B)
+{
+ cTensor_B.CopyToDevice();
+
+ STensorAttentionTransposeKernel<type_t> sTensorAttentionTransposeKernel_Output(cTensor_Output,cTensor_B);
+ STensorKernel<type_t> sTensorKernel_X(cTensor_X);
+ STensorKernel<type_t> sTensorKernel_W(cTensor_W);
+ MulAbstract<STensorAttentionTransposeKernel<type_t>,STensorKernel<type_t>,STensorKernel<type_t>>(cTensor_Output,sTensorAttentionTransposeKernel_Output,cTensor_X,sTensorKernel_X,cTensor_W,sTensorKernel_W);
 }
 
 #endif

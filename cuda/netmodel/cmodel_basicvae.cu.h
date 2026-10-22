@@ -64,7 +64,6 @@ class CModelBasicVAE:public CModelMain<type_t>
   std::vector<uint32_t> RealImageIndex;///<индексы изображений в обучающем наборе
 
   using CModelMain<type_t>::STRING_BUFFER_SIZE;
-  using CModelMain<type_t>::CUDA_PAUSE_MS;
 
   using CModelMain<type_t>::SafeLog;
   using CModelMain<type_t>::CrossEntropy;

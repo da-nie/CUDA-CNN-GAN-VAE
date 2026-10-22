@@ -2,7 +2,7 @@
 #define C_NET_LAYER_GROUP_NORMALIZATION_H
 
 //****************************************************************************************************
-//\file Групповая нормализация (Group Normalization)
+//\file Групповая нормализация
 //****************************************************************************************************
 
 //****************************************************************************************************
@@ -20,7 +20,7 @@
 //****************************************************************************************************
 //константы
 //****************************************************************************************************
-static const double GN_EPSILON = 1e-4;
+static const double GN_EPSILON=1e-4;
 
 //****************************************************************************************************
 //!Групповая нормализация
@@ -49,13 +49,13 @@ class CNetLayerGroupNormalization:public INetLayer<type_t>
   CTensor<type_t> cTensor_Beta_EMA;///<EMA параметр сдвига
   CTensor<type_t> cTensor_Gamma_EMA;///<EMA параметр масштабирования
 
-  CTensor<type_t> cTensor_H_Array;///<тензор выхода слоя
-  CTensor<type_t> cTensor_Delta_Array;///<тензор ошибки (входящий)
-  CTensor<type_t> cTensor_PrevLayerError_Array;///<тензор ошибки для предыдущего слоя
+  CTensor<type_t> cTensor_H;///<тензор выхода слоя
+  CTensor<type_t> cTensor_Delta;///<тензор ошибки (входящий)
+  CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки для предыдущего слоя
 
-  // Кэши для backward
-  CTensor<type_t> cTensor_XHAT_Array;     ///< нормализованные значения
-  CTensor<type_t> cTensor_InvStd_Array;   ///< обратное стандартное отклонение (BatchSize x NumGroups x 1 x 1)
+  //тензоры, используемые при обучении
+  CTensor<type_t> cTensor_XHAT;     ///< нормализованные значения
+  CTensor<type_t> cTensor_InvStd;   ///< обратное стандартное отклонение (BatchSize x NumGroups x 1 x 1)
 
   CTensor<type_t> cTensor_dGamma;///<градиент по гамме
   CTensor<type_t> cTensor_dBeta;///<градиент по бете
@@ -80,37 +80,40 @@ class CNetLayerGroupNormalization:public INetLayer<type_t>
   using INetLayer<type_t>::InferenceMode;///режим вывода
  public:
   //-конструктор----------------------------------------------------------------------------------------
-  CNetLayerGroupNormalization(uint32_t num_groups, INetLayer<type_t> *prev_layer_ptr=NULL, uint32_t batch_size=1);
+  CNetLayerGroupNormalization(uint32_t num_groups,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
   //-деструктор-----------------------------------------------------------------------------------------
   ~CNetLayerGroupNormalization();
  public:
   //-открытые функции-----------------------------------------------------------------------------------
-  void Create(uint32_t num_groups, INetLayer<type_t> *prev_layer_ptr=NULL, uint32_t batch_size=1);///<создать слой
+  void Create(uint32_t num_groups,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);///<создать слой
   void Reset(type_t scale=1);///<выполнить инициализацию весов и сдвигов
-  void SetOutput(CTensor<type_t> &output) { cTensor_H_Array=output; }///<задать выход слоя
-  void GetOutput(CTensor<type_t> &output) { output=cTensor_H_Array; }///<получить выход слоя
+  void SetOutput(CTensor<type_t> &output);///<задать выход слоя
+  void GetOutput(CTensor<type_t> &output);///<получить выход слоя
   void Forward(void);///<выполнить прямой проход по слою
-  CTensor<type_t>& GetOutputTensor(void) { return(cTensor_H_Array); }///<получить ссылку на выходной тензор
-  void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr) { NextLayerPtr=next_layer_ptr; }///<задать указатель на последующий слой
+  CTensor<type_t>& GetOutputTensor(void);///<получить ссылку на выходной тензор
+  void SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr);///<задать указатель на последующий слой
   bool Save(IDataStream *iDataStream_Ptr);///<сохранить параметры слоя
-  bool Load(IDataStream *iDataStream_Ptr, bool check_size=false);///<загрузить параметры слоя
+  bool Load(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить параметры слоя
   bool SaveTrainingParam(IDataStream *iDataStream_Ptr);///<сохранить параметры обучения слоя
   bool LoadTrainingParam(IDataStream *iDataStream_Ptr);///<загрузить параметры обучения слоя
-
   void TrainingStart(void);///<начать процесс обучения
-  void TrainingStop(void) { TrainingEnabled=false; }///<завершить процесс обучения
+  void TrainingStop(void);///<завершить процесс обучения
   void TrainingBackward(bool create_delta_weight=true);///<выполнить обратный проход по сети для обучения
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
-  void TrainingUpdateWeight(double speed, double iteration, double batch_scale=1);///<выполнить обновления весов
-  CTensor<type_t>& GetDeltaTensor(void) { return(cTensor_Delta_Array); }///<получить ссылку на тензор дельты слоя
-  void SetOutputError(CTensor<type_t>& error) { cTensor_Delta_Array=error; }///<задать ошибку и расчитать дельту
-  void ClipWeight(type_t min, type_t max) {}///<ограничить веса в диапазон
-  void SetTimeStep(uint32_t index, uint32_t time_step) {}///<задать временной шаг
-  void PrintInputTensorSize(const std::string &name) { if (PrevLayerPtr!=NULL) PrevLayerPtr->GetOutputTensor().Print(name+" GroupNorm: input",false); }///<вывести размерность входного тензора
-  void PrintOutputTensorSize(const std::string &name) { GetOutputTensor().Print(name+" GroupNorm: output",false); }///<вывести размерность выходного тензора
+  void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
+
+  CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
+
+  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
+
+  void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
+  void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
+
+  void PrintInputTensorSize(const std::string &name);///<вывести размерность входного тензора слоя
+  void PrintOutputTensorSize(const std::string &name);///<вывести размерность выходного тензора слоя
 
   void EnableEMA(bool state);///<разрешить/запретить использование усреднённых весов
-  bool LoadEMAWeight(IDataStream *iDataStream_Ptr, bool check_size=false);///<загрузить усреднённые веса
+  bool LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size=false);///<загрузить усреднённые веса
   bool SaveEMAWeight(IDataStream *iDataStream_Ptr);///<сохранить усреднённые веса
 };
 
@@ -122,9 +125,9 @@ class CNetLayerGroupNormalization:public INetLayer<type_t>
 //!конструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerGroupNormalization<type_t>::CNetLayerGroupNormalization(uint32_t num_groups, INetLayer<type_t> *prev_layer_ptr, uint32_t batch_size)
+CNetLayerGroupNormalization<type_t>::CNetLayerGroupNormalization(uint32_t num_groups,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
- Create(num_groups, prev_layer_ptr, batch_size);
+ Create(num_groups,prev_layer_ptr,batch_size);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -146,7 +149,7 @@ CNetLayerGroupNormalization<type_t>::~CNetLayerGroupNormalization() {}
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerGroupNormalization<type_t>::Create(uint32_t num_groups, INetLayer<type_t> *prev_layer_ptr, uint32_t batch_size)
+void CNetLayerGroupNormalization<type_t>::Create(uint32_t num_groups,INetLayer<type_t> *prev_layer_ptr,uint32_t batch_size)
 {
  static uint32_t i=0;
  i++;
@@ -159,24 +162,24 @@ void CNetLayerGroupNormalization<type_t>::Create(uint32_t num_groups, INetLayer<
  BatchSize=batch_size;
  NumGroups=num_groups;
 
- uint32_t Z = PrevLayerPtr->GetOutputTensor().GetSizeZ();
- uint32_t Y = PrevLayerPtr->GetOutputTensor().GetSizeY();
- uint32_t X = PrevLayerPtr->GetOutputTensor().GetSizeX();
+ uint32_t Z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+ uint32_t Y=PrevLayerPtr->GetOutputTensor().GetSizeY();
+ uint32_t X=PrevLayerPtr->GetOutputTensor().GetSizeX();
 
  if (Z % NumGroups != 0) throw("Количество каналов Z должно делиться на количество групп!");
- ChannelsPerGroup = Z / NumGroups;
+ ChannelsPerGroup=Z / NumGroups;
 
- cTensor_H_Array = CTensor<type_t>(BatchSize, Z, Y, X);
- cTensor_Delta_Array = CTensor<type_t>(BatchSize, Z, Y, X);
- cTensor_XHAT_Array = CTensor<type_t>(BatchSize, Z, Y, X);
- cTensor_PrevLayerError_Array = CTensor<type_t>(BatchSize, Z, Y, X);
+ cTensor_H=CTensor<type_t>(BatchSize,Z,Y,X);
+ cTensor_Delta=CTensor<type_t>(BatchSize,Z,Y,X);
+ cTensor_XHAT=CTensor<type_t>(BatchSize,Z,Y,X);
+ cTensor_PrevLayerError=CTensor<type_t>(BatchSize,Z,Y,X);
 
- cTensor_Gamma = CTensor<type_t>(1, Z, 1, 1);
- cTensor_Beta = CTensor<type_t>(1, Z, 1, 1);
- cTensor_Gamma_EMA = CTensor<type_t>(1, Z, 1, 1);
- cTensor_Beta_EMA = CTensor<type_t>(1, Z, 1, 1);
+ cTensor_Gamma=CTensor<type_t>(1,Z,1,1);
+ cTensor_Beta=CTensor<type_t>(1,Z,1,1);
+ cTensor_Gamma_EMA=CTensor<type_t>(1,Z,1,1);
+ cTensor_Beta_EMA=CTensor<type_t>(1,Z,1,1);
 
- cTensor_InvStd_Array = CTensor<type_t>(BatchSize, NumGroups, 1, 1);
+ cTensor_InvStd=CTensor<type_t>(BatchSize,NumGroups,1,1);
 
  prev_layer_ptr->SetNextLayerPtr(this);
  TrainingEnabled=false;
@@ -189,27 +192,85 @@ void CNetLayerGroupNormalization<type_t>::Create(uint32_t num_groups, INetLayer<
 template<class type_t>
 void CNetLayerGroupNormalization<type_t>::Reset(type_t scale)
 {
- CTensorMath<type_t>::Fill(cTensor_Gamma, 1);
- CTensorMath<type_t>::Fill(cTensor_Beta, 0);
- CTensorMath<type_t>::Fill(cTensor_Gamma_EMA, 1);
- CTensorMath<type_t>::Fill(cTensor_Beta_EMA, 0);
+ CTensorMath<type_t>::Fill(cTensor_Gamma,1);
+ CTensorMath<type_t>::Fill(cTensor_Beta,0);
+ CTensorMath<type_t>::Fill(cTensor_Gamma_EMA,1);
+ CTensorMath<type_t>::Fill(cTensor_Beta_EMA,0);
 }
-
+//----------------------------------------------------------------------------------------------------
+/*!задать выход слоя
+\param[in] output Матрица задаваемых выходных значений (H)
+\return Ничего не возвращается
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerGroupNormalization<type_t>::SetOutput(CTensor<type_t> &output)
+{
+ cTensor_H.RestoreSize();
+ //if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerGroupNormalization<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ //if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerGroup<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ //if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerGroup<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ //if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerGroup<type_t>::SetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ cTensor_H=output;
+}
+//----------------------------------------------------------------------------------------------------
+/*!задать выход слоя
+\param[out] output Матрица возвращаемых выходных значений (H)
+\return Ничего не возвращается
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerGroupNormalization<type_t>::GetOutput(CTensor<type_t> &output)
+{
+ cTensor_H.RestoreSize();
+ if (output.GetSizeX()!=cTensor_H.GetSizeX()) throw("void CNetLayerGroup<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerGroup<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerGroup<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerGroup<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности матрицы output!");
+ output=cTensor_H;
+}
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
 void CNetLayerGroupNormalization<type_t>::Forward(void)
 {
- CTensor<type_t> &input = PrevLayerPtr->GetOutputTensor();
+ cTensor_H.RestoreSize();
+ CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
- CTensor<type_t> &gamma = (UseEMA) ? cTensor_Gamma_EMA : cTensor_Gamma;
- CTensor<type_t> &beta = (UseEMA) ? cTensor_Beta_EMA : cTensor_Beta;
+ CTensor<type_t> &gamma=(UseEMA)?cTensor_Gamma_EMA:cTensor_Gamma;
+ CTensor<type_t> &beta=(UseEMA)?cTensor_Beta_EMA:cTensor_Beta;
 
  // Вызов функции из CTensorMath с передачей GN_EPSILON
     // используем единую константу
- CTensorMath<type_t>::GroupNormForward(cTensor_H_Array,input,gamma,beta,cTensor_XHAT_Array,cTensor_InvStd_Array,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
+ CTensorMath<type_t>::GroupNormForward(cTensor_H,input,gamma,beta,cTensor_XHAT,cTensor_InvStd,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
 }
+
+
+//----------------------------------------------------------------------------------------------------
+/*!получить ссылку на выходной тензор
+\return Ссылка на матрицу выхода слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+CTensor<type_t>& CNetLayerGroupNormalization<type_t>::GetOutputTensor(void)
+{
+ cTensor_H.RestoreSize();
+ return(cTensor_H);
+}
+//----------------------------------------------------------------------------------------------------
+/*!задать указатель на последующий слой
+\param[in] next_layer_ptr Указатель на последующий слой
+\return Ничего не возвращается
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerGroupNormalization<type_t>::SetNextLayerPtr(INetLayer<type_t> *next_layer_ptr)
+{
+ NextLayerPtr=next_layer_ptr;
+}
+
+
 
 //----------------------------------------------------------------------------------------------------
 /*!сохранить параметры слоя
@@ -232,10 +293,10 @@ bool CNetLayerGroupNormalization<type_t>::Save(IDataStream *iDataStream_Ptr)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerGroupNormalization<type_t>::Load(IDataStream *iDataStream_Ptr, bool check_size)
+bool CNetLayerGroupNormalization<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
 {
- cTensor_Beta.Load(iDataStream_Ptr, check_size);
- cTensor_Gamma.Load(iDataStream_Ptr, check_size);
+ cTensor_Beta.Load(iDataStream_Ptr,check_size);
+ cTensor_Gamma.Load(iDataStream_Ptr,check_size);
  return(true);
 }
 
@@ -278,23 +339,43 @@ bool CNetLayerGroupNormalization<type_t>::LoadTrainingParam(IDataStream *iDataSt
 template<class type_t>
 void CNetLayerGroupNormalization<type_t>::TrainingStart(void)
 {
- uint32_t Z = cTensor_Gamma.GetSizeZ();
- cTensor_dGamma = CTensor<type_t>(1, Z, 1, 1);
- cTensor_dBeta = CTensor<type_t>(1, Z, 1, 1);
+ cTensor_H.RestoreSize();
 
- cTensor_MK = cTensor_dGamma;
- cTensor_VK = cTensor_dGamma;
- cTensor_MB = cTensor_dBeta;
- cTensor_VB = cTensor_dBeta;
+ uint32_t Z=cTensor_Gamma.GetSizeZ();
+ cTensor_dGamma=CTensor<type_t>(1,Z,1,1);
+ cTensor_dBeta=CTensor<type_t>(1,Z,1,1);
 
- CTensorMath<type_t>::Fill(cTensor_MK, 0);
- CTensorMath<type_t>::Fill(cTensor_VK, 0);
- CTensorMath<type_t>::Fill(cTensor_MB, 0);
- CTensorMath<type_t>::Fill(cTensor_VB, 0);
+ cTensor_MK=cTensor_dGamma;
+ cTensor_VK=cTensor_dGamma;
+ cTensor_MB=cTensor_dBeta;
+ cTensor_VB=cTensor_dBeta;
+
+ CTensorMath<type_t>::Fill(cTensor_MK,0);
+ CTensorMath<type_t>::Fill(cTensor_VK,0);
+ CTensorMath<type_t>::Fill(cTensor_MB,0);
+ CTensorMath<type_t>::Fill(cTensor_VB,0);
 
  TrainingEnabled=true;
 }
 
+//----------------------------------------------------------------------------------------------------
+/*!завершить процесс обучения
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerGroupNormalization<type_t>::TrainingStop(void)
+{
+ //удаляем все вспомогательные тензоры
+ cTensor_dGamma=CTensor<type_t>(1,1,1,1);
+ cTensor_dBeta=CTensor<type_t>(1,1,1,1);
+
+ cTensor_MK=cTensor_dGamma;
+ cTensor_VK=cTensor_dGamma;
+ cTensor_MB=cTensor_dBeta;
+ cTensor_VB=cTensor_dBeta;
+
+ TrainingEnabled=false;
+}
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
 */
@@ -304,13 +385,13 @@ void CNetLayerGroupNormalization<type_t>::TrainingBackward(bool create_delta_wei
 {
  if (create_delta_weight)
  {
-  CTensorMath<type_t>::Fill(cTensor_dGamma, 0);
-  CTensorMath<type_t>::Fill(cTensor_dBeta, 0);
+  CTensorMath<type_t>::Fill(cTensor_dGamma,0);
+  CTensorMath<type_t>::Fill(cTensor_dBeta,0);
  }
 
  // Вызов функции из CTensorMath
- CTensorMath<type_t>::GroupNormBackward(cTensor_Delta_Array,cTensor_XHAT_Array,cTensor_Gamma,cTensor_InvStd_Array,cTensor_PrevLayerError_Array,cTensor_dGamma,cTensor_dBeta,NumGroups,ChannelsPerGroup,create_delta_weight);
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError_Array);
+ CTensorMath<type_t>::GroupNormBackward(cTensor_Delta,cTensor_XHAT,cTensor_Gamma,cTensor_InvStd,cTensor_PrevLayerError,cTensor_dGamma,cTensor_dBeta,NumGroups,ChannelsPerGroup,create_delta_weight);
+ PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -320,8 +401,8 @@ void CNetLayerGroupNormalization<type_t>::TrainingBackward(bool create_delta_wei
 template<class type_t>
 void CNetLayerGroupNormalization<type_t>::TrainingResetDeltaWeight(void)
 {
- CTensorMath<type_t>::Fill(cTensor_dGamma, 0);
- CTensorMath<type_t>::Fill(cTensor_dBeta, 0);
+ CTensorMath<type_t>::Fill(cTensor_dGamma,0);
+ CTensorMath<type_t>::Fill(cTensor_dBeta,0);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -330,7 +411,7 @@ void CNetLayerGroupNormalization<type_t>::TrainingResetDeltaWeight(void)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-void CNetLayerGroupNormalization<type_t>::TrainingUpdateWeight(double speed, double iteration, double batch_scale)
+void CNetLayerGroupNormalization<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
  CTensorMath<type_t>::ClipByNormXY(cTensor_dGamma,cTensor_dGamma,ClipByNormThresHold);
  CTensorMath<type_t>::ClipByNormXY(cTensor_dBeta,cTensor_dBeta,ClipByNormThresHold);
@@ -338,26 +419,90 @@ void CNetLayerGroupNormalization<type_t>::TrainingUpdateWeight(double speed, dou
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_Gamma, cTensor_dGamma, cTensor_MK, cTensor_VK, BatchSize*batch_scale, speed, Beta1, Beta2, Epsilon, iteration);
-  CTensorMath<type_t>::Adam(cTensor_Beta, cTensor_dBeta, cTensor_MB, cTensor_VB, BatchSize*batch_scale, speed, Beta1, Beta2, Epsilon, iteration);
+  CTensorMath<type_t>::Adam(cTensor_Gamma,cTensor_dGamma,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorMath<type_t>::Adam(cTensor_Beta,cTensor_dBeta,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
-  double s = speed / static_cast<double>(BatchSize);
-  CTensorMath<type_t>::Sub(cTensor_Gamma, cTensor_Gamma, cTensor_dGamma, 1, s/batch_scale);
-  CTensorMath<type_t>::Sub(cTensor_Beta, cTensor_Beta, cTensor_dBeta, 1, s/batch_scale);
+  double s=speed / static_cast<double>(BatchSize);
+  CTensorMath<type_t>::Sub(cTensor_Gamma,cTensor_Gamma,cTensor_dGamma,1,s/batch_scale);
+  CTensorMath<type_t>::Sub(cTensor_Beta,cTensor_Beta,cTensor_dBeta,1,s/batch_scale);
  }
 
- // ДОБАВЛЕННАЯ ЗАЩИТА: Ограничиваем Gamma и Beta в диапазоне [-100, 100]
- // Этого с головой хватит для нормализации, но это спасет от взрыва сети.
- CTensorMath<type_t>::Clip(cTensor_Gamma, -100.0, 100.0);
- CTensorMath<type_t>::Clip(cTensor_Beta, -100.0, 100.0);
+ // ДОБАВЛЕННАЯ ЗАЩИТА: Ограничиваем Gamma и Beta в диапазоне [-100,100]
+ // Этого с головой хватит для нормализации,но это спасет от взрыва сети.
+ CTensorMath<type_t>::Clip(cTensor_Gamma,-100.0,100.0);
+ CTensorMath<type_t>::Clip(cTensor_Beta,-100.0,100.0);
 
  if (EMAEnabled)
  {
-  CTensorMath<type_t>::Add(cTensor_Gamma_EMA, cTensor_Gamma_EMA, cTensor_Gamma, EMA_K, 1.0-EMA_K);
-  CTensorMath<type_t>::Add(cTensor_Beta_EMA, cTensor_Beta_EMA, cTensor_Beta, EMA_K, 1.0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Gamma_EMA,cTensor_Gamma_EMA,cTensor_Gamma,EMA_K,1.0-EMA_K);
+  CTensorMath<type_t>::Add(cTensor_Beta_EMA,cTensor_Beta_EMA,cTensor_Beta,EMA_K,1.0-EMA_K);
  }
+}
+
+//----------------------------------------------------------------------------------------------------
+/*!получить ссылку на тензор дельты слоя
+\return Ссылка на тензор дельты слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+CTensor<type_t>& CNetLayerGroupNormalization<type_t>::GetDeltaTensor(void)
+{
+ return(cTensor_Delta);
+}
+//----------------------------------------------------------------------------------------------------
+/*!задать ошибку и расчитать дельту
+\param[in] error Тензор ошибки
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerGroupNormalization<type_t>::SetOutputError(CTensor<type_t>& error)
+{
+ cTensor_Delta=error;
+}
+
+//----------------------------------------------------------------------------------------------------
+/*!ограничить веса в диапазон
+\param[in] min Минимальное значение веса
+\param[in] max Максимальное значение веса
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerGroupNormalization<type_t>::ClipWeight(type_t min,type_t max)
+{
+}
+//----------------------------------------------------------------------------------------------------
+/*!задать временной шаг
+\param[in] index Индекс элемента пакета
+\param[in] time_step Временной шаг
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerGroupNormalization<type_t>::SetTimeStep(uint32_t index,uint32_t time_step)
+{
+}
+
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность входного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerGroupNormalization<type_t>::PrintInputTensorSize(const std::string &name)
+{
+ if (PrevLayerPtr!=NULL) PrevLayerPtr->GetOutputTensor().Print(name+" GroupNormalization: input",false);
+}
+//----------------------------------------------------------------------------------------------------
+/*!вывести размерность выходного тензора слоя
+\param[in] name Название слоя
+*/
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CNetLayerGroupNormalization<type_t>::PrintOutputTensorSize(const std::string &name)
+{
+ cTensor_H.RestoreSize();
+ GetOutputTensor().Print(name+" GroupNormalization: output",false);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -383,10 +528,10 @@ void CNetLayerGroupNormalization<type_t>::EnableEMA(bool state)
 */
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-bool CNetLayerGroupNormalization<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr, bool check_size)
+bool CNetLayerGroupNormalization<type_t>::LoadEMAWeight(IDataStream *iDataStream_Ptr,bool check_size)
 {
- cTensor_Beta_EMA.Load(iDataStream_Ptr, check_size);
- cTensor_Gamma_EMA.Load(iDataStream_Ptr, check_size);
+ cTensor_Beta_EMA.Load(iDataStream_Ptr,check_size);
+ cTensor_Gamma_EMA.Load(iDataStream_Ptr,check_size);
  return(true);
 }
 

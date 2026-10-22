@@ -182,7 +182,8 @@ void CNetLayerDropOut<type_t>::Reset(type_t scale)
 template<class type_t>
 void CNetLayerDropOut<type_t>::SetOutput(CTensor<type_t> &output)
 {
- throw("Слою DropOut нельзя задать выходное значение!");
+ cTensor_H.RestoreSize();
+ cTensor_H=output;
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать выход слоя
@@ -193,7 +194,13 @@ void CNetLayerDropOut<type_t>::SetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerDropOut<type_t>::GetOutput(CTensor<type_t> &output)
 {
- throw("От слоя DropOut нельзя получить выходное значение!");
+ cTensor_H.RestoreSize();
+ if (Training==true && InferenceMode==false)
+ {
+  output=cTensor_H;
+  return;
+ }
+ output=PrevLayerPtr->GetOutputTensor();
 }
 //----------------------------------------------------------------------------------------------------
 ///!выполнить прямой проход по слою
@@ -201,6 +208,7 @@ void CNetLayerDropOut<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerDropOut<type_t>::Forward(void)
 {
+ cTensor_H.RestoreSize();
  if (Training==false || InferenceMode==true) return;
  //создаём матрицу исключения
  #ifdef USE_GPU_RANDOM_GENERATOR
@@ -241,6 +249,7 @@ void CNetLayerDropOut<type_t>::Forward(void)
 template<class type_t>
 CTensor<type_t>& CNetLayerDropOut<type_t>::GetOutputTensor(void)
 {
+ cTensor_H.RestoreSize();
  if (Training==true && InferenceMode==false) return(cTensor_H);
  return(PrevLayerPtr->GetOutputTensor());
 }
@@ -308,6 +317,7 @@ bool CNetLayerDropOut<type_t>::LoadTrainingParam(IDataStream *iDataStream_Ptr)
 template<class type_t>
 void CNetLayerDropOut<type_t>::TrainingStart(void)
 {
+ cTensor_H.RestoreSize();
  Training=true;
  //создаём все вспомогательные тензоры
  CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor();
@@ -419,6 +429,7 @@ void CNetLayerDropOut<type_t>::PrintInputTensorSize(const std::string &name)
 template<class type_t>
 void CNetLayerDropOut<type_t>::PrintOutputTensorSize(const std::string &name)
 {
+ cTensor_H.RestoreSize();
  GetOutputTensor().Print(name+" DropOut: output",false);
 }
 //----------------------------------------------------------------------------------------------------

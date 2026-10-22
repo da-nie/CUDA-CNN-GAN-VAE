@@ -12,6 +12,7 @@
 //#include "netmodel/cmodel_srgan.cu.h"
 #include "netmodel/cmodel_vae.cu.h"
 #include "netmodel/cmodel_diffusion.cu.h"
+#include "netmodel/LLM/cmodel_llm.cu.h"
 #include "../system/system.h"
 
 //----------------------------------------------------------------------------------------------------
@@ -92,14 +93,18 @@ struct cudaDeviceProp
  //CModelGAN<float> cModelGAN;
  //cModelGAN.Execute();
 
- CModelDiffusion<float> cModelDiffusion;
- cModelDiffusion.Execute();
+ //CModelDiffusion<float> cModelDiffusion;
+ //cModelDiffusion.Execute();
 
  //CModelVAE<float> cModelVAE;
  //cModelVAE.Execute();
 
  //CModelTest<double> cModelTest;
  //cModelTest.Execute();
+
+ CModelLLM<float> cModelLLM;
+ cModelLLM.Execute();
+
 
 /*
  CModelSR_GAN<float> cModelSR_GAN;

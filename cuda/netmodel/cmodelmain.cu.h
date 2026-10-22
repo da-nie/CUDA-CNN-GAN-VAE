@@ -30,6 +30,8 @@
 #include "../../netlayer/cnetlayerdropout.cu.h"
 #include "../../netlayer/cnetlayerbatchnormalization.cu.h"
 #include "../../netlayer/cnetlayergroupnormalization.cu.h"
+#include "../../netlayer/cnetlayerlayernormalization.cu.h"
+#include "../../netlayer/cnetlayerlayernormalizationgpt2.cu.h"
 #include "../../netlayer/cnetlayerconvolution.cu.h"
 #include "../../netlayer/cnetlayerconvolutioninput.cu.h"
 #include "../../netlayer/cnetlayerbackconvolution.cu.h"
@@ -44,6 +46,8 @@
 #include "../../netlayer/cnetlayervaecoderoutput.cu.h"
 #include "../../netlayer/cnetlayersoftmax.cu.h"
 #include "../../netlayer/cnetlayerselfattention.cu.h"
+#include "../../netlayer/cnetlayeradder.cu.h"
+#include "../../netlayer/cnetlayerview.cu.h"
 
 #include "../tensor.cu.h"
 
@@ -78,7 +82,6 @@ class CModelMain
   };
   //-константы------------------------------------------------------------------------------------------
   static const uint32_t STRING_BUFFER_SIZE=1024;///<размер буфера строки
-  static const uint32_t CUDA_PAUSE_MS=1;///<пауза для CUDA
  protected:
   //-структуры------------------------------------------------------------------------------------------
   struct SProtectedVariables
