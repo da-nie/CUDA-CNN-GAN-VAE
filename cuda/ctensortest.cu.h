@@ -952,6 +952,8 @@ bool CTensorTest<type_t>::Test(void)
   }
   if (error==true) return(false);
  }
+ SYSTEM::PutMessageToConsole("Успешно.");
+ SYSTEM::PutMessageToConsole("");
  return(true);
 }
 

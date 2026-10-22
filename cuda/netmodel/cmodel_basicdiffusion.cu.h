@@ -1333,7 +1333,10 @@ void CModelBasicDiffusion<type_t>::DebugVarVsTimeForImage(void)
   {
    for(uint32_t layer=0;layer<net_size;layer++) DiffusionNet[layer]->SetTimeStep(b,t);
   }
-  for(uint32_t layer=0;layer<net_size;layer++) DiffusionNet[layer]->Forward();
+  for(uint32_t layer=0;layer<net_size;layer++)
+  {
+   DiffusionNet[layer]->Forward();
+  }
   //считаем Var(eps_theta)
   CTensor<type_t> &out=DiffusionNet.back()->GetOutputTensor();
   double sum=0;

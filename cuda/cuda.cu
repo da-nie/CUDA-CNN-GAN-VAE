@@ -93,8 +93,8 @@ struct cudaDeviceProp
  //CModelGAN<float> cModelGAN;
  //cModelGAN.Execute();
 
- //CModelDiffusion<float> cModelDiffusion;
- //cModelDiffusion.Execute();
+ CModelDiffusion<float> cModelDiffusion;
+ cModelDiffusion.Execute();
 
  //CModelVAE<float> cModelVAE;
  //cModelVAE.Execute();
@@ -102,8 +102,8 @@ struct cudaDeviceProp
  //CModelTest<double> cModelTest;
  //cModelTest.Execute();
 
- CModelLLM<float> cModelLLM;
- cModelLLM.Execute();
+ //CModelLLM<float> cModelLLM;
+ //cModelLLM.Execute();
 
 
 /*

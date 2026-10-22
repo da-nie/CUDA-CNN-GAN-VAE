@@ -169,6 +169,7 @@ void CNetLayerSplitter<type_t>::Create(uint32_t output_amount,INetLayer<type_t> 
  uint32_t input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
  uint32_t input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
  uint32_t input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
+
  //размер выходного тензора
  uint32_t output_x=input_x;
  uint32_t output_y=input_y;
@@ -225,6 +226,7 @@ void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output)
  if (output.GetSizeY()!=cTensor_H.GetSizeY()) throw("void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeZ()!=cTensor_H.GetSizeZ()) throw("void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
  if (output.GetSizeW()!=cTensor_H.GetSizeW()) throw("void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output) - ошибка размерности тензора output!");
+
  output=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
@@ -233,8 +235,7 @@ void CNetLayerSplitter<type_t>::GetOutput(CTensor<type_t> &output)
 template<class type_t>
 void CNetLayerSplitter<type_t>::Forward(void)
 {
- cTensor_H.RestoreSize();
- cTensor_H=PrevLayerPtr->GetOutputTensor();
+ cTensor_H.CopyItem(PrevLayerPtr->GetOutputTensor());
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор

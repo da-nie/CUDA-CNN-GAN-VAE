@@ -93,7 +93,7 @@ void CModelLLM<type_t>::CreateLLMNet(void)
   uint32_t residual_1=LLMNet.size()-1;
 
   LLMNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerLayerNormalizationGPT2<type_t>(LLMNet.back().get(),BATCH_SIZE)));//ln_1
-  LLMNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerSelfAttention<type_t>(ARCH_NHEAD,LLMNet.back().get(),BATCH_SIZE)));//c_attn (QKV+внимание)
+  LLMNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerSelfAttention<type_t>(ARCH_NHEAD,true,LLMNet.back().get(),BATCH_SIZE)));//c_attn (QKV+внимание)
   LLMNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerLinear<type_t>(ARCH_DIM,LLMNet.back().get(),BATCH_SIZE)));//attn.c_proj: 768->768
   LLMNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerDropOut<type_t>(DROP_OUT,LLMNet.back().get(),BATCH_SIZE)));
   LLMNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerAdder<type_t>(LLMNet.back().get(),LLMNet[residual_1].get(),BATCH_SIZE)));

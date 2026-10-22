@@ -67,7 +67,7 @@ CModelDiffusion<type_t>::CModelDiffusion(void)
 
  SPEED=0.0003;
 
- BATCH_SIZE=8;
+ BATCH_SIZE=16;
 
  ITERATION_OF_SAVE_IMAGE=1;
  ITERATION_OF_SAVE_NET=1;
@@ -91,10 +91,10 @@ template<class type_t>
 void CModelDiffusion<type_t>::CreateDiffusionNet(void)
 {
  const type_t time_scale=1;//множитель временной добавки
- const uint32_t NUM_BLOCKS=4;//количество блоков энкодера и декодера
- const uint32_t BOTTLENECK_CONVS=3;//количество свёрток "бутылочного горлышка"
+ const uint32_t NUM_BLOCKS=3;//количество блоков энкодера и декодера
+ const uint32_t BOTTLENECK_CONVS=2;//количество свёрток "бутылочного горлышка"
  const type_t BN_MOMENTUM=0.9;//фильтр нормализаций
- uint32_t kernels=128;
+ uint32_t kernels=64;
  uint32_t groups=8;
 
  uint32_t mlp_time_size=128;
@@ -137,6 +137,43 @@ void CModelDiffusion<type_t>::CreateDiffusionNet(void)
   DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_LEAKY_RELU,DiffusionNet.back().get(),BATCH_SIZE)));
   DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerTimeEmbeddingMLP<type_t>(DiffusionNet.back().get(),mlp_time_size,TIME_COUNTER,BATCH_SIZE)));
  }
+
+ printf("Слой:%i\r\n",(int)DiffusionNet.size());
+ DiffusionNet.back()->GetOutputTensor().Print("Вход",false);
+
+ uint32_t tx=DiffusionNet.back().get()->GetOutputTensor().GetSizeX();
+ uint32_t ty=DiffusionNet.back().get()->GetOutputTensor().GetSizeY();
+ uint32_t tz=DiffusionNet.back().get()->GetOutputTensor().GetSizeZ();
+
+ uint32_t head_dim=tx;
+ uint32_t head=tx*ty/head_dim;
+
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerView<type_t>(1,tz,tx*ty,DiffusionNet.back().get(),BATCH_SIZE)));
+ //добавим слой самовнимания
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerSplitter<type_t>(2,DiffusionNet.back().get(),BATCH_SIZE)));
+
+ uint32_t residual=DiffusionNet.size()-1;
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerSelfAttention<type_t>(head,false,DiffusionNet.back().get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerLinear<type_t>(tx*ty,DiffusionNet.back().get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerDropOut<type_t>(0.9,DiffusionNet.back().get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerAdder<type_t>(DiffusionNet.back().get(),DiffusionNet[residual].get(),BATCH_SIZE)));
+
+/*
+ //=== x = x + mlp(ln_2(x)) ===
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerSplitter<type_t>(2,DiffusionNet.back().get(),BATCH_SIZE)));
+ uint32_t residual_2=DiffusionNet.size()-1;
+
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerLinear<type_t>(MLP_DIM,DiffusionNet.back().get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerFunction<type_t>(NNeuron::NEURON_FUNCTION_GELU,DiffusionNet.back().get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerLinear<type_t>(ARCH_DIM,DiffusionNet.back().get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerDropOut<type_t>(DROP_OUT,DiffusionNet.back().get(),BATCH_SIZE)));
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t>>(new CNetLayerAdder<type_t>(DiffusionNet.back().get(),DiffusionNet[residual_2].get(),BATCH_SIZE)));
+*/
+ DiffusionNet.push_back(std::shared_ptr<INetLayer<type_t> >(new CNetLayerView<type_t>(tz,ty,tx,DiffusionNet.back().get(),BATCH_SIZE)));
+
+ DiffusionNet.back()->GetOutputTensor().Print("Выход",false);
+
+ printf("Слой:%i\r\n",(int)DiffusionNet.size());
 
  uint32_t bottle_pos=DiffusionNet.size();
 

@@ -369,8 +369,6 @@ struct STensorAttentionTransposeKernel
 
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
  {
-  throw("Стоп");
-
   int32_t head_dimension=sTensorKernel_Tensor.Size_X;
   int32_t z=x/head_dimension;
   x=x%head_dimension;
