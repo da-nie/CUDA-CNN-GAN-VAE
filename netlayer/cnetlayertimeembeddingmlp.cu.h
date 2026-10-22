@@ -77,6 +77,7 @@ class CNetLayerTimeEmbeddingMLP:public INetLayer<type_t>
   using INetLayer<type_t>::EMA_K;
   //ограничение нормы
   using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
+  using INetLayer<type_t>::InferenceMode;
 
   // обучаемый масштаб
   type_t emb_scale;         // текущее значение
@@ -274,7 +275,7 @@ void CNetLayerTimeEmbeddingMLP<type_t>::Forward(void)
  for(uint32_t n=0;n<LocalNet.size();n++) LocalNet[n]->Forward();
 
  type_t scale=emb_scale;
- if (UseEMA==true) scale=emb_scale_EMA;
+ if (UseEMA==true && InferenceMode==true) scale=emb_scale_EMA;
  //прибавляем ко всем значениям (y,x) одно и то же значение
  CTensorMath<type_t>::AddToXY(cTensor_H,PrevLayerPtr->GetOutputTensor(),LocalNet.back()->GetOutputTensor(),1,scale);
 }

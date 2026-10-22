@@ -142,8 +142,9 @@ CNetLayerLayerNormalization<type_t>::CNetLayerLayerNormalization(INetLayer<type_
 //!деструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerLayerNormalization<type_t>::~CNetLayerLayerNormalization() {}
-
+CNetLayerLayerNormalization<type_t>::~CNetLayerLayerNormalization()
+{
+}
 //****************************************************************************************************
 //открытые функции
 //****************************************************************************************************
@@ -242,12 +243,8 @@ void CNetLayerLayerNormalization<type_t>::Forward(void)
  cTensor_H.RestoreSize();
  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
- CTensor<type_t> &gamma=(UseEMA) ? cTensor_Gamma_EMA : cTensor_Gamma;
- CTensor<type_t> &beta=(UseEMA) ? cTensor_Beta_EMA : cTensor_Beta;
-
- //статистики LayerNorm вычисляются по каждому примеру пакета независимо,
- //поэтому отдельный режим инференса (InferenceMode) не требуется
- CTensorMath<type_t>::LayerNormForward(cTensor_H,input,gamma,beta,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(LN_EPSILON));
+ if (UseEMA==true && InferenceMode==true) CTensorMath<type_t>::LayerNormForward(cTensor_H,input,cTensor_Gamma_EMA,cTensor_Beta_EMA,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(LN_EPSILON));
+                                     else CTensorMath<type_t>::LayerNormForward(cTensor_H,input,cTensor_Gamma,cTensor_Beta,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(LN_EPSILON));
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -383,17 +380,13 @@ void CNetLayerLayerNormalization<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerLayerNormalization<type_t>::TrainingBackward(bool create_delta_weight)
 {
- if (create_delta_weight)
+ if (create_delta_weight==true)
  {
   CTensorMath<type_t>::Fill(cTensor_dGamma,0);
   CTensorMath<type_t>::Fill(cTensor_dBeta,0);
  }
-
- //используем ту же гамму, что и в прямом проходе
- CTensor<type_t> &gamma=(UseEMA) ? cTensor_Gamma_EMA : cTensor_Gamma;
-
  //функция НАКАПЛИВАЕТ dGamma/dBeta, поэтому при create_delta_weight=true они предварительно обнулены
- CTensorMath<type_t>::LayerNormBackward(cTensor_Delta,cTensor_XHAT,gamma,cTensor_InvStd,cTensor_PrevLayerError,cTensor_dGamma,cTensor_dBeta);
+ CTensorMath<type_t>::LayerNormBackward(cTensor_Delta,cTensor_XHAT,cTensor_Gamma,cTensor_InvStd,cTensor_PrevLayerError,cTensor_dGamma,cTensor_dBeta);
  PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
 }
 

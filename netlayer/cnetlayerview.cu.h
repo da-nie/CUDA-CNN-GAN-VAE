@@ -122,7 +122,7 @@ CNetLayerView<type_t>::CNetLayerView(uint32_t size_z,uint32_t size_y,uint32_t si
 template<class type_t>
 CNetLayerView<type_t>::CNetLayerView(void)
 {
- Create(1,1,1,1);
+ Create(1,1,1,NULL,1);
 }
 //----------------------------------------------------------------------------------------------------
 //!деструктор

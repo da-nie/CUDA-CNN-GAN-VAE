@@ -90,6 +90,7 @@ class CNetLayerBackConvolution:public INetLayer<type_t>
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
   using INetLayer<type_t>::EMA_K;
+  using INetLayer<type_t>::InferenceMode;
   //ограничение нормы
   using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
  public:
@@ -316,8 +317,8 @@ void CNetLayerBackConvolution<type_t>::Forward(void)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
 
  //выполняем обратную свёртку
- if (UseEMA==false) CTensorConv<type_t>::BackwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
- else CTensorConv<type_t>::BackwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel_EMA,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias_EMA,Stride_X,Stride_Y,Padding_X,Padding_Y);
+ if (UseEMA==true && InferenceMode==true) CTensorConv<type_t>::BackwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel_EMA,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias_EMA,Stride_X,Stride_Y,Padding_X,Padding_Y);
+                                     else CTensorConv<type_t>::BackwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,input_z,input_y,input_x);
 }
 //----------------------------------------------------------------------------------------------------

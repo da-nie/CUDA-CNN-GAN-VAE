@@ -92,6 +92,7 @@ class CNetLayerConvolution:public INetLayer<type_t>
   using INetLayer<type_t>::EMA_K;
   //ограничение нормы
   using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
+  using INetLayer<type_t>::InferenceMode;
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerConvolution(uint32_t kernel_amount,uint32_t kernel_size,int32_t stride_x,int32_t stride_y,int32_t padding_x,int32_t padding_y,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -323,8 +324,8 @@ void CNetLayerConvolution<type_t>::Forward(void)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
 
  //выполняем прямую свёртку
- if (UseEMA==false) CTensorConv<type_t>::ForwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
-               else CTensorConv<type_t>::ForwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel_EMA,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias_EMA,Stride_X,Stride_Y,Padding_X,Padding_Y);
+ if (UseEMA==true && InferenceMode==true) CTensorConv<type_t>::ForwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel_EMA,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias_EMA,Stride_X,Stride_Y,Padding_X,Padding_Y);
+                                     else CTensorConv<type_t>::ForwardConvolution(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_Kernel,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_Bias,Stride_X,Stride_Y,Padding_X,Padding_Y);
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,input_z,input_y,input_x);
 }
 //----------------------------------------------------------------------------------------------------

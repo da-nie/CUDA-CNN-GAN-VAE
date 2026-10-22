@@ -58,15 +58,14 @@ class CModelBasicLLM
   //-перечисления---------------------------------------------------------------------------------------
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------
-  const int32_t MAX_SEQ_LEN=1024; //Максимальная длина контекста архитектуры (менять нельзя, ограничено wpe_)
-  const int32_t MODEL_SCALE=1;//0 - 124M, 1 - 355M, 2 - 774M, 3 - 1558M
-  const int32_t ARCH_NHEAD=(MODEL_SCALE==3)?25:(12+4*MODEL_SCALE);
-  const int32_t HEAD_DIM=64;
-  const int32_t ARCH_DIM=ARCH_NHEAD*HEAD_DIM;   //768
-  const int32_t ARCH_NLAYER=12+MODEL_SCALE*12;  //12
-  const int32_t MLP_DIM=4*ARCH_DIM;             //3072
-  const int32_t VOCAB_SIZE=50257;
-
+  static const int32_t MAX_SEQ_LEN=1024; //Максимальная длина контекста архитектуры (менять нельзя, ограничено wpe_)
+  static const int32_t MODEL_SCALE=1;//0 - 124M, 1 - 355M, 2 - 774M, 3 - 1558M
+  static const int32_t ARCH_NHEAD=(MODEL_SCALE==3)?25:(12+4*MODEL_SCALE);
+  static const int32_t HEAD_DIM=64;
+  static const int32_t ARCH_DIM=ARCH_NHEAD*HEAD_DIM;   //768
+  static const int32_t ARCH_NLAYER=12+MODEL_SCALE*12;  //12
+  static const int32_t MLP_DIM=4*ARCH_DIM;             //3072
+  static const int32_t VOCAB_SIZE=50257;
  protected:
   //-структуры------------------------------------------------------------------------------------------
   //-константы------------------------------------------------------------------------------------------

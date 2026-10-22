@@ -76,6 +76,7 @@ class CNetLayerLinear:public INetLayer<type_t>
   using INetLayer<type_t>::EMA_K;
   //ограничение нормы
   using INetLayer<type_t>::ClipByNormThresHold;///<ограничение нормы
+  using INetLayer<type_t>::InferenceMode;
  public:
   //-конструктор----------------------------------------------------------------------------------------
   CNetLayerLinear(uint32_t neurons,INetLayer<type_t> *prev_layer_ptr=NULL,uint32_t batch_size=1);
@@ -273,10 +274,16 @@ void CNetLayerLinear<type_t>::Forward(void)
  cTensor_H.RestoreSize();
 
  //Z=Zprev@W
- if (UseEMA==false) CTensorMath<type_t>::Mul(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_W);
-               else CTensorMath<type_t>::Mul(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_W_EMA);
- if (UseEMA==false) CTensorMath<type_t>::LayerAddX(cTensor_H,cTensor_H,cTensor_B);
-               else CTensorMath<type_t>::LayerAddX(cTensor_H,cTensor_H,cTensor_B_EMA);
+ if (UseEMA==true && InferenceMode==true)
+ {
+  CTensorMath<type_t>::Mul(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_W_EMA);
+  CTensorMath<type_t>::LayerAddX(cTensor_H,cTensor_H,cTensor_B_EMA);
+ }
+ else
+ {
+  CTensorMath<type_t>::Mul(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_W);
+  CTensorMath<type_t>::LayerAddX(cTensor_H,cTensor_H,cTensor_B);
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор

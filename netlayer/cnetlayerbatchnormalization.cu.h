@@ -331,17 +331,17 @@ bool
  }
  else//режим работы
  {
-  if (UseEMA==false)
-  {
-   cTensor_VAR=cTensor_Variable;
-   //считаем разность от среднего
-   CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_Mean,1.0,1.0);
-  }
-  else
+  if (UseEMA==true && InferenceMode==true)
   {
    cTensor_VAR=cTensor_Variable_EMA;
    //считаем разность от среднего
    CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_Mean_EMA,1.0,1.0);
+  }
+  else
+  {
+   cTensor_VAR=cTensor_Variable;
+   //считаем разность от среднего
+   CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_Mean,1.0,1.0);
   }
  }
 
@@ -369,20 +369,20 @@ bool
  CTensorMath<type_t>::TensorItemProduction(cTensor_XHAT_Array,cTensor_XHAT_Array,cTensor_IVAR);
  //считаем выход
 
- if (UseEMA==false)
+ if (UseEMA==true && InferenceMode==true)
+ {
+  //gammax = gamma * xhat
+  CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Gamma_EMA,cTensor_XHAT_Array);
+  //out = gammax + beta
+  CTensorMath<type_t>::Add(cTensor_H,cTensor_TmpA_H,cTensor_Beta_EMA);
+ }
+ else
  {
   //gammax = gamma * xhat
   CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Gamma,cTensor_XHAT_Array);
   //out = gammax + beta
   CTensorMath<type_t>::Add(cTensor_H,cTensor_TmpA_H,cTensor_Beta);
-  }
-  else
-  {
-   //gammax = gamma * xhat
-   CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Gamma_EMA,cTensor_XHAT_Array);
-   //out = gammax + beta
-   CTensorMath<type_t>::Add(cTensor_H,cTensor_TmpA_H,cTensor_Beta_EMA);
-  }
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор

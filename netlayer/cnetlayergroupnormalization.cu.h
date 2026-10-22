@@ -134,8 +134,9 @@ CNetLayerGroupNormalization<type_t>::CNetLayerGroupNormalization(uint32_t num_gr
 //!деструктор
 //----------------------------------------------------------------------------------------------------
 template<class type_t>
-CNetLayerGroupNormalization<type_t>::~CNetLayerGroupNormalization() {}
-
+CNetLayerGroupNormalization<type_t>::~CNetLayerGroupNormalization()
+{
+}
 //****************************************************************************************************
 //открытые функции
 //****************************************************************************************************
@@ -243,7 +244,8 @@ void CNetLayerGroupNormalization<type_t>::Forward(void)
 
  // Вызов функции из CTensorMath с передачей GN_EPSILON
     // используем единую константу
- CTensorMath<type_t>::GroupNormForward(cTensor_H,input,gamma,beta,cTensor_XHAT,cTensor_InvStd,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
+ if (UseEMA==true && InferenceMode==true) CTensorMath<type_t>::GroupNormForward(cTensor_H,input,cTensor_Gamma_EMA,cTensor_Beta_EMA,cTensor_XHAT,cTensor_InvStd,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
+                                     else CTensorMath<type_t>::GroupNormForward(cTensor_H,input,cTensor_Gamma,cTensor_Beta,cTensor_XHAT,cTensor_InvStd,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
 }
 
 

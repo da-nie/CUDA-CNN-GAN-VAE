@@ -170,7 +170,7 @@ struct STensorKernel
 ///!структура ядра транспонированного тензора
 //****************************************************************************************************
 template<class type_t>
-struct STensorTransposeKernel
+struct STensorKernel_Transpose
 {
  uint32_t Size_X;///<размер по x
  uint32_t Size_Y;///<размер по y
@@ -186,10 +186,10 @@ struct STensorTransposeKernel
  type_t *TensorData_WZ_Ptr;///<указатель на данные тензора на стороне GPU выбранного слоя Z и W
  type_t *TensorData_W_Ptr;///<указатель на данные тензора на стороне GPU выбранного слоя W
 
- __host__ __device__ STensorTransposeKernel(void)///<конструктор
+ __host__ __device__ STensorKernel_Transpose(void)///<конструктор
  {
  }
- __host__ __device__ STensorTransposeKernel(const CTensor<type_t> &cTensor)///<конструктор
+ __host__ __device__ STensorKernel_Transpose(const CTensor<type_t> &cTensor)///<конструктор
  {
   Set(cTensor);
  }
@@ -301,7 +301,7 @@ __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
 ///!структура ядра тензора с переставленными осями для слоя внимания
 //****************************************************************************************************
 template<class type_t>
-struct STensorAttentionTransposeKernel
+struct STensorKernel_AttentionTranspose
 {
  STensorKernel<type_t> sTensorKernel_Tensor;///<исходный тензор
  STensorKernel<type_t> sTensorKernel_B;///<исходный тензор
@@ -311,10 +311,10 @@ struct STensorAttentionTransposeKernel
  int32_t Size_Z;
  int32_t Size_W;
 
- __host__ __device__ STensorAttentionTransposeKernel()///<конструктор
+ __host__ __device__ STensorKernel_AttentionTranspose()///<конструктор
  {
  }
- __host__ __device__ STensorAttentionTransposeKernel(const CTensor<type_t> &cTensor,const CTensor<type_t> &cTensor_B)///<конструктор
+ __host__ __device__ STensorKernel_AttentionTranspose(const CTensor<type_t> &cTensor,const CTensor<type_t> &cTensor_B)///<конструктор
  {
   Set(cTensor,cTensor_B);
  }
@@ -327,11 +327,13 @@ struct STensorAttentionTransposeKernel
  __forceinline__ __host__ __device__ type_t GetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x)
  {
   SelectW(w);
+  SelectZ(z);
   return(GetElement(y,x));
  }
  __host__ __device__ void SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
  {
   SelectW(w);
+  SelectZ(z);
   SetElement(y,x,value);
  }
 
@@ -371,7 +373,7 @@ struct STensorAttentionTransposeKernel
  {
   int32_t head_dimension=sTensorKernel_Tensor.Size_X;
   int32_t z=x/head_dimension;
-  x=x%head_dimension;
+  x-=z*head_dimension;
   return(sTensorKernel_Tensor.GetElement(z,y,x));
  }
  __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
@@ -418,6 +420,120 @@ struct STensorAttentionTransposeKernel
 
 
 
+
+//****************************************************************************************************
+///!структура ядра тензора delta с переставленными осями для обратного прохода слоя внимания
+//****************************************************************************************************
+template<class type_t>
+struct STensorKernel_AttentionBackwardTransposeDelta
+{
+ STensorKernel<type_t> sTensorKernel_Tensor;///<исходный тензор
+ int32_t Size_X;
+ int32_t Size_Y;
+ int32_t Size_Z;
+ int32_t Size_W;
+ int32_t HeadDimension;
+ int32_t Z;
+
+ __host__ __device__ STensorKernel_AttentionBackwardTransposeDelta()///<конструктор
+ {
+ }
+ __host__ __device__ STensorKernel_AttentionBackwardTransposeDelta(const CTensor<type_t> &cTensor,int32_t head_dimension)///<конструктор
+ {
+  Set(cTensor,head_dimension);
+ }
+
+ __forceinline__ __host__ __device__ type_t* GetTensorDataPtr(uint32_t w,uint32_t z)///<получить указатель на элементы с глубиной z
+ {
+  return(NULL);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x)
+ {
+  SelectW(w);
+  SelectZ(z);
+  return(GetElement(y,x));
+ }
+ __host__ __device__ void SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
+ {
+  SelectW(w);
+  SelectZ(z);
+  SetElement(y,x,value);
+ }
+
+ __forceinline__ __host__ __device__ uint32_t GetSizeX(void) const
+ {
+  return(Size_X);
+ }
+
+ __forceinline__ __host__ __device__ uint32_t GetSizeY(void) const
+ {
+  return(Size_Y);
+ }
+
+ __forceinline__ __host__ __device__ uint32_t GetSizeZ(void) const
+ {
+  return(Size_Z);
+ }
+
+ __forceinline__ __host__ __device__ uint32_t GetSizeW(void) const
+ {
+  return(Size_W);
+ }
+
+ __forceinline__ __host__ __device__ void SelectW(uint32_t w)///<выбрать слой W
+ {
+  sTensorKernel_Tensor.SelectW(w);
+ }
+
+ __forceinline__ __host__ __device__ void SelectZ(uint32_t z)///<выбрать слой Z
+ {
+  Z=z;
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
+ {
+  return(sTensorKernel_Tensor.GetElement(0,y,Z*HeadDimension+x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(uint32_t y,uint32_t x,type_t value)
+ {
+  sTensorKernel_Tensor.SetElement(0,y,Z*HeadDimension+x,value);
+ }
+
+ __forceinline__ __host__ __device__ type_t GetElement(uint32_t z,uint32_t y,uint32_t x)
+ {
+  return(GetElement(y,x));
+ }
+ __forceinline__ __host__ __device__ void SetElement(uint32_t z,uint32_t y,uint32_t x,type_t value)
+ {
+  SetElement(y,x,value);
+ }
+
+
+ __host__ __device__ void Reset(void)
+ {
+  sTensorKernel_Tensor.Reset();
+  HeadDimension=0;
+  Z=0;
+
+  Size_X=0;
+  Size_Y=0;
+  Size_Z=0;
+  Size_W=0;
+ }
+
+ __host__ __device__ void Set(const CTensor<type_t> &cTensor,int32_t head_dimension)
+ {
+  HeadDimension=head_dimension;
+  sTensorKernel_Tensor.Set(cTensor);
+  Size_X=head_dimension;
+  Size_Y=cTensor.GetSizeY();
+  Size_Z=cTensor.GetSizeX()/head_dimension;
+  Size_W=cTensor.GetSizeW();
+
+  Z=0;
+ }
+};
 
 //****************************************************************************************************
 ///!Функции

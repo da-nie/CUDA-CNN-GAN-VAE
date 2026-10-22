@@ -59,7 +59,7 @@ class CTensorMath
  friend struct STensorKernel;
 
  template<class new_type_t>
- friend struct STensorTransposeKernel;
+ friend struct STensorKernel_Transpose;
  public:
   //-перечисления---------------------------------------------------------------------------------------
   //-структуры------------------------------------------------------------------------------------------
@@ -148,12 +148,16 @@ class CTensorMath
   static void SoftMaxX(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<SoftMax по оси X
 
   static void SetCausalMask(CTensor<type_t> &cTensor);///<нанести каузальную маску на тензор
-  static void AttentionTranspose(CTensor<type_t> &cTensor_Output_Q,const CTensor<type_t> &cTensor_Input_Q,CTensor<type_t> &cTensor_Output_K,const CTensor<type_t> &cTensor_Input_K,CTensor<type_t> &cTensor_Output_V,const CTensor<type_t> &cTensor_Input_V);///<перестановка осей для слоя внимания
+  //static void AttentionTranspose(CTensor<type_t> &cTensor_Output_Q,const CTensor<type_t> &cTensor_Input_Q,CTensor<type_t> &cTensor_Output_K,const CTensor<type_t> &cTensor_Input_K,CTensor<type_t> &cTensor_Output_V,const CTensor<type_t> &cTensor_Input_V);///<перестановка осей для слоя внимания
   static void AttentionUnion(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Input);///<объединение для слоя внимания
 
   static void AddSumX(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Input_A,CTensor<type_t> &cTensor_Input_B);///<сложить в слой X слои Y,Z,W
 
   static void MulAttentionTranspose(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_X,const CTensor<type_t> &cTensor_W,const CTensor<type_t> &cTensor_B);///<умножить тензоры для слоя внимания
+
+  static void AttentionBackward_dV_dP(CTensor<type_t> &cTensor_dVh,CTensor<type_t> &cTensor_dP,const CTensor<type_t> &cTensor_Vh,const CTensor<type_t> &cTensor_SoftMax,const CTensor<type_t> &cTensor_Delta,int32_t head_dimension);///<получение dV и dP для обратного проход слоя внимания
+
+  static void AttentionBackward_dQ_dK_dV(CTensor<type_t> &cTensor_dQ,CTensor<type_t> &cTensor_dK,CTensor<type_t> &cTensor_dV,const CTensor<type_t> &cTensor_dQh,const CTensor<type_t> &cTensor_dKh,const CTensor<type_t> &cTensor_dVh);///<перестановка осей для обратного прохода слоя внимания
 
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
@@ -1715,9 +1719,9 @@ template<class type_t>
 void CTensorMath<type_t>::LeftTransposeMul(CTensor<type_t> &cTensor_Output,const CTensor<type_t> &cTensor_Left,const CTensor<type_t> &cTensor_Right)
 {
  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
- STensorTransposeKernel<type_t> sTensorTransposeKernel_Left(cTensor_Left);
+ STensorKernel_Transpose<type_t> sTensorKernel_Transpose_Left(cTensor_Left);
  STensorKernel<type_t> sTensorKernel_Right(cTensor_Right);
- MulAbstract<STensorKernel<type_t>,STensorTransposeKernel<type_t>,STensorKernel<type_t>>(cTensor_Output,sTensorKernel_Output,cTensor_Left,sTensorTransposeKernel_Left,cTensor_Right,sTensorKernel_Right);
+ MulAbstract<STensorKernel<type_t>,STensorKernel_Transpose<type_t>,STensorKernel<type_t>>(cTensor_Output,sTensorKernel_Output,cTensor_Left,sTensorKernel_Transpose_Left,cTensor_Right,sTensorKernel_Right);
 }
 //----------------------------------------------------------------------------------------------------
 //умножить левый тензор на транспонированный правый
@@ -1727,8 +1731,8 @@ void CTensorMath<type_t>::RightTransposeMul(CTensor<type_t> &cTensor_Output,cons
 {
  STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
  STensorKernel<type_t> sTensorKernel_Left(cTensor_Left);
- STensorTransposeKernel<type_t> sTensorTransposeKernel_Right(cTensor_Right);
- MulAbstract<STensorKernel<type_t>,STensorKernel<type_t>,STensorTransposeKernel<type_t>>(cTensor_Output,sTensorKernel_Output,cTensor_Left,sTensorKernel_Left,cTensor_Right,sTensorTransposeKernel_Right);
+ STensorKernel_Transpose<type_t> sTensorKernel_Transpose_Right(cTensor_Right);
+ MulAbstract<STensorKernel<type_t>,STensorKernel<type_t>,STensorKernel_Transpose<type_t>>(cTensor_Output,sTensorKernel_Output,cTensor_Left,sTensorKernel_Left,cTensor_Right,sTensorKernel_Transpose_Right);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -4083,7 +4087,7 @@ void CTensorMath<type_t>::SetCausalMask(CTensor<type_t> &cTensor)
  cTensor.SetDeviceOnChange();
 }
 
-
+/*
 //----------------------------------------------------------------------------------------------------
 //функция CUDA для перестановки осей для слоя внимания
 //----------------------------------------------------------------------------------------------------
@@ -4184,7 +4188,7 @@ void CTensorMath<type_t>::AttentionTranspose(CTensor<type_t> &cTensor_Output_Q,c
  cTensor_Output_K.SetDeviceOnChange();
  cTensor_Output_V.SetDeviceOnChange();
 }
-
+*/
 
 
 
@@ -4319,11 +4323,139 @@ void CTensorMath<type_t>::MulAttentionTranspose(CTensor<type_t> &cTensor_Output,
 {
  cTensor_B.CopyToDevice();
 
- STensorAttentionTransposeKernel<type_t> sTensorAttentionTransposeKernel_Output(cTensor_Output,cTensor_B);
+ STensorKernel_AttentionTranspose<type_t> sTensorKernel_AttentionTranspose_Output(cTensor_Output,cTensor_B);
  STensorKernel<type_t> sTensorKernel_X(cTensor_X);
  STensorKernel<type_t> sTensorKernel_W(cTensor_W);
- MulAbstract<STensorAttentionTransposeKernel<type_t>,STensorKernel<type_t>,STensorKernel<type_t>>(cTensor_Output,sTensorAttentionTransposeKernel_Output,cTensor_X,sTensorKernel_X,cTensor_W,sTensorKernel_W);
+ MulAbstract<STensorKernel_AttentionTranspose<type_t>,STensorKernel<type_t>,STensorKernel<type_t>>(cTensor_Output,sTensorKernel_AttentionTranspose_Output,cTensor_X,sTensorKernel_X,cTensor_W,sTensorKernel_W);
 }
+
+
+//----------------------------------------------------------------------------------------------------
+//!получение dV и dP для обратного проход слоя внимания
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::AttentionBackward_dV_dP(CTensor<type_t> &cTensor_dVh,CTensor<type_t> &cTensor_dP,const CTensor<type_t> &cTensor_Vh,const CTensor<type_t> &cTensor_SoftMax,const CTensor<type_t> &cTensor_Delta,int32_t head_dimension)
+{
+ cTensor_Vh.CopyToDevice();
+ cTensor_SoftMax.CopyToDevice();
+ cTensor_Delta.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_dVh(cTensor_dVh);
+ STensorKernel<type_t> sTensorKernel_dP(cTensor_dP);
+ STensorKernel_Transpose<type_t> sTensorKernel_Transpose_Vh(cTensor_Vh);
+ STensorKernel_Transpose<type_t> sTensorKernel_Transpose_SoftMax(cTensor_SoftMax);
+ STensorKernel_AttentionBackwardTransposeDelta<type_t> sTensorKernel_AttentionBackwardTransposeDelta(cTensor_Delta,head_dimension);
+
+ //dVh = P.T @ dOh;
+ MulAbstract<STensorKernel<type_t>,STensorKernel_Transpose<type_t>,STensorKernel_AttentionBackwardTransposeDelta<type_t>>(cTensor_dVh,sTensorKernel_dVh,cTensor_SoftMax,sTensorKernel_Transpose_SoftMax,cTensor_Delta,sTensorKernel_AttentionBackwardTransposeDelta);
+ //dP = dOh @ Vh.T
+ MulAbstract<STensorKernel<type_t>,STensorKernel_AttentionBackwardTransposeDelta<type_t>,STensorKernel_Transpose<type_t>>(cTensor_dP,sTensorKernel_dP,cTensor_Delta,sTensorKernel_AttentionBackwardTransposeDelta,cTensor_Vh,sTensorKernel_Transpose_Vh);
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для перестановки осей для обратного прохода слоя внимания
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDAAttentionBackward_dQ_dK_dV(STensorKernel<type_t> tensor_dQ,const STensorKernel<type_t> tensor_dQh,STensorKernel<type_t> tensor_dK,const STensorKernel<type_t> tensor_dKh,STensorKernel<type_t> tensor_dV,const STensorKernel<type_t> tensor_dVh)
+{
+ uint32_t blockCol=blockIdx.z;
+ uint32_t blockRow=blockIdx.y;
+ uint32_t z=Mod(blockIdx.x,tensor_dQh.Size_Z);
+ uint32_t w=Mod((blockIdx.x/tensor_dQh.Size_Z),tensor_dQh.Size_W);
+ //координаты элементов блока в выходном тензоре
+ uint32_t x=threadIdx.x;
+ uint32_t y=threadIdx.y;
+ //получаем подтензоры
+ uint32_t xp=blockCol*CTensorMath<type_t>::TILE_BLOCK_SIZE+x;
+ uint32_t yp=blockRow*CTensorMath<type_t>::TILE_BLOCK_SIZE+y;
+
+ if (xp>=tensor_dQh.Size_X || yp>=tensor_dQh.Size_Y) return;
+ if (xp>=tensor_dKh.Size_X || yp>=tensor_dKh.Size_Y) return;
+ if (xp>=tensor_dVh.Size_X || yp>=tensor_dVh.Size_Y) return;
+
+ uint32_t head_dimension=tensor_dQ.Size_X;
+
+ type_t dQh=tensor_dQh.GetElement(w,z,yp,xp);
+ tensor_dQ.SetElement(w,0,yp,xp+z*head_dimension,dQh);
+
+ type_t dKh=tensor_dKh.GetElement(w,z,yp,xp);
+ tensor_dK.SetElement(w,0,yp,xp+z*head_dimension,dKh);
+
+ type_t dVh=tensor_dVh.GetElement(w,z,yp,xp);
+ tensor_dV.SetElement(w,0,yp,xp+z*head_dimension,dVh);
+
+ __syncthreads();
+}
+
+//----------------------------------------------------------------------------------------------------
+///!перестановка осей для обратного прохода слоя внимания
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::AttentionBackward_dQ_dK_dV(CTensor<type_t> &cTensor_dQ,CTensor<type_t> &cTensor_dK,CTensor<type_t> &cTensor_dV,const CTensor<type_t> &cTensor_dQh,const CTensor<type_t> &cTensor_dKh,const CTensor<type_t> &cTensor_dVh)
+{
+ if (cTensor_dQ.Size_W!=cTensor_dK.Size_W || cTensor_dQ.Size_Z!=cTensor_dK.Size_Z ||
+     cTensor_dQ.Size_Y!=cTensor_dK.Size_Y || cTensor_dQ.Size_X!=cTensor_dK.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности выходных тензоров dQ и dK не совпадают!";
+ }
+ if (cTensor_dQ.Size_W!=cTensor_dV.Size_W || cTensor_dQ.Size_Z!=cTensor_dV.Size_Z ||
+     cTensor_dQ.Size_Y!=cTensor_dV.Size_Y || cTensor_dQ.Size_X!=cTensor_dV.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности выходных тензоров dQh и dVh не совпадают!";
+ }
+
+ if (cTensor_dQh.Size_W!=cTensor_dKh.Size_W || cTensor_dQh.Size_Z!=cTensor_dKh.Size_Z ||
+     cTensor_dQh.Size_Y!=cTensor_dKh.Size_Y || cTensor_dQh.Size_X!=cTensor_dKh.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности входных тензоров dQh и dKh не совпадают!";
+ }
+ if (cTensor_dQh.Size_W!=cTensor_dVh.Size_W || cTensor_dQh.Size_Z!=cTensor_dVh.Size_Z ||
+     cTensor_dQh.Size_Y!=cTensor_dVh.Size_Y || cTensor_dQh.Size_X!=cTensor_dVh.Size_X)
+ {
+  throw "CTensorMath::SoftMaxX: Размерности входных тензоров dQ и dV не совпадают!";
+ }
+
+ if (cTensor_dQ.Size_W!=cTensor_dQh.Size_W) throw("Размерность w входных и выходных тензоров не совпадает!");
+ if (cTensor_dQ.Size_Z!=1) throw("Размерность z выходных тензоров должна быть единичной!");
+ if (cTensor_dQ.Size_Y!=cTensor_dQh.Size_Y) throw("Размерность y входных и выходных тензоров не совпадает!");
+ if (cTensor_dQ.Size_X!=cTensor_dQh.Size_X*cTensor_dQh.Size_Z) throw("Размерность x выходных тензоров должна быть равна размерности z*x входных тензоров!");
+
+ cTensor_dQh.CopyToDevice();
+ cTensor_dKh.CopyToDevice();
+ cTensor_dVh.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_dQh(cTensor_dQh);
+ STensorKernel<type_t> sTensorKernel_dQ(cTensor_dQ);
+
+ STensorKernel<type_t> sTensorKernel_dKh(cTensor_dKh);
+ STensorKernel<type_t> sTensorKernel_dK(cTensor_dK);
+
+ STensorKernel<type_t> sTensorKernel_dVh(cTensor_dVh);
+ STensorKernel<type_t> sTensorKernel_dV(cTensor_dV);
+
+ //запускаем процесс
+ dim3 thread(CTensorMath<type_t>::TILE_BLOCK_SIZE,CTensorMath<type_t>::TILE_BLOCK_SIZE);
+
+ uint32_t block_z=cTensor_dQh.Size_X/thread.x;
+ if (cTensor_dQh.Size_X%thread.x) block_z++;
+ uint32_t block_y=cTensor_dQh.Size_Y/thread.y;
+ if (cTensor_dQh.Size_Y%thread.y) block_y++;
+ uint32_t block_x=cTensor_dQh.Size_Z*cTensor_dQh.Size_W;
+
+ dim3 blocks(block_x,block_y,block_z);
+ if (blocks.x==0) blocks.x=1;
+ if (blocks.y==0) blocks.y=1;
+ if (blocks.z==0) blocks.z=1;
+ CUDAAttentionBackward_dQ_dK_dV<type_t><<<blocks,thread>>>(sTensorKernel_dQ,sTensorKernel_dQ,sTensorKernel_dK,sTensorKernel_dKh,sTensorKernel_dV,sTensorKernel_dVh);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_dQ.SetDeviceOnChange();
+ cTensor_dK.SetDeviceOnChange();
+ cTensor_dV.SetDeviceOnChange();
+}
+
 
 #endif
 

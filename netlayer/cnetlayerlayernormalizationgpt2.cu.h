@@ -303,9 +303,6 @@ void CNetLayerLayerNormalizationGPT2<type_t>::Forward(void)
 
  ReallocateTensors(input.GetSizeW(),input.GetSizeY());
 
- CTensor<type_t> &gamma=(UseEMA)?cTensor_Gamma_EMA:cTensor_Gamma;
- CTensor<type_t> &beta=(UseEMA)?cTensor_Beta_EMA:cTensor_Beta;
-
  //1. транспонирование (B,1,T,D) -> (B,1,D,T)
  cTensor_Tmp.ReinterpretSize(BatchSize,1,Features,Positions);//гарантировать вид (B,1,D,T) для Transpose
  CTensorMath<type_t>::Transpose(cTensor_Tmp,input);
@@ -314,8 +311,9 @@ void CNetLayerLayerNormalizationGPT2<type_t>::Forward(void)
 
  //3. LayerNorm: статистики по Z (=признаки) для каждой позиции (w,t)
  cTensor_H_Z.ReinterpretSize(BatchSize,Features,Positions,1);//гарантировать вид (B,D,T,1) для ядра
- CTensorMath<type_t>::LayerNormForwardGPT2(cTensor_H_Z,cTensor_Tmp,gamma,beta,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(GPT2_LN_EPSILON));
 
+ if (UseEMA==true && InferenceMode==true) CTensorMath<type_t>::LayerNormForwardGPT2(cTensor_H_Z,cTensor_Tmp,cTensor_Gamma_EMA,cTensor_Beta_EMA,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(GPT2_LN_EPSILON));
+                                     else CTensorMath<type_t>::LayerNormForwardGPT2(cTensor_H_Z,cTensor_Tmp,cTensor_Gamma,cTensor_Beta,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(GPT2_LN_EPSILON));
  //4. обратно в раскладку сети
  cTensor_H_Z.ReinterpretSize(BatchSize,1,Features,Positions);//вид (B,1,D,T) для Transpose
  CTensorMath<type_t>::Transpose(cTensor_H,cTensor_H_Z);
@@ -451,9 +449,6 @@ void CNetLayerLayerNormalizationGPT2<type_t>::TrainingBackward(bool create_delta
   CTensorMath<type_t>::Fill(cTensor_dBeta,0);
  }
 
- //та же гамма, что и в прямом проходе
- CTensor<type_t> &gamma=(UseEMA)?cTensor_Gamma_EMA:cTensor_Gamma;
-
  //1. ошибка (B,1,T,D) -> (B,1,D,T) -> (B,D,T,1)
  cTensor_Tmp.ReinterpretSize(BatchSize,1,Features,Positions);//вид (B,1,D,T) для Transpose
  CTensorMath<type_t>::Transpose(cTensor_Tmp,cTensor_Delta);
@@ -461,8 +456,7 @@ void CNetLayerLayerNormalizationGPT2<type_t>::TrainingBackward(bool create_delta
 
  //2. LayerNormBackwardGPT2 НАКАПЛИВАЕТ dGamma/dBeta (сумма по позициям и пакету - как и требуется)
  cTensor_PrevLayerError_Z.ReinterpretSize(BatchSize,Features,Positions,1);//вид (B,D,T,1) для ядра
- CTensorMath<type_t>::LayerNormBackwardGPT2(cTensor_Tmp,cTensor_XHAT,gamma,cTensor_InvStd,
-                                            cTensor_PrevLayerError_Z,cTensor_dGamma,cTensor_dBeta);
+ CTensorMath<type_t>::LayerNormBackwardGPT2(cTensor_Tmp,cTensor_XHAT,cTensor_Gamma,cTensor_InvStd,cTensor_PrevLayerError_Z,cTensor_dGamma,cTensor_dBeta);
 
  //3. ошибка предыдущему слою: (B,D,T,1) -> (B,1,D,T) -> (B,1,T,D)
  cTensor_PrevLayerError_Z.ReinterpretSize(BatchSize,1,Features,Positions);//вид (B,1,D,T) для Transpose
