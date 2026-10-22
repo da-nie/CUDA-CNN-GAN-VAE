@@ -93,8 +93,6 @@ class CNetLayerAdder:public INetLayer<type_t>
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
-
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
 
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
@@ -332,8 +330,8 @@ template<class type_t>
 void CNetLayerAdder<type_t>::TrainingBackward(bool create_delta_weight)
 {
  //задаём ошибки предыдущих слоёв
- PrevLayerAPtr->SetOutputError(cTensor_Delta);
- PrevLayerBPtr->SetOutputError(cTensor_Delta);
+ PrevLayerAPtr->GetDeltaTensor()=cTensor_Delta;
+ PrevLayerBPtr->GetDeltaTensor()=cTensor_Delta;
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -361,16 +359,6 @@ template<class type_t>
 CTensor<type_t>& CNetLayerAdder<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
-}
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerAdder<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон

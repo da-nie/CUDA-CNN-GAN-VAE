@@ -67,10 +67,9 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   CTensor<type_t> cTensor_TmpA_H;///<промежуточный тензор, размерности H
 
   //тензоры, используемые при обучении
-  CTensor<type_t> cTensor_Delta_Array;///<тензор ошибки предыдущего слоя
-  CTensor<type_t> cTensor_PrevLayerError_Array;///<тензор ошибки предыдущего слоя
-  CTensor<type_t> cTensor_XHAT_Array;
-  CTensor<type_t> cTensor_DXHAT_Array;
+  CTensor<type_t> cTensor_Delta;///<тензор ошибки предыдущего слоя
+  CTensor<type_t> cTensor_XHAT;
+  CTensor<type_t> cTensor_DXHAT;
   CTensor<type_t> cTensor_TmpB;
   CTensor<type_t> cTensor_TmpC;
   CTensor<type_t> cTensor_IVAR;///<обратная дисперсия
@@ -124,8 +123,6 @@ class CNetLayerBatchNormalization:public INetLayer<type_t>
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
-
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
@@ -205,8 +202,8 @@ void CNetLayerBatchNormalization<type_t>::Create(type_t momentum,INetLayer<type_
  Momentum=momentum;
 
  cTensor_H=CTensor<type_t>(BatchSize,PrevLayerPtr->GetOutputTensor().GetSizeZ(),PrevLayerPtr->GetOutputTensor().GetSizeY(),PrevLayerPtr->GetOutputTensor().GetSizeX());
- cTensor_Delta_Array=CTensor<type_t>(BatchSize,PrevLayerPtr->GetOutputTensor().GetSizeZ(),PrevLayerPtr->GetOutputTensor().GetSizeY(),PrevLayerPtr->GetOutputTensor().GetSizeX());
- cTensor_XHAT_Array=CTensor<type_t>(BatchSize,PrevLayerPtr->GetOutputTensor().GetSizeZ(),PrevLayerPtr->GetOutputTensor().GetSizeY(),PrevLayerPtr->GetOutputTensor().GetSizeX());
+ cTensor_Delta=CTensor<type_t>(BatchSize,PrevLayerPtr->GetOutputTensor().GetSizeZ(),PrevLayerPtr->GetOutputTensor().GetSizeY(),PrevLayerPtr->GetOutputTensor().GetSizeX());
+ cTensor_XHAT=CTensor<type_t>(BatchSize,PrevLayerPtr->GetOutputTensor().GetSizeZ(),PrevLayerPtr->GetOutputTensor().GetSizeY(),PrevLayerPtr->GetOutputTensor().GetSizeX());
 
  cTensor_Mean=CTensor<type_t>(1,cTensor_H.GetSizeZ(),cTensor_H.GetSizeY(),cTensor_H.GetSizeX());
  cTensor_Variable=CTensor<type_t>(1,cTensor_H.GetSizeZ(),cTensor_H.GetSizeY(),cTensor_H.GetSizeX());
@@ -305,7 +302,7 @@ bool
  cTensor_H.RestoreSize();
 
  type_t N=static_cast<type_t>(BatchSize);
- //используем Tensor_XHAT_Array вместо Tensor_XMU_Array - всё равно Tensor_XMU_Array нужно только здесь, а Tensor_XHAT_Array до заполнения не используется
+ //используем Tensor_XHAT вместо Tensor_XMU - всё равно Tensor_XMU нужно только здесь, а Tensor_XHAT до заполнения не используется
  CTensor<type_t> &cTensor_VAR=cTensor_TmpB;
  if (TrainingEnabled==true && InferenceMode==false)//режим обучения
  {
@@ -318,13 +315,13 @@ bool
 
   //считаем разность от среднего для каждого пакета
   //xmu = x - mu
-  CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_TmpA,1.0,1.0);
+  CTensorMath<type_t>::Sub(cTensor_XHAT,PrevLayerPtr->GetOutputTensor(),cTensor_TmpA,1.0,1.0);
 
   //возводим в квадрат xmu и вычисляем дисперсию
   //sq = xmu ** 2
   //var = 1./N * np.sum(sq, axis = 0)
   CTensorMath<type_t>::Fill(cTensor_VAR,0);
-  CTensorMath<type_t>::Pow2(cTensor_TmpA_H,cTensor_XHAT_Array,1);
+  CTensorMath<type_t>::Pow2(cTensor_TmpA_H,cTensor_XHAT,1);
   CTensorMath<type_t>::AddSumW(cTensor_VAR,cTensor_VAR,cTensor_TmpA_H,1,1.0/N);
 
   CTensorMath<type_t>::Add(cTensor_NewVariable,cTensor_NewVariable,cTensor_VAR,Momentum,1.0-Momentum);
@@ -335,13 +332,13 @@ bool
   {
    cTensor_VAR=cTensor_Variable_EMA;
    //считаем разность от среднего
-   CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_Mean_EMA,1.0,1.0);
+   CTensorMath<type_t>::Sub(cTensor_XHAT,PrevLayerPtr->GetOutputTensor(),cTensor_Mean_EMA,1.0,1.0);
   }
   else
   {
    cTensor_VAR=cTensor_Variable;
    //считаем разность от среднего
-   CTensorMath<type_t>::Sub(cTensor_XHAT_Array,PrevLayerPtr->GetOutputTensor(),cTensor_Mean,1.0,1.0);
+   CTensorMath<type_t>::Sub(cTensor_XHAT,PrevLayerPtr->GetOutputTensor(),cTensor_Mean,1.0,1.0);
   }
  }
 
@@ -352,7 +349,7 @@ bool
  for(uint32_t n=0;n<BatchSize;n++)
  {
   CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor(n);
-  CTensorMath<type_t>::Sub(cTensor_XMU_Array[n],input,cTensor_NewMean,1.0,1.0);
+  CTensorMath<type_t>::Sub(cTensor_XMU[n],input,cTensor_NewMean,1.0,1.0);
  }
  */
 
@@ -366,20 +363,20 @@ bool
 
  //считаем xhat и выход слоя
  //xhat = xmu * ivar
- CTensorMath<type_t>::TensorItemProduction(cTensor_XHAT_Array,cTensor_XHAT_Array,cTensor_IVAR);
+ CTensorMath<type_t>::TensorItemProduction(cTensor_XHAT,cTensor_XHAT,cTensor_IVAR);
  //считаем выход
 
  if (UseEMA==true && InferenceMode==true)
  {
   //gammax = gamma * xhat
-  CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Gamma_EMA,cTensor_XHAT_Array);
+  CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Gamma_EMA,cTensor_XHAT);
   //out = gammax + beta
   CTensorMath<type_t>::Add(cTensor_H,cTensor_TmpA_H,cTensor_Beta_EMA);
  }
  else
  {
   //gammax = gamma * xhat
-  CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Gamma,cTensor_XHAT_Array);
+  CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Gamma,cTensor_XHAT);
   //out = gammax + beta
   CTensorMath<type_t>::Add(cTensor_H,cTensor_TmpA_H,cTensor_Beta);
  }
@@ -482,9 +479,7 @@ void CNetLayerBatchNormalization<type_t>::TrainingStart(void)
  cTensor_dGamma=CTensor<type_t>(1,prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
  cTensor_dBeta=CTensor<type_t>(1,prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
 
- cTensor_DXHAT_Array=CTensor<type_t>(BatchSize,PrevLayerPtr->GetOutputTensor().GetSizeZ(),PrevLayerPtr->GetOutputTensor().GetSizeY(),PrevLayerPtr->GetOutputTensor().GetSizeX());
-
- cTensor_PrevLayerError_Array=CTensor<type_t>(BatchSize,cTensor_H.GetSizeZ(),cTensor_H.GetSizeY(),cTensor_H.GetSizeX());
+ cTensor_DXHAT=CTensor<type_t>(BatchSize,PrevLayerPtr->GetOutputTensor().GetSizeZ(),PrevLayerPtr->GetOutputTensor().GetSizeY(),PrevLayerPtr->GetOutputTensor().GetSizeX());
 
  //для оптимизации Adam
  cTensor_MK=cTensor_dGamma;
@@ -506,8 +501,7 @@ void CNetLayerBatchNormalization<type_t>::TrainingStart(void)
 template<class type_t>
 void CNetLayerBatchNormalization<type_t>::TrainingStop(void)
 {
- cTensor_DXHAT_Array=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerError_Array=CTensor<type_t>(1,1,1,1);
+ cTensor_DXHAT=CTensor<type_t>(1,1,1,1);
 
  cTensor_MK=CTensor<type_t>(1,1,1,1);
  cTensor_VK=CTensor<type_t>(1,1,1,1);
@@ -586,35 +580,35 @@ void CNetLayerBatchNormalization<type_t>::TrainingBackward(bool create_delta_wei
 
  cTensor_H.RestoreSize();
 
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
+
  type_t N=static_cast<type_t>(BatchSize);
  CTensorMath<type_t>::Fill(cTensor_TmpB,0);//будет np.sum(dxhat, axis=0)
  CTensorMath<type_t>::Fill(cTensor_TmpC,0);//будет np.sum(dxhat*x_hat, axis=0)
 
- CTensorMath<type_t>::TensorItemProduction(cTensor_DXHAT_Array,cTensor_Delta_Array,cTensor_Gamma);//dxhat = dout * gamma
- CTensorMath<type_t>::AddSumW(cTensor_TmpB,cTensor_TmpB,cTensor_DXHAT_Array);//np.sum(dxhat, axis=0)
+ CTensorMath<type_t>::TensorItemProduction(cTensor_DXHAT,cTensor_Delta,cTensor_Gamma);//dxhat = dout * gamma
+ CTensorMath<type_t>::AddSumW(cTensor_TmpB,cTensor_TmpB,cTensor_DXHAT);//np.sum(dxhat, axis=0)
 
- CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_DXHAT_Array,cTensor_XHAT_Array);//dxhat*x_hat
+ CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_DXHAT,cTensor_XHAT);//dxhat*x_hat
  CTensorMath<type_t>::AddSumW(cTensor_TmpC,cTensor_TmpC,cTensor_TmpA_H);//np.sum(dxhat*x_hat, axis=0)
  if (create_delta_weight==true)
  {
   //dgamma = np.sum(dout*xhat, axis=0)
-  CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Delta_Array,cTensor_XHAT_Array);
+  CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Delta,cTensor_XHAT);
   CTensorMath<type_t>::AddSumW(cTensor_dGamma,cTensor_dGamma,cTensor_TmpA_H);
   //dbeta = np.sum(dout, axis=0)
-  CTensorMath<type_t>::AddSumW(cTensor_dBeta,cTensor_dBeta,cTensor_Delta_Array);
+  CTensorMath<type_t>::AddSumW(cTensor_dBeta,cTensor_dBeta,cTensor_Delta);
  }
 
- CTensorMath<type_t>::Mul(cTensor_PrevLayerError_Array,cTensor_DXHAT_Array,N);//N*dxhat
- CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_XHAT_Array,cTensor_TmpC);//x_hat*np.sum(dxhat*x_hat, axis=0)
+ CTensorMath<type_t>::Mul(prev_delta,cTensor_DXHAT,N);//N*dxhat
+ CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_XHAT,cTensor_TmpC);//x_hat*np.sum(dxhat*x_hat, axis=0)
 
- CTensorMath<type_t>::Sub(cTensor_PrevLayerError_Array,cTensor_PrevLayerError_Array,cTensor_TmpA_H);
- CTensorMath<type_t>::Sub(cTensor_PrevLayerError_Array,cTensor_PrevLayerError_Array,cTensor_TmpB);
- CTensorMath<type_t>::TensorItemProduction(cTensor_PrevLayerError_Array,cTensor_PrevLayerError_Array,cTensor_IVAR);
- CTensorMath<type_t>::Mul(cTensor_PrevLayerError_Array,cTensor_PrevLayerError_Array,1.0/N);
+ CTensorMath<type_t>::Sub(prev_delta,prev_delta,cTensor_TmpA_H);
+ CTensorMath<type_t>::Sub(prev_delta,prev_delta,cTensor_TmpB);
+ CTensorMath<type_t>::TensorItemProduction(prev_delta,prev_delta,cTensor_IVAR);
+ CTensorMath<type_t>::Mul(prev_delta,prev_delta,1.0/N);
 
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError_Array);
-
- //printf("Layer:%i Gamma:%f Beta:%f -> ",static_cast<int>(Layer),cTensor_Gamma.GetElement(0,0,0),cTensor_Beta.GetElement(0,0,0));
+  //printf("Layer:%i Gamma:%f Beta:%f -> ",static_cast<int>(Layer),cTensor_Gamma.GetElement(0,0,0),cTensor_Beta.GetElement(0,0,0));
  //printf("dGamma:%f dBeta:%f\r\n",cTensor_dGamma.GetElement(0,0,0),cTensor_dBeta.GetElement(0,0,0));
 
 }
@@ -680,19 +674,8 @@ void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,doub
 template<class type_t>
 CTensor<type_t>& CNetLayerBatchNormalization<type_t>::GetDeltaTensor(void)
 {
- return(cTensor_Delta_Array);
+ return(cTensor_Delta);
 }
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerBatchNormalization<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta_Array=error;
-}
-
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон
 \param[in] min Минимальное значение веса

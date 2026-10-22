@@ -57,7 +57,6 @@ class CNetLayerUpSampling:public INetLayer<type_t>
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
-  CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
   //режим усреднения
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
@@ -90,8 +89,6 @@ class CNetLayerUpSampling:public INetLayer<type_t>
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
-
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
@@ -343,7 +340,6 @@ void CNetLayerUpSampling<type_t>::TrainingStart(void)
  cTensor_H.RestoreSize();
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
- cTensor_PrevLayerError=PrevLayerPtr->GetOutputTensor();
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -354,7 +350,6 @@ void CNetLayerUpSampling<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerError=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -363,20 +358,20 @@ void CNetLayerUpSampling<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerUpSampling<type_t>::TrainingBackward(bool create_delta_weight)
 {
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
+
  uint32_t basic_input_x=PrevLayerPtr->GetOutputTensor().GetSizeX();
  uint32_t basic_input_y=PrevLayerPtr->GetOutputTensor().GetSizeY();
  uint32_t basic_input_z=PrevLayerPtr->GetOutputTensor().GetSizeZ();
  //приведём входной тензор к нужному виду
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
- cTensor_PrevLayerError.ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
+ prev_delta.ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
 
- CTensorMath<type_t>::DownSampling(cTensor_PrevLayerError,cTensor_Delta,UpSampling_X,UpSampling_Y);
+ CTensorMath<type_t>::DownSampling(prev_delta,cTensor_Delta,UpSampling_X,UpSampling_Y);
 
  //задаём ошибку предыдущего слоя
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);
- cTensor_PrevLayerError.ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);
-
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
+ prev_delta.ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -404,16 +399,6 @@ template<class type_t>
 CTensor<type_t>& CNetLayerUpSampling<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
-}
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerUpSampling<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон

@@ -112,8 +112,6 @@ class CNetLayerTimeEmbeddingMLP:public INetLayer<type_t>
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
-
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
 
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
@@ -410,10 +408,18 @@ void CNetLayerTimeEmbeddingMLP<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerTimeEmbeddingMLP<type_t>::TrainingBackward(bool create_delta_weight)
 {
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
+
+ //суммируем градиент
+ type_t k=cTensor_H.GetSizeY()*cTensor_H.GetSizeX();
+ k=1/k;
+ k*=emb_scale;
+ CTensorMath<type_t>::SumXY(cTensor_DeltaLocalNet,cTensor_Delta,k);
+
  //задаём ошибку предыдущего слоя
- PrevLayerPtr->SetOutputError(cTensor_Delta);
+ prev_delta=cTensor_Delta;
  //обучаем встроенную сеть
- LocalNet.back()->SetOutputError(cTensor_DeltaLocalNet);
+ LocalNet.back()->GetDeltaTensor()=cTensor_DeltaLocalNet;
  for(uint32_t m=0,n=LocalNet.size()-1;m<LocalNet.size();m++,n--) LocalNet[n]->TrainingBackward(create_delta_weight);
 
  //обновляем масштаб
@@ -484,21 +490,6 @@ template<class type_t>
 CTensor<type_t>& CNetLayerTimeEmbeddingMLP<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
-}
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerTimeEmbeddingMLP<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
- //суммируем градиент
- type_t k=cTensor_H.GetSizeY()*cTensor_H.GetSizeX();
- k=1/k;
- k*=emb_scale;
- CTensorMath<type_t>::SumXY(cTensor_DeltaLocalNet,cTensor_Delta,k);
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон

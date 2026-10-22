@@ -48,7 +48,6 @@ class CNetLayerSoftMax:public INetLayer<type_t>
   uint32_t BatchSize;///<размер пакета для обучения
 
   CTensor<type_t> cTensor_H;///<выходной тензор значений нейронов
-  CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
 
   uint32_t InputSize_X;///<размер входного тензора по X
   uint32_t InputSize_Y;///<размер входного тензора по Y
@@ -88,8 +87,6 @@ class CNetLayerSoftMax:public INetLayer<type_t>
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
-
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
 
@@ -342,7 +339,6 @@ void CNetLayerSoftMax<type_t>::TrainingStart(void)
  cTensor_H.RestoreSize();
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
- cTensor_PrevLayerError=cTensor_H;
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -353,7 +349,6 @@ void CNetLayerSoftMax<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerError=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -362,8 +357,38 @@ void CNetLayerSoftMax<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerSoftMax<type_t>::TrainingBackward(bool create_delta_weight)
 {
- //задаём ошибку предыдущего слоя
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
+ CTensorMath<type_t>::SoftMaxX_Backward(prev_delta,cTensor_Delta,cTensor_H);
+ /*
+
+ uint32_t input_x=cTensor_H.GetSizeX();
+ uint32_t input_y=cTensor_H.GetSizeY();
+ uint32_t input_z=cTensor_H.GetSizeZ();
+ uint32_t input_w=cTensor_H.GetSizeW();
+
+ for(size_t w=0;w<input_w;w++)
+ {
+  for(size_t z=0;z<input_z;z++)
+  {
+   for(size_t y=0;y<input_y;y++)
+   {
+    // 1) Вычисляем взвешенную сумму ошибок: sum_j (p_j * error_j)
+    type_t weighted_error_sum=0;
+    for(size_t x=0;x<input_x;x++)
+    {
+     weighted_error_sum+=cTensor_H.GetElement(w,z,y,x)*cTensor_Delta.GetElement(w,z,y,x);
+    }
+    // 2) Дельта: delta_i = p_i * (error_i - weighted_error_sum)
+    for(size_t x=0;x<input_x;x++)
+    {
+     type_t p=cTensor_H.GetElement(w,z,y,x);
+     type_t delta=p*(cTensor_Delta.GetElement(w,z,y,x)-weighted_error_sum);
+     prev_delta.SetElement(w,z,y,x,delta);
+    }
+   }
+  }
+ }
+ */
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -391,46 +416,6 @@ template<class type_t>
 CTensor<type_t>& CNetLayerSoftMax<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
-}
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerSoftMax<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- // Используем уже вычисленные выходы softmax из Forward (cTensor_H)
- // Это даёт максимальную эффективность и численную стабильность.
- CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();//оставлено для совместимости, не используется
-
- uint32_t input_x=cTensor_H.GetSizeX();
- uint32_t input_y=cTensor_H.GetSizeY();
- uint32_t input_z=cTensor_H.GetSizeZ();
- uint32_t input_w=cTensor_H.GetSizeW();
-
- for(size_t w=0;w<input_w;w++)
- {
-  for(size_t z=0;z<input_z;z++)
-  {
-   for(size_t y=0;y<input_y;y++)
-   {
-    // 1) Вычисляем взвешенную сумму ошибок: sum_j (p_j * error_j)
-    type_t weighted_error_sum=0;
-    for(size_t x=0;x<input_x;x++)
-    {
-     weighted_error_sum+=cTensor_H.GetElement(w,z,y,x)*error.GetElement(w,z,y,x);
-    }
-    // 2) Дельта: delta_i = p_i * (error_i - weighted_error_sum)
-    for(size_t x=0;x<input_x;x++)
-    {
-     type_t p=cTensor_H.GetElement(w,z,y,x);
-     type_t delta=p*(error.GetElement(w,z,y,x)-weighted_error_sum);
-     cTensor_PrevLayerError.SetElement(w,z,y,x,delta);
-    }
-   }
-  }
- }
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон

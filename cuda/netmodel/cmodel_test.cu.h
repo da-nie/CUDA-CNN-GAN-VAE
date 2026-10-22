@@ -337,7 +337,7 @@ void CModelTest<type_t>::Test(double &cost1,double &cost2)
 
  {
   CTimeStamp cTimeStamp("Задание ошибки:");
-  DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
+  DecoderNet[DecoderNet.size()-1]->GetDeltaTensor()=cTensor_Error;
  }
 
  double error=0;
@@ -405,7 +405,7 @@ void CModelTest<type_t>::Test(double &cost1,double &cost2)
 
  {
   CTimeStamp cTimeStamp("Задание ошибки:");
-  DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
+  DecoderNet[DecoderNet.size()-1]->GetDeltaTensor()=cTensor_Error;
  }
 
  error=0;

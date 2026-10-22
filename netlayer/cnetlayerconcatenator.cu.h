@@ -63,8 +63,6 @@ class CNetLayerConcatenator:public INetLayer<type_t>
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
-  CTensor<type_t> cTensor_PrevLayerAError;///<тензоры ошибки слоя A
-  CTensor<type_t> cTensor_PrevLayerBError;///<тензоры ошибки слоя B
   //режим усреднения
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
@@ -97,8 +95,6 @@ class CNetLayerConcatenator:public INetLayer<type_t>
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
-
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
 
@@ -317,8 +313,6 @@ void CNetLayerConcatenator<type_t>::TrainingStart(void)
  cTensor_H.RestoreSize();
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
- cTensor_PrevLayerAError=CTensor<type_t>(BatchSize,OutputSizeA_Z,OutputSize_Y,OutputSize_X);
- cTensor_PrevLayerBError=CTensor<type_t>(BatchSize,OutputSizeB_Z,OutputSize_Y,OutputSize_X);
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -329,8 +323,6 @@ void CNetLayerConcatenator<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerAError=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerBError=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -340,8 +332,7 @@ template<class type_t>
 void CNetLayerConcatenator<type_t>::TrainingBackward(bool create_delta_weight)
 {
  //задаём ошибки предыдущих слоёв
- PrevLayerAPtr->SetOutputError(cTensor_PrevLayerAError);
- PrevLayerBPtr->SetOutputError(cTensor_PrevLayerBError);
+ CTensorMath<type_t>::SplitZ(PrevLayerAPtr->GetDeltaTensor(),PrevLayerBPtr->GetDeltaTensor(),cTensor_Delta);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -369,17 +360,6 @@ template<class type_t>
 CTensor<type_t>& CNetLayerConcatenator<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
-}
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerConcatenator<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
- CTensorMath<type_t>::SplitZ(cTensor_PrevLayerAError,cTensor_PrevLayerBError,cTensor_Delta);
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон

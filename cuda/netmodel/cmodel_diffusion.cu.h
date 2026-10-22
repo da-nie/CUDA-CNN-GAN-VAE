@@ -67,7 +67,7 @@ CModelDiffusion<type_t>::CModelDiffusion(void)
 
  SPEED=0.0003;
 
- BATCH_SIZE=16;
+ BATCH_SIZE=32;
 
  ITERATION_OF_SAVE_IMAGE=1;
  ITERATION_OF_SAVE_NET=1;

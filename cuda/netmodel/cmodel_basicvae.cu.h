@@ -277,7 +277,7 @@ void CModelBasicVAE<type_t>::TrainingCoderAndDecoder(uint32_t mini_batch_index,d
 
  {
   CTimeStamp cTimeStamp("Задание ошибки:");
-  DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
+  DecoderNet[DecoderNet.size()-1]->GetDeltaTensor()=cTensor_Error;
  }
 
  //выполняем вычисление весов декодировщика
@@ -625,7 +625,7 @@ void CModelBasicVAE<type_t>::TestTrainingCoderDecoder(void)
   //задаём ошибку
   {
    CTimeStamp cTimeStamp("Задание ошибки:");
-   DecoderNet[DecoderNet.size()-1]->SetOutputError(cTensor_Error);
+   DecoderNet[DecoderNet.size()-1]->GetDeltaTensor()=cTensor_Error;
   }
 
   //выполняем вычисление весов декодировщика

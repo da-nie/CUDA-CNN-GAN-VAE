@@ -159,6 +159,8 @@ class CTensorMath
 
   static void AttentionBackward_dQ_dK_dV(CTensor<type_t> &cTensor_dQ,CTensor<type_t> &cTensor_dK,CTensor<type_t> &cTensor_dV,const CTensor<type_t> &cTensor_dQh,const CTensor<type_t> &cTensor_dKh,const CTensor<type_t> &cTensor_dVh);///<перестановка осей для обратного прохода слоя внимания
 
+  static void SoftMaxX_Backward(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Delta,CTensor<type_t> &cTensor_Input);//выполнить обратный проход SoftMax по слою X
+
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
 };
@@ -4454,6 +4456,68 @@ void CTensorMath<type_t>::AttentionBackward_dQ_dK_dV(CTensor<type_t> &cTensor_dQ
  cTensor_dQ.SetDeviceOnChange();
  cTensor_dK.SetDeviceOnChange();
  cTensor_dV.SetDeviceOnChange();
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//функция CUDA для вобратного прохода SoftMax по слою X
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+__global__ void CUDATensorSoftMaxXBackwardFunction(STensorKernel<type_t> tensor_output,STensorKernel<type_t> tensor_delta,STensorKernel<type_t> tensor_input)
+{
+ uint32_t w_in=Mod(blockIdx.x,tensor_input.Size_W);
+ uint32_t w_out=Mod(blockIdx.x,tensor_output.Size_W);
+ uint32_t w_delta=Mod(blockIdx.x,tensor_delta.Size_W);
+ uint32_t z=Mod(blockIdx.y,tensor_input.Size_Z);
+ uint32_t y=Mod(blockIdx.z,tensor_input.Size_Y);
+
+ uint32_t size_x=tensor_input.Size_X;
+ //вычисляем взвешенную сумму ошибок: sum_j (p_j * error_j)
+ type_t weighted_error_sum=0;
+ type_t *d_xin=tensor_input.GetTensorDataPtr(w_in,z)+y*tensor_input.Size_X;
+ type_t *d_delta=tensor_delta.GetTensorDataPtr(w_delta,z)+y*tensor_delta.Size_X;
+ type_t *d_xin_local=d_xin;
+ type_t *d_delta_local=d_delta;
+ for(uint32_t x=0;x<size_x;x++,d_xin_local++,d_delta_local++)
+ {
+  type_t v=*d_xin_local;
+  type_t d=*d_delta_local;
+  weighted_error_sum+=v*d;
+ }
+ //дельта: delta_i = p_i * (error_i - weighted_error_sum)
+ type_t *d_output=tensor_output.GetTensorDataPtr(w_out,z)+y*tensor_output.Size_X;
+ for(uint32_t x=0;x<size_x;x++,d_xin++,d_delta++,d_output++)
+ {
+  type_t p=*d_xin;
+  type_t d=*d_delta;
+  type_t delta=p*(d-weighted_error_sum);
+  *d_output=delta;
+ }
+}
+
+//----------------------------------------------------------------------------------------------------
+//выполнить обратный проход SoftMax по слою X
+//----------------------------------------------------------------------------------------------------
+template<class type_t>
+void CTensorMath<type_t>::SoftMaxX_Backward(CTensor<type_t> &cTensor_Output,CTensor<type_t> &cTensor_Delta,CTensor<type_t> &cTensor_Input)
+{
+ cTensor_Input.CopyToDevice();
+ cTensor_Delta.CopyToDevice();
+
+ STensorKernel<type_t> sTensorKernel_Output(cTensor_Output);
+ STensorKernel<type_t> sTensorKernel_Input(cTensor_Input);
+ STensorKernel<type_t> sTensorKernel_Delta(cTensor_Delta);
+
+ //запускаем процесс
+ dim3 thread(1,1,1);
+
+ dim3 blocks(cTensor_Input.Size_W,cTensor_Input.Size_Z,cTensor_Input.Size_Y);
+
+ CUDATensorSoftMaxXBackwardFunction<type_t><<<blocks,thread>>>(sTensorKernel_Output,sTensorKernel_Delta,sTensorKernel_Input);
+ HANDLE_ERROR(cudaGetLastError());
+ HANDLE_ERROR(cudaDeviceSynchronize());
+
+ cTensor_Output.SetDeviceOnChange();
 }
 
 

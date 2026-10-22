@@ -259,7 +259,7 @@ void CModelBasicSR_GAN<type_t>::TrainingSRGAN(uint32_t mini_batch_index,double &
   //задаём ошибку
   {
    CTimeStamp cTimeStamp("Задание ошибки:");
-   Net[Net.size()-1]->SetOutputError(cTensor_Error);
+   Net[Net.size()-1]->GetDeltaTensor()=cTensor_Error;
   }
 
   //выполняем вычисление весов

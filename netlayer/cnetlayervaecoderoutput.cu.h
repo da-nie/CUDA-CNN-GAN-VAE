@@ -67,8 +67,6 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<тензоры дельты слоя
-  CTensor<type_t> cTensor_PrevLayerError_Mu;///<тензоры ошибки слоя mu
-  CTensor<type_t> cTensor_PrevLayerError_LogVar;///<тензоры ошибки слоя logvar
 
   type_t KLSpeed;///<предельная скорость KL-дивергенции
   type_t KLSpeedCurrent;///<текущая скорость KL-дивергенции
@@ -105,8 +103,6 @@ class CNetLayerVAECoderOutput:public INetLayer<type_t>
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
-
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
 
@@ -366,8 +362,6 @@ void CNetLayerVAECoderOutput<type_t>::TrainingStart(void)
 {
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
- cTensor_PrevLayerError_Mu=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y,OutputSize_X);
- cTensor_PrevLayerError_LogVar=CTensor<type_t>(BatchSize,OutputSize_Z,OutputSize_Y,OutputSize_X);
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -378,8 +372,6 @@ void CNetLayerVAECoderOutput<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerError_Mu=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerError_LogVar=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -388,6 +380,41 @@ void CNetLayerVAECoderOutput<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerVAECoderOutput<type_t>::TrainingBackward(bool create_delta_weight)
 {
+ CTensor<type_t> &cTensor_PrevLayerError_Mu=MuLayerPtr->GetDeltaTansor();
+ CTensor<type_t> &cTensor_PrevLayerError_LogVar=LogVarLayerPtr->GetDeltaTansor();
+
+ type_t k=KLSpeedCurrent;
+
+ for(uint32_t w=0;w<BatchSize;w++)
+ {
+  for(uint32_t z=0;z<OutputSize_Z;z++)
+  {
+   for(uint32_t y=0;y<OutputSize_Y;y++)
+   {
+    for(uint32_t x=0;x<OutputSize_X;x++)
+    {
+     type_t epsilon=cTensor_Epsilon.GetElement(w,z,y,x);
+     //считаем ошибку для слоя логарифма дисперсии
+     type_t log_var_delta=cTensor_Delta.GetElement(w,z,y,x);
+     type_t log_var=LogVarLayerPtr->GetOutputTensor().GetElement(w,z,y,x);
+     type_t log_var_diff=1.0/2.0*epsilon*exp(log_var/2.0);//производная функции построения выхода слоя по log_var
+     //по этим данным получаем ошибку на входе слоя
+     type_t log_var_delta_out=log_var_delta*log_var_diff;
+     log_var_delta_out+=-1.0/2.0*(1-exp(log_var))*k;//добавляем ошибку по расстоянию Кульбака-Лейбнера
+     cTensor_PrevLayerError_LogVar.SetElement(w,z,y,x,log_var_delta_out);
+
+     //считаем ошибку для слоя среднего
+     type_t mu=MuLayerPtr->GetOutputTensor().GetElement(w,z,y,x);
+     type_t mu_delta=cTensor_Delta.GetElement(w,z,y,x);
+     type_t mu_diff=1;//производная функции построения выхода слоя по mu
+     //по этим данным получаем ошибку на входе слоя
+     type_t mu_delta_out=mu_delta*mu_diff;
+     mu_delta_out+=-1.0/2.0*(0-2*mu)*k;//добавляем ошибку по расстоянию Кульбака-Лейбнера
+	 cTensor_PrevLayerError_Mu.SetElement(w,z,y,x,mu_delta_out);
+    }
+   }
+  }
+ }
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -421,50 +448,6 @@ template<class type_t>
 CTensor<type_t>& CNetLayerVAECoderOutput<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
-}
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerVAECoderOutput<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
- type_t k=KLSpeedCurrent;
-
- for(uint32_t w=0;w<BatchSize;w++)
- {
-  for(uint32_t z=0;z<OutputSize_Z;z++)
-  {
-   for(uint32_t y=0;y<OutputSize_Y;y++)
-   {
-    for(uint32_t x=0;x<OutputSize_X;x++)
-    {
-     type_t epsilon=cTensor_Epsilon.GetElement(w,z,y,x);
-     //считаем ошибку для слоя логарифма дисперсии
-     type_t log_var_delta=cTensor_Delta.GetElement(w,z,y,x);
-     type_t log_var=LogVarLayerPtr->GetOutputTensor().GetElement(w,z,y,x);
-     type_t log_var_diff=1.0/2.0*epsilon*exp(log_var/2.0);//производная функции построения выхода слоя по log_var
-     //по этим данным получаем ошибку на входе слоя
-     type_t log_var_delta_out=log_var_delta*log_var_diff;
-     log_var_delta_out+=-1.0/2.0*(1-exp(log_var))*k;//добавляем ошибку по расстоянию Кульбака-Лейбнера
-     cTensor_PrevLayerError_LogVar.SetElement(w,z,y,x,log_var_delta_out);
-
-     //считаем ошибку для слоя среднего
-     type_t mu=MuLayerPtr->GetOutputTensor().GetElement(w,z,y,x);
-     type_t mu_delta=cTensor_Delta.GetElement(w,z,y,x);
-     type_t mu_diff=1;//производная функции построения выхода слоя по mu
-     //по этим данным получаем ошибку на входе слоя
-     type_t mu_delta_out=mu_delta*mu_diff;
-     mu_delta_out+=-1.0/2.0*(0-2*mu)*k;//добавляем ошибку по расстоянию Кульбака-Лейбнера
-	 cTensor_PrevLayerError_Mu.SetElement(w,z,y,x,mu_delta_out);
-    }
-   }
-  }
- }
- LogVarLayerPtr->SetOutputError(cTensor_PrevLayerError_LogVar);
- MuLayerPtr->SetOutputError(cTensor_PrevLayerError_Mu);
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон

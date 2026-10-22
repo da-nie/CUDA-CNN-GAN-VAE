@@ -80,8 +80,6 @@ class CNetLayerConvolutionInput:public INetLayer<type_t>
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
-
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
 
@@ -311,16 +309,6 @@ template<class type_t>
 CTensor<type_t>& CNetLayerConvolutionInput<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
-}
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerConvolutionInput<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон

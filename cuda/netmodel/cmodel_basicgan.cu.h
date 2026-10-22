@@ -278,7 +278,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
   }
   {
    CTimeStamp cTimeStamp("Задание ошибки для генератора:");
-   DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error);
+   DiscriminatorNet[DiscriminatorNet.size()-1]->GetDeltaTensor()=cTensor_Discriminator_Error;
   }
   //выполняем вычисление ошибок дискриминатора без обновления весов
   {
@@ -308,7 +308,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFakeAndGenerator(double &disc_
   //задаём ошибку дискриминатору
   {
    CTimeStamp cTimeStamp("Задание ошибки для дискриминатора:");
-   DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error);
+   DiscriminatorNet[DiscriminatorNet.size()-1]->GetDeltaTensor()=cTensor_Discriminator_Error;
   }
   //выполняем вычисление весов
   {
@@ -378,7 +378,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorFake(double &disc_cost)
  //задаём ошибку дискриминатору
  {
   CTimeStamp cTimeStamp("Задание ошибки для дискриминатора:");
-  DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error);
+  DiscriminatorNet[DiscriminatorNet.size()-1]->GetDeltaTensor()=cTensor_Discriminator_Error;
  }
  //выполняем вычисление весов
  {
@@ -447,7 +447,7 @@ void CModelBasicGAN<type_t>::TrainingDiscriminatorReal(uint32_t mini_batch_index
  {
   CTimeStamp cTimeStamp("Задание ошибки:");
   //задаём ошибку дискриминатору
-  DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error);
+  DiscriminatorNet[DiscriminatorNet.size()-1]->GetDeltaTensor()=cTensor_Discriminator_Error;
  }
 
  //выполняем вычисление весов
@@ -516,7 +516,7 @@ void CModelBasicGAN<type_t>::TrainingGenerator(double &cost,double &middle_answe
  }
  {
   CTimeStamp cTimeStamp("Задание ошибки:");
-  DiscriminatorNet[DiscriminatorNet.size()-1]->SetOutputError(cTensor_Discriminator_Error);
+  DiscriminatorNet[DiscriminatorNet.size()-1]->GetDeltaTensor()=cTensor_Discriminator_Error;
  }
 
  //выполняем вычисление весов дискриминатораals
@@ -996,7 +996,7 @@ void CModelBasicGAN<type_t>::TestTrainingGenerator(void)
   {
    CTimeStamp cTimeStamp("Расчёт ошибки генератора:");
    CTensorMath<type_t>::Sub(cTensor_Generator_Error,GeneratorNet[GeneratorNet.size()-1]->GetOutputTensor(),cTensor_Generator_Etalon);
-   GeneratorNet[GeneratorNet.size()-1]->SetOutputError(cTensor_Generator_Error);
+   GeneratorNet[GeneratorNet.size()-1]->GetDeltaTensor()=cTensor_Generator_Error;
    cTensor_Generator_Error.CopyFromDevice();
 
    type_t *ptr=cTensor_Generator_Error.GetColumnPtr(0,0,0);

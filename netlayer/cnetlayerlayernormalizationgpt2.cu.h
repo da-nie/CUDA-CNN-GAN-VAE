@@ -78,7 +78,6 @@ class CNetLayerLayerNormalizationGPT2:public INetLayer<type_t>
   CTensor<type_t> cTensor_InvStd;///<обратное СКО по позициям (Batch,1,Positions,1)
 
   CTensor<type_t> cTensor_Delta;///<входящая ошибка в раскладке сети (Batch,1,Positions,Features)
-  CTensor<type_t> cTensor_PrevLayerError;///<ошибка предыдущему слою (Batch,1,Positions,Features)
   CTensor<type_t> cTensor_PrevLayerError_Z;///<ошибка во внутреннем представлении (Batch,Features,Positions,1)
 
   CTensor<type_t> cTensor_dGamma;///<градиент по гамме (1,Features,1,1)
@@ -128,8 +127,6 @@ class CNetLayerLayerNormalizationGPT2:public INetLayer<type_t>
 
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
-
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
 
@@ -178,8 +175,7 @@ CNetLayerLayerNormalizationGPT2<type_t>::~CNetLayerLayerNormalizationGPT2()
 template<class type_t>
 void CNetLayerLayerNormalizationGPT2<type_t>::ReallocateTensors(uint32_t batch_size,uint32_t positions)
 {
- if (cTensor_H.GetSizeW()==batch_size && cTensor_H.GetSizeZ()==1 &&
-     cTensor_H.GetSizeY()==positions && cTensor_H.GetSizeX()==Features) return;//форма не изменилась
+ if (cTensor_H.GetSizeW()==batch_size && cTensor_H.GetSizeZ()==1 && cTensor_H.GetSizeY()==positions && cTensor_H.GetSizeX()==Features) return;//форма не изменилась
 
  BatchSize=batch_size;
  Positions=positions;
@@ -190,7 +186,6 @@ void CNetLayerLayerNormalizationGPT2<type_t>::ReallocateTensors(uint32_t batch_s
  cTensor_XHAT=CTensor<type_t>(BatchSize,Features,Positions,1);
  cTensor_InvStd=CTensor<type_t>(BatchSize,1,Positions,1);
  cTensor_Delta=CTensor<type_t>(BatchSize,1,Positions,Features);
- cTensor_PrevLayerError=CTensor<type_t>(BatchSize,1,Positions,Features);
 
  if (TrainingEnabled==true) cTensor_PrevLayerError_Z=CTensor<type_t>(BatchSize,Features,Positions,1);
 }
@@ -242,7 +237,6 @@ void CNetLayerLayerNormalizationGPT2<type_t>::Create(INetLayer<type_t> *prev_lay
 
  //ошибки в раскладке сети
  cTensor_Delta=CTensor<type_t>(BatchSize,1,Positions,Features);
- cTensor_PrevLayerError=CTensor<type_t>(BatchSize,1,Positions,Features);
 
  prev_layer_ptr->SetNextLayerPtr(this);
  TrainingEnabled=false;
@@ -443,6 +437,8 @@ void CNetLayerLayerNormalizationGPT2<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerLayerNormalizationGPT2<type_t>::TrainingBackward(bool create_delta_weight)
 {
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
+
  if (create_delta_weight)
  {
   CTensorMath<type_t>::Fill(cTensor_dGamma,0);
@@ -460,9 +456,7 @@ void CNetLayerLayerNormalizationGPT2<type_t>::TrainingBackward(bool create_delta
 
  //3. ошибка предыдущему слою: (B,D,T,1) -> (B,1,D,T) -> (B,1,T,D)
  cTensor_PrevLayerError_Z.ReinterpretSize(BatchSize,1,Features,Positions);//вид (B,1,D,T) для Transpose
- CTensorMath<type_t>::Transpose(cTensor_PrevLayerError,cTensor_PrevLayerError_Z);
-
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
+ CTensorMath<type_t>::Transpose(prev_delta,cTensor_PrevLayerError_Z);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -521,20 +515,6 @@ CTensor<type_t>& CNetLayerLayerNormalizationGPT2<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
 }
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки в раскладке сети (Batch,1,Positions,Features)
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerLayerNormalizationGPT2<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- if (error.GetSizeW()!=BatchSize || error.GetSizeZ()!=1 ||
-     error.GetSizeY()!=Positions || error.GetSizeX()!=Features)
-  throw("CNetLayerLayerNormalizationGPT2::SetOutputError - неверная размерность тензора ошибки!");
- cTensor_Delta=error;
-}
-
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон (в LayerNorm ограничивать нечего)
 */

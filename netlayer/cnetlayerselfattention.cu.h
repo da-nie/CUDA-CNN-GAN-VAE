@@ -101,9 +101,7 @@ class CNetLayerSelfAttention:public INetLayer<type_t>
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_Delta;///<градиент выхода слоя dH [Batch,1,T,D]
-  CTensor<type_t> cTensor_PrevLayerError;///<градиент входа слоя dX [Batch,1,T,D]
 
-  //CTensor<type_t> cTensor_dOh;///<градиент результата внимания по головам [Batch,h,T,Dk]
   CTensor<type_t> cTensor_dP;///<градиент матрицы внимания (вход softmax) [Batch,h,T,T]
   CTensor<type_t> cTensor_dSh;///<градиент Sh после масштабирования [Batch,h,T,T]
 
@@ -188,8 +186,6 @@ class CNetLayerSelfAttention:public INetLayer<type_t>
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
-
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
 
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
@@ -224,7 +220,7 @@ CNetLayerSelfAttention<type_t>::CNetLayerSelfAttention(uint32_t head,bool apply_
 template<class type_t>
 CNetLayerSelfAttention<type_t>::CNetLayerSelfAttention(void)
 {
- Create();
+ Create(1,false,NULL,1);
 }
 //----------------------------------------------------------------------------------------------------
 //!деструктор
@@ -555,7 +551,6 @@ void CNetLayerSelfAttention<type_t>::TrainingStart(void)
 
  //создаём все вспомогательные тензоры
  cTensor_Delta=cTensor_H;
- cTensor_PrevLayerError=cTensor_H;
 
  //параметры Adam
  cTensor_M_Wq=CTensor<type_t>(1,1,NumberOfHead*HeadDimension,NumberOfHead*HeadDimension);
@@ -616,7 +611,6 @@ void CNetLayerSelfAttention<type_t>::TrainingStart(void)
  cTensor_dKh=CTensor<type_t>(BatchSize,NumberOfHead,TSize,HeadDimension);
  cTensor_dVh=CTensor<type_t>(BatchSize,NumberOfHead,TSize,HeadDimension);
 
- //cTensor_dOh=CTensor<type_t>(BatchSize,NumberOfHead,TSize,HeadDimension);
  cTensor_dP=CTensor<type_t>(BatchSize,NumberOfHead,TSize,TSize);
  cTensor_dSh=CTensor<type_t>(BatchSize,NumberOfHead,TSize,TSize);
 
@@ -648,7 +642,6 @@ void CNetLayerSelfAttention<type_t>::TrainingStop(void)
 {
  //удаляем все вспомогательные тензоры
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerError=CTensor<type_t>(1,1,1,1);
 
  iNetLayer_SoftMaxInput->TrainingStop();
  iNetLayer_SoftMax->TrainingStop();
@@ -662,6 +655,7 @@ void CNetLayerSelfAttention<type_t>::TrainingBackward(bool create_delta_weight)
 {
  //выход предыдущего слоя — тот же X, что использовался в прямом проходе
  CTensor<type_t>& cTensor_X=PrevLayerPtr->GetOutputTensor();
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
 
  //обратный коэффициент масштабирования: 1/sqrt(Dk) — тот же, что в Forward
  const type_t attention_scale=static_cast<type_t>(1.0/sqrt(static_cast<double>(HeadDimension)));
@@ -687,13 +681,14 @@ void CNetLayerSelfAttention<type_t>::TrainingBackward(bool create_delta_weight)
  CTensorMath<type_t>::LeftTransposeMul(cTensor_dVh,iNetLayer_SoftMax->GetOutputTensor(),cTensor_dOh);
  CTensorMath<type_t>::RightTransposeMul(cTensor_dP,cTensor_dOh,cTensor_Vh);
 */
-
  CTensorMath<type_t>::AttentionBackward_dV_dP(cTensor_dVh,cTensor_dP,cTensor_Vh,iNetLayer_SoftMax->GetOutputTensor(),cTensor_Delta,HeadDimension);
+
+
 
  //3. Обратный проход softmax: dS_scaled = Jacobian(dP)
  //   после этого градиент лежит в тензоре входного слоя softmax [Batch,h,T,T]
 
- iNetLayer_SoftMax->SetOutputError(cTensor_dP);
+ iNetLayer_SoftMax->GetDeltaTensor()=cTensor_dP;
  iNetLayer_SoftMax->TrainingBackward(create_delta_weight);
  iNetLayer_SoftMaxInput->TrainingBackward(create_delta_weight);
  CTensor<type_t>& cTensor_dS=iNetLayer_SoftMaxInput->GetDeltaTensor();
@@ -752,12 +747,9 @@ void CNetLayerSelfAttention<type_t>::TrainingBackward(bool create_delta_weight)
  //8. Градиент входа: dX = dQ@Wq.T + dK@Wk.T + dV@Wv.T
  CTensorMath<type_t>::RightTransposeMul(cTensor_dX,cTensor_dQ,cTensor_Wq);
  CTensorMath<type_t>::RightTransposeMul(cTensor_dX2,cTensor_dK,cTensor_Wk);
- CTensorMath<type_t>::Add(cTensor_PrevLayerError,cTensor_dX,cTensor_dX2);
+ CTensorMath<type_t>::Add(prev_delta,cTensor_dX,cTensor_dX2);
  CTensorMath<type_t>::RightTransposeMul(cTensor_dX2,cTensor_dV,cTensor_Wv);
- CTensorMath<type_t>::Add(cTensor_PrevLayerError,cTensor_PrevLayerError,cTensor_dX2);
-
- //передаём ошибку предыдущему слою
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
+ CTensorMath<type_t>::Add(prev_delta,prev_delta,cTensor_dX2);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -835,16 +827,6 @@ template<class type_t>
 CTensor<type_t>& CNetLayerSelfAttention<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
-}
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerSelfAttention<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон

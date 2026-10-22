@@ -339,7 +339,7 @@ void CModelBasicDiffusion<type_t>::TrainingDiffusionNet(uint32_t mini_batch_inde
  }
  {
   CTimeStamp cTimeStamp("Задание ошибки:");
-  DiffusionNet[DiffusionNet.size()-1]->SetOutputError(cTensor_Error);
+  DiffusionNet[DiffusionNet.size()-1]->GetDeltaTensor()=cTensor_Error;
  }
  //считаем ошибку
  CTensorMath<type_t>::Pow2(cTensor_Error,cTensor_Error,static_cast<type_t>(1.0/4.0));
@@ -1006,7 +1006,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
    TrainingImageIndex[i]=n;
   }
  }
-
+/*
  //добавляем отражённые по горизонтали
  {
   uint32_t size_img=TrainingImage.size();
@@ -1046,6 +1046,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
    TrainingImageIndex[n+size_img]=n+size_img;
   }
  }
+ */
 
  //дополняем набор до кратного размеру пакета
  uint32_t image_amount=TrainingImage.size();

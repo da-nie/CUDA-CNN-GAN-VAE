@@ -59,7 +59,6 @@ class CNetLayerLayerNormalization:public INetLayer<type_t>
 
   CTensor<type_t> cTensor_H;///<тензор выхода слоя
   CTensor<type_t> cTensor_Delta;///<тензор ошибки (входящий)
-  CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки для предыдущего слоя
 
   //тензоры, используемые при обучении
   CTensor<type_t> cTensor_XHAT;///<нормализованные значения (BatchSize x Z x Y x X)
@@ -111,8 +110,6 @@ class CNetLayerLayerNormalization:public INetLayer<type_t>
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
 
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
-
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
@@ -176,7 +173,6 @@ void CNetLayerLayerNormalization<type_t>::Create(INetLayer<type_t> *prev_layer_p
  cTensor_H=CTensor<type_t>(BatchSize,Z,Y,X);
  cTensor_Delta=CTensor<type_t>(BatchSize,Z,Y,X);
  cTensor_XHAT=CTensor<type_t>(BatchSize,Z,Y,X);
- cTensor_PrevLayerError=CTensor<type_t>(BatchSize,Z,Y,X);
 
  cTensor_Gamma=CTensor<type_t>(1,Z,1,1);
  cTensor_Beta=CTensor<type_t>(1,Z,1,1);
@@ -385,9 +381,9 @@ void CNetLayerLayerNormalization<type_t>::TrainingBackward(bool create_delta_wei
   CTensorMath<type_t>::Fill(cTensor_dGamma,0);
   CTensorMath<type_t>::Fill(cTensor_dBeta,0);
  }
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
  //функция НАКАПЛИВАЕТ dGamma/dBeta, поэтому при create_delta_weight=true они предварительно обнулены
- CTensorMath<type_t>::LayerNormBackward(cTensor_Delta,cTensor_XHAT,cTensor_Gamma,cTensor_InvStd,cTensor_PrevLayerError,cTensor_dGamma,cTensor_dBeta);
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
+ CTensorMath<type_t>::LayerNormBackward(cTensor_Delta,cTensor_XHAT,cTensor_Gamma,cTensor_InvStd,prev_delta,cTensor_dGamma,cTensor_dBeta);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -446,17 +442,6 @@ CTensor<type_t>& CNetLayerLayerNormalization<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
 }
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerLayerNormalization<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
-}
-
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон (в LayerNorm ограничивать нечего)
 \param[in] min Минимальное значение веса

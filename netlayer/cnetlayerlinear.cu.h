@@ -59,7 +59,6 @@ class CNetLayerLinear:public INetLayer<type_t>
   CTensor<type_t> cTensor_dB;///<тензор поправок сдвигов слоя
   CTensor<type_t> cTensor_Delta;///<тензор дельты слоя
   CTensor<type_t> cTensor_TmpdW;///<вспомогательный тензор поправок весов слоя
-  CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
 
   //для оптимизации Adam
   CTensor<type_t> cTensor_MW;///<тензор фильтра 1
@@ -103,8 +102,6 @@ class CNetLayerLinear:public INetLayer<type_t>
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
-
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
@@ -393,7 +390,6 @@ void CNetLayerLinear<type_t>::TrainingStart(void)
  if (PrevLayerPtr!=NULL)
  {
   CTensor<type_t> &prev_output=PrevLayerPtr->GetOutputTensor();
-  cTensor_PrevLayerError=CTensor<type_t>(BatchSize,prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -407,7 +403,6 @@ void CNetLayerLinear<type_t>::TrainingStop(void)
  cTensor_dW=CTensor<type_t>(1,1,1,1);
  cTensor_TmpdW=CTensor<type_t>(1,1,1,1);
  cTensor_dB=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerError=CTensor<type_t>(1,1,1,1);
 
  cTensor_MW=CTensor<type_t>(1,1,1,1);
  cTensor_VW=CTensor<type_t>(1,1,1,1);
@@ -424,11 +419,10 @@ template<class type_t>
 void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
 {
  if (PrevLayerPtr==NULL) return;//это входной слой
-
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
  //вычисляем ошибку предыдущего слоя (D=Dnext@tr(W))
  //считаем ошибку предыдущего слоя
- CTensorMath<type_t>::RightTransposeMul(cTensor_PrevLayerError,cTensor_Delta,cTensor_W);
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
+ CTensorMath<type_t>::RightTransposeMul(prev_delta,cTensor_Delta,cTensor_W);
  //считаем поправки
  if (create_delta_weight==true)
  {
@@ -487,17 +481,6 @@ CTensor<type_t>& CNetLayerLinear<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
 }
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerLinear<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
-}
-
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон
 \param[in] min Минимальное значение веса

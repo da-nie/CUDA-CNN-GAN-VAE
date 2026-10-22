@@ -52,7 +52,6 @@ class CNetLayerDropOut:public INetLayer<type_t>
   CTensor<type_t> cTensor_H;///<тензоры выхода слоя
   CTensor<type_t> cTensor_H_DropOut;///<тензоры исключения выхода слоя
   CTensor<type_t> cTensor_Delta;///<тензоры ошибки предыдущего слоя
-  CTensor<type_t> cTensor_PrevLayerError;///<тензор ошибки предыдущего слоя
   //режим усреднения
   using INetLayer<type_t>::EMAEnabled;
   using INetLayer<type_t>::UseEMA;
@@ -86,8 +85,6 @@ class CNetLayerDropOut:public INetLayer<type_t>
   void TrainingResetDeltaWeight(void);///<сбросить поправки к весам
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
-
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
 
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
@@ -324,7 +321,6 @@ void CNetLayerDropOut<type_t>::TrainingStart(void)
  cTensor_H=CTensor<type_t>(BatchSize,prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
  cTensor_H_DropOut=CTensor<type_t>(BatchSize,prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
  cTensor_Delta=CTensor<type_t>(BatchSize,prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
- cTensor_PrevLayerError=CTensor<type_t>(BatchSize,prev_output.GetSizeZ(),prev_output.GetSizeY(),prev_output.GetSizeX());
 }
 //----------------------------------------------------------------------------------------------------
 /*!завершить процесс обучения
@@ -338,7 +334,6 @@ void CNetLayerDropOut<type_t>::TrainingStop(void)
  cTensor_H=CTensor<type_t>(1,1,1,1);
  cTensor_H_DropOut=CTensor<type_t>(1,1,1,1);
  cTensor_Delta=CTensor<type_t>(1,1,1,1);
- cTensor_PrevLayerError=CTensor<type_t>(1,1,1,1);
 }
 //----------------------------------------------------------------------------------------------------
 /*!выполнить обратный проход по сети для обучения
@@ -347,10 +342,9 @@ void CNetLayerDropOut<type_t>::TrainingStop(void)
 template<class type_t>
 void CNetLayerDropOut<type_t>::TrainingBackward(bool create_delta_weight)
 {
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
  //умножаем тензор ошибки на тензор исключения поэлементно
- CTensorMath<type_t>::TensorItemProduction(cTensor_PrevLayerError,cTensor_Delta,cTensor_H_DropOut);
- //задаём ошибку предыдущего слоя
- PrevLayerPtr->SetOutputError(cTensor_PrevLayerError);
+ CTensorMath<type_t>::TensorItemProduction(prev_delta,cTensor_Delta,cTensor_H_DropOut);
 }
 //----------------------------------------------------------------------------------------------------
 /*!сбросить поправки к весам
@@ -379,17 +373,6 @@ CTensor<type_t>& CNetLayerDropOut<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
 }
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerDropOut<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
-}
-
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон
 \param[in] min Минимальное значение веса

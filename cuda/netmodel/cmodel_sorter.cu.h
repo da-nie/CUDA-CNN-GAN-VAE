@@ -800,7 +800,7 @@ void CModelSorter<type_t>::TrainingSorter(uint32_t mini_batch_index,double &cost
  {
   CTimeStamp cTimeStamp("Задание ошибки:");
   //задаём ошибку сортировщику
-  SorterNet[SorterNet.size()-1]->SetOutputError(cTensor_Sorter_Output);
+  SorterNet[SorterNet.size()-1]->GetDeltaTensor()=cTensor_Sorter_Output;
  }
  //выполняем вычисление весов
  {

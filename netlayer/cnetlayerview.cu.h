@@ -88,8 +88,6 @@ class CNetLayerView:public INetLayer<type_t>
   void TrainingUpdateWeight(double speed,double iteration,double batch_scale=1);///<выполнить обновления весов
   CTensor<type_t>& GetDeltaTensor(void);///<получить ссылку на тензор дельты слоя
 
-  void SetOutputError(CTensor<type_t>& error);///<задать ошибку и расчитать дельту
-
   void ClipWeight(type_t min,type_t max);///<ограничить веса в диапазон
   void SetTimeStep(uint32_t index,uint32_t time_step);///<задать временной шаг
 
@@ -301,7 +299,8 @@ template<class type_t>
 void CNetLayerView<type_t>::TrainingBackward(bool create_delta_weight)
 {
  cTensor_Delta.ReinterpretSize(BatchSize,InputZ,InputY,InputX);
- PrevLayerPtr->SetOutputError(cTensor_Delta);
+ CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
+ prev_delta=cTensor_Delta;
  cTensor_Delta.RestoreSize();
 }
 //----------------------------------------------------------------------------------------------------
@@ -330,16 +329,6 @@ template<class type_t>
 CTensor<type_t>& CNetLayerView<type_t>::GetDeltaTensor(void)
 {
  return(cTensor_Delta);
-}
-//----------------------------------------------------------------------------------------------------
-/*!задать ошибку и расчитать дельту
-\param[in] error Тензор ошибки
-*/
-//----------------------------------------------------------------------------------------------------
-template<class type_t>
-void CNetLayerView<type_t>::SetOutputError(CTensor<type_t>& error)
-{
- cTensor_Delta=error;
 }
 //----------------------------------------------------------------------------------------------------
 /*!ограничить веса в диапазон
