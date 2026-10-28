@@ -158,7 +158,7 @@ struct STensorKernel
   StrideX=cTensor.Size_X;
   StrideZ=cTensor.Size_X*cTensor.Size_Y;
   StrideW=cTensor.Size_X*cTensor.Size_Y*cTensor.Size_Z;
-  TensorData_Ptr=cTensor.DeviceItem.get();
+  TensorData_Ptr=cTensor.GetDeviceItem().get();
   TensorData_W_Ptr=TensorData_Ptr;
   TensorData_WZ_Ptr=TensorData_Ptr;
   SelectedZ=0;
@@ -288,7 +288,7 @@ __forceinline__ __host__ __device__ type_t GetElement(uint32_t y,uint32_t x)
   StrideX=cTensor.Size_X;
   StrideZ=cTensor.Size_X*cTensor.Size_Y;
   StrideW=cTensor.Size_X*cTensor.Size_Y*cTensor.Size_Z;
-  TensorData_Ptr=cTensor.DeviceItem.get();
+  TensorData_Ptr=cTensor.GetDeviceItem().get();
   TensorData_W_Ptr=TensorData_Ptr;
   TensorData_WZ_Ptr=TensorData_Ptr;
   SelectedZ=0;

@@ -199,8 +199,27 @@ class CTensor
   void Print(const std::string &name,bool print_value=true) const;///<вывод тензора на экран
   void PrintToFile(const std::string &file_name,const std::string &name,bool print_value=true) const;///<вывод тензора в файл
   bool Compare(const CTensor<type_t> &cTensor_Control,const std::string &name="",bool print_value=true) const;///<сравнение тензоров
+
+  std::vector<type_t>& GetItem(void) const
+  {
+   CreateItemMemory();
+   return(Item);
+  }
+  CCUDADeviceVector<type_t>& GetDeviceItem(void) const
+  {
+   CreateDeviceItemMemory();
+   return(DeviceItem);
+  }
  private:
   //-закрытые функции-----------------------------------------------------------------------------------
+  void CreateItemMemory(void) const///<выделить память для элементов на процессоре
+  {
+   if (Item.size()!=BasedSize_X*BasedSize_Y*BasedSize_Z*BasedSize_W) Item.resize(Size_X*Size_Y*Size_Z*Size_W);
+  }
+  void CreateDeviceItemMemory(void) const///<выделить память для элементов на устройстве
+  {
+   if (DeviceItem.size()!=BasedSize_X*BasedSize_Y*BasedSize_Z*BasedSize_W) DeviceItem.resize(Size_X*Size_Y*Size_Z*Size_W);
+  }
 };
 
 //****************************************************************************************************
@@ -229,8 +248,13 @@ CTensor<type_t>::CTensor(uint32_t size_w,uint32_t size_z,uint32_t size_y,uint32_
  BasedSize_Z=Size_Z;
  BasedSize_W=Size_W;
 
+ Item.clear();
+ DeviceItem.clear();
+
+ /*
  Item.resize(Size_X*Size_Y*Size_Z*Size_W);
  DeviceItem.resize(Size_X*Size_Y*Size_Z*Size_W);
+ */
 
  HostOnChange=false;
  DeviceOnChange=false;
@@ -325,6 +349,7 @@ template<class type_t>
 type_t CTensor<type_t>::GetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x) const
 {
  if (x>=Size_X || y>=Size_Y || z>=Size_Z || w>=Size_W) throw("Ошибка доступа к элементу тензора для чтения!");
+ CreateItemMemory();
  CopyFromDevice();
  return(Item[Size_X*y+x+Size_X*Size_Y*z+Size_X*Size_Y*Size_Z*w]);
 }
@@ -335,6 +360,7 @@ template<class type_t>
 void CTensor<type_t>::SetElement(uint32_t w,uint32_t z,uint32_t y,uint32_t x,type_t value)
 {
  if (x>=Size_X || y>=Size_Y || z>=Size_Z || w>=Size_W) throw("Ошибка доступа к элементу тензора для записи!");
+ CreateItemMemory();
  CopyFromDevice();
  Item[Size_X*y+x+Size_X*Size_Y*z+Size_X*Size_Y*Size_Z*w]=value;
  SetHostOnChange();
@@ -347,6 +373,7 @@ template<class type_t>
 type_t* CTensor<type_t>::GetColumnPtr(uint32_t w,uint32_t z,uint32_t y)
 {
  if (y>=Size_Y || z>=Size_Z || w>=Size_W) throw("Ошибка получения указателя на строку тензора!");
+ CreateItemMemory();
  CopyFromDevice();
  SetHostOnChange();
  return(&Item[Size_X*y+Size_X*Size_Y*z+Size_X*Size_Y*Size_Z*w]);
@@ -358,6 +385,7 @@ template<class type_t>
 const type_t* CTensor<type_t>::GetColumnPtr(uint32_t w,uint32_t z,uint32_t y) const
 {
  if (y>=Size_Y || z>=Size_Z || w>=Size_W) throw("Ошибка получения указателя на строку тензора!");
+ CreateItemMemory();
  CopyFromDevice();
  SetHostOnChange();
  return(&Item[Size_X*y+Size_X*Size_Y*z+Size_X*Size_Y*Size_Z*w]);
@@ -368,6 +396,7 @@ const type_t* CTensor<type_t>::GetColumnPtr(uint32_t w,uint32_t z,uint32_t y) co
 template<class type_t>
 CCUDADeviceVector<type_t>& CTensor<type_t>::GetDeviceVector(void) const
 {
+ CreateDeviceItemMemory();
  return(DeviceItem);
 }
 
@@ -377,6 +406,7 @@ CCUDADeviceVector<type_t>& CTensor<type_t>::GetDeviceVector(void) const
 template<class type_t>
 void CTensor<type_t>::Unitary(void)
 {
+ CreateItemMemory();
  type_t *o_ptr=&Item[0];
  for(uint32_t w=0;w<Size_W;w++)
  {
@@ -400,6 +430,7 @@ void CTensor<type_t>::Unitary(void)
 template<class type_t>
 void CTensor<type_t>::Zero(void)
 {
+ CreateItemMemory();
  type_t *o_ptr=&Item[0];
  for(uint32_t w=0;w<Size_W;w++)
  {
@@ -423,6 +454,7 @@ void CTensor<type_t>::Zero(void)
 template<class type_t>
 void CTensor<type_t>::Fill(type_t value)
 {
+ CreateItemMemory();
  type_t *o_ptr=&Item[0];
  for(uint32_t w=0;w<Size_W;w++)
  {
@@ -481,6 +513,7 @@ template<class type_t>
 void CTensor<type_t>::CopyItem(CTensor<type_t> &cTensor)
 {
  if (Size_X*Size_Y*Size_Z*Size_W!=cTensor.GetSizeX()*cTensor.GetSizeY()*cTensor.GetSizeZ()*cTensor.GetSizeW()) throw("Нельзя копировать элементы тензора, если их количество различно.");
+ CreateItemMemory();
  cTensor.CopyFromDevice();
  Item=cTensor.Item;
  SetHostOnChange();
@@ -492,6 +525,7 @@ void CTensor<type_t>::CopyItem(CTensor<type_t> &cTensor)
 template<class type_t>
 void CTensor<type_t>::CopyItemToHost(type_t *item_array,uint32_t size)
 {
+ CreateItemMemory();
  if (Item.size()<size) throw("Слишком большой массив для копирования на хост.");
  memcpy(&Item[0],item_array,size*sizeof(type_t));
  SetHostOnChange();
@@ -502,6 +536,7 @@ void CTensor<type_t>::CopyItemToHost(type_t *item_array,uint32_t size)
 template<class type_t>
 void CTensor<type_t>::CopyItemToDevice(type_t *item_array,uint32_t size)
 {
+ CreateDeviceItemMemory();
  if (Item.size()<size) throw("Слишком большой массив для копирования на устройство.");
  DeviceItem.copy_host_to_device(item_array,size);
  SetDeviceOnChange();
@@ -514,6 +549,7 @@ void CTensor<type_t>::CopyItemToDevice(type_t *item_array,uint32_t size)
 template<class type_t>
 void CTensor<type_t>::CopyItemLayerWToHost(uint32_t w,type_t *item_array,uint32_t size)
 {
+ CreateItemMemory();
  if (Item.size()<size+w*Size_X*Size_Y*Size_Z) throw("Слишком большой массив для копирования на хост.");
  memcpy(&Item[w*Size_X*Size_Y*Size_Z],item_array,size*sizeof(type_t));
  SetHostOnChange();
@@ -524,7 +560,8 @@ void CTensor<type_t>::CopyItemLayerWToHost(uint32_t w,type_t *item_array,uint32_
 template<class type_t>
 void CTensor<type_t>::CopyItemLayerWToDevice(uint32_t w,type_t *item_array,uint32_t size)
 {
- if (Item.size()<size+w*Size_X*Size_Y*Size_Z) throw("Слишком большой массив для копирования на устройство.");
+ CreateDeviceItemMemory();
+ if (DeviceItem.size()<size+w*Size_X*Size_Y*Size_Z) throw("Слишком большой массив для копирования на устройство.");
  DeviceItem.copy_host_to_device(item_array,size,w*Size_X*Size_Y*Size_Z);
  SetDeviceOnChange();
 }
@@ -568,6 +605,7 @@ bool CTensor<type_t>::Save(IDataStream *iDataStream_Ptr)
  iDataStream_Ptr->SaveUInt32(Size_Y);
  iDataStream_Ptr->SaveUInt32(Size_X);
  //сохраняем данные тензора
+ CreateItemMemory();
  for(uint32_t n=0;n<Size_X*Size_Y*Size_Z*Size_W;n++) iDataStream_Ptr->SaveDouble(Item[n]);
  return(true);
 }
@@ -597,8 +635,7 @@ bool CTensor<type_t>::Load(IDataStream *iDataStream_Ptr,bool check_size)
  std::vector<type_t> item(Size_X*Size_Y*Size_Z*Size_W);
  Item.clear();
  std::swap(Item,item);
- DeviceItem.resize(Item.size());
-
+ DeviceItem.clear();
  //загружаем данные тензора
  for(uint32_t n=0;n<Size_X*Size_Y*Size_Z*Size_W;n++) Item[n]=static_cast<type_t>(iDataStream_Ptr->LoadDouble());
 
@@ -654,6 +691,7 @@ void CTensor<type_t>::RestoreSize(void) const
 template<class type_t>
 void CTensor<type_t>::Normalize(void)
 {
+ CreateItemMemory();
  CopyFromDevice();
 
  for(uint32_t w=0;w<Size_W;w++)
@@ -679,6 +717,7 @@ void CTensor<type_t>::Normalize(void)
 template<class type_t>
 type_t CTensor<type_t>::GetNorma(uint32_t w,uint32_t z) const
 {
+ CreateItemMemory();
  CopyFromDevice();
  type_t norma=0;
  for(uint32_t y=0;y<Size_Y;y++)
@@ -701,6 +740,8 @@ void CTensor<type_t>::CopyToDevice(bool force) const
 {
  //копируем данные хоста на устройство
  if (HostOnChange==false && force==false) return;
+ CreateItemMemory();
+ CreateDeviceItemMemory();
  DeviceItem.copy_host_to_device(&Item[0],Item.size());
  //указываем, что копии идентичные
  HostOnChange=false;
@@ -714,6 +755,8 @@ void CTensor<type_t>::CopyFromDevice(bool force) const
 {
  //копируем данные с устройства на хост
  if (DeviceOnChange==false && force==false) return;
+ CreateItemMemory();
+ CreateDeviceItemMemory();
  DeviceItem.copy_device_to_host(&Item[0],Item.size());
  //указываем, что копии идентичные
  HostOnChange=false;
@@ -747,6 +790,7 @@ void CTensor<type_t>::Print(const std::string &name,bool print_value) const
 {
  char str[255];
 
+ CreateItemMemory();
  CopyFromDevice();
 
  sprintf(str,"***** %s *****",name.c_str());
@@ -783,6 +827,7 @@ void CTensor<type_t>::Print(const std::string &name,bool print_value) const
 template<class type_t>
 void CTensor<type_t>::PrintToFile(const std::string &file_name,const std::string &name,bool print_value) const
 {
+ CreateItemMemory();
  CopyFromDevice();
  FILE *file=fopen(file_name.c_str(),"wb");
  if (file==NULL) return;
@@ -816,7 +861,6 @@ template<class type_t>
 bool CTensor<type_t>::Compare(const CTensor<type_t> &cTensor_Control,const std::string &name,bool print_value) const
 {
  char str[255];
-
  CopyFromDevice();
  cTensor_Control.CopyFromDevice();
 

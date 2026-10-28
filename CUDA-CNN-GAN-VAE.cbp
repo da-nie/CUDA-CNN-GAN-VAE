@@ -15,7 +15,7 @@
 					<Add option="-O3" />
 					<Add option="-std=c++11" />
 					<Add option="-ccbin=g++" />
-					<Add option="-gencode=arch=compute_70,code=sm_70" />
+					<Add option="-gencode=arch=compute_60,code=sm_60" />
 					<Add option="-I /usr/local/cuda-12.4/include" />
 					<Add option="-L /usr/local/cuda-12.4/lib64" />
 					<Add option="--fmad=true" />
@@ -557,8 +557,6 @@
 		<Unit filename="settings.h" />
 		<Unit filename="system/system.cpp" />
 		<Unit filename="system/system.h" />
-		<Extensions>
-			<code_completion />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>
