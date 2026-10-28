@@ -248,7 +248,7 @@ void CNetLayerUpSampling<type_t>::Forward(void)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
- CTensorMath<type_t>::UpSampling(cTensor_H,input,UpSampling_X,UpSampling_Y);
+ CTensorSampling<type_t>::UpSampling(cTensor_H,input,UpSampling_X,UpSampling_Y);
 
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);
 }
@@ -367,7 +367,7 @@ void CNetLayerUpSampling<type_t>::TrainingBackward(bool create_delta_weight)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
  prev_delta.ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
 
- CTensorMath<type_t>::DownSampling(prev_delta,cTensor_Delta,UpSampling_X,UpSampling_Y);
+ CTensorSampling<type_t>::DownSampling(prev_delta,cTensor_Delta,UpSampling_X,UpSampling_Y);
 
  //задаём ошибку предыдущего слоя
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);

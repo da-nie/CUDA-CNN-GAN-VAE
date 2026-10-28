@@ -249,7 +249,7 @@ void CNetLayerAveragePooling<type_t>::Forward(void)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
- CTensorMath<type_t>::DownSampling(cTensor_H,input,AveragePooling_X,AveragePooling_Y);
+ CTensorSampling<type_t>::DownSampling(cTensor_H,input,AveragePooling_X,AveragePooling_Y);
 
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);
 }
@@ -368,7 +368,7 @@ void CNetLayerAveragePooling<type_t>::TrainingBackward(bool create_delta_weight)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
  prev_delta.ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
 
- CTensorMath<type_t>::UpSampling(prev_delta,cTensor_Delta,AveragePooling_X,AveragePooling_Y);//задаём ошибку предыдущего слоя
+ CTensorSampling<type_t>::UpSampling(prev_delta,cTensor_Delta,AveragePooling_X,AveragePooling_Y);//задаём ошибку предыдущего слоя
  CTensorMath<type_t>::Mul(prev_delta,prev_delta,static_cast<type_t>(1.0/(AveragePooling_X*AveragePooling_Y)));
 
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,basic_input_z,basic_input_y,basic_input_x);

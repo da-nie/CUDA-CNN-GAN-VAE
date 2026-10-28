@@ -428,8 +428,8 @@ void CNetLayerLinear<type_t>::TrainingBackward(bool create_delta_weight)
  {
   CTensor<type_t> &h=PrevLayerPtr->GetOutputTensor();
   CTensorMath<type_t>::LeftTransposeMul(cTensor_TmpdW,h,cTensor_Delta);
-  CTensorMath<type_t>::AddSumW(cTensor_dW,cTensor_dW,cTensor_TmpdW);
-  CTensorMath<type_t>::AddSumX(cTensor_dB,cTensor_dB,cTensor_Delta);
+  CTensorSum<type_t>::AddSumW(cTensor_dW,cTensor_dW,cTensor_TmpdW);
+  CTensorSum<type_t>::AddSumX(cTensor_dB,cTensor_dB,cTensor_Delta);
  }
 }
 //----------------------------------------------------------------------------------------------------
@@ -450,14 +450,14 @@ void CNetLayerLinear<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerLinear<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
- CTensorMath<type_t>::ClipByNormXY(cTensor_dW,cTensor_dW,ClipByNormThresHold);//TODO: возможно, в линейном слое ограничивать не нужно
- CTensorMath<type_t>::ClipByNormXY(cTensor_dB,cTensor_dB,ClipByNormThresHold);
+ CTensorClip<type_t>::ClipByNormXY(cTensor_dW,cTensor_dW,ClipByNormThresHold);//TODO: возможно, в линейном слое ограничивать не нужно
+ CTensorClip<type_t>::ClipByNormXY(cTensor_dB,cTensor_dB,ClipByNormThresHold);
 
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_W,cTensor_dW,cTensor_MW,cTensor_VW,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_B,cTensor_dB,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
@@ -490,8 +490,8 @@ CTensor<type_t>& CNetLayerLinear<type_t>::GetDeltaTensor(void)
 template<class type_t>
 void CNetLayerLinear<type_t>::ClipWeight(type_t min,type_t max)
 {
- CTensorMath<type_t>::Clip(cTensor_W,min,max);
- CTensorMath<type_t>::Clip(cTensor_B,min,max);
+ CTensorClip<type_t>::Clip(cTensor_W,min,max);
+ CTensorClip<type_t>::Clip(cTensor_B,min,max);
 }
 
 //----------------------------------------------------------------------------------------------------

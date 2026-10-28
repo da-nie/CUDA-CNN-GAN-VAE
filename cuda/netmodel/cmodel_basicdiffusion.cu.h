@@ -344,7 +344,7 @@ void CModelBasicDiffusion<type_t>::TrainingDiffusionNet(uint32_t mini_batch_inde
  //считаем ошибку
  CTensorMath<type_t>::Pow2(cTensor_Error,cTensor_Error,static_cast<type_t>(1.0/4.0));
  static CTensor<type_t> cTensor_Loss(cTensor_Error.GetSizeW(),cTensor_Error.GetSizeZ(),1,1);
- CTensorMath<type_t>::SumXY(cTensor_Loss,cTensor_Error);
+ CTensorSum<type_t>::SumXY(cTensor_Loss,cTensor_Error);
 
  double error=0;
  for(uint32_t b=0;b<BATCH_SIZE;b++)
@@ -383,7 +383,7 @@ void CModelBasicDiffusion<type_t>::SaveRandomImageDDIM(int32_t step_counter)
         DiffusionNet[layer]->SetInferenceMode(true);
     }
 
-    step_counter=30;
+    step_counter=50;
 
     // ---- 3. Вычисляем шаг пропуска между шагами t ----
     // step_counter = 50 → step = 500/50 = 10 (50 вызовов сети)
@@ -1006,7 +1006,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
    TrainingImageIndex[i]=n;
   }
  }
-/*
+
  //добавляем отражённые по горизонтали
  {
   uint32_t size_img=TrainingImage.size();
@@ -1046,7 +1046,7 @@ void CModelBasicDiffusion<type_t>::TrainingNet(bool mnist)
    TrainingImageIndex[n+size_img]=n+size_img;
   }
  }
- */
+
 
  //дополняем набор до кратного размеру пакета
  uint32_t image_amount=TrainingImage.size();
@@ -1130,7 +1130,7 @@ void CModelBasicDiffusion<type_t>::SetNoisyImage(CTensor<type_t> &cTensor_NoisyI
   cTensor_SqrtAlphaBar.SetElement(n,0,0,0,sqrt_alpha_bar);
   cTensor_OneMinusAlphaBar.SetElement(n,0,0,0,sqrt_one_minus_alpha_bar);
  }
- CTensorMath<type_t>::GetNoiseImageAndNoise(cTensor_NoisyImage,cTensor_Noise,cTensor_Image,cTensor_SqrtAlphaBar,cTensor_OneMinusAlphaBar);
+ CTensorRandom<type_t>::GetNoiseImageAndNoise(cTensor_NoisyImage,cTensor_Noise,cTensor_Image,cTensor_SqrtAlphaBar,cTensor_OneMinusAlphaBar);
 }
 //----------------------------------------------------------------------------------------------------
 //!получить тензор шума
@@ -1138,7 +1138,7 @@ void CModelBasicDiffusion<type_t>::SetNoisyImage(CTensor<type_t> &cTensor_NoisyI
 template<class type_t>
 void CModelBasicDiffusion<type_t>::GetNoiseTensor(CTensor<type_t> &cTensor)
 {
- CTensorMath<type_t>::SetNormalNoise(cTensor);
+ CTensorRandom<type_t>::SetNormalNoise(cTensor);
 }
 #endif
 

@@ -228,7 +228,7 @@ template<class type_t>
 void CNetLayerTimeEmbedding<type_t>::Forward(void)
 {
  cTensor_H.RestoreSize();
- CTensorMath<type_t>::SetTimeStep(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_TimeLine,Scale);
+ CTensorTime<type_t>::SetTimeStep(cTensor_H,PrevLayerPtr->GetOutputTensor(),cTensor_TimeLine,Scale);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор

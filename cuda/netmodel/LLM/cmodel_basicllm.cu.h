@@ -45,6 +45,9 @@
 #include "../../../netlayer/cnetlayerselfattention.cu.h"
 #include "../../../netlayer/cnetlayeradder.cu.h"
 #include "../../../netlayer/cnetlayerview.cu.h"
+#include "../../../netlayer/cnetlayertransposezx.cu.h"
+#include "../../../netlayer/cnetlayertransposeyx.cu.h"
+#include "../../../netlayer/cnetlayerpositionalencoding.cu.h"
 
 #include "cgpt2tokenizer.cu.h"
 

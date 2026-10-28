@@ -245,7 +245,7 @@ void CNetLayerMaxPooling<type_t>::Forward(void)
 
  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
- CTensorMath<type_t>::MaxPooling(cTensor_H,cTensor_P,input,Pooling_X,Pooling_Y);
+ CTensorPooling<type_t>::MaxPooling(cTensor_H,cTensor_P,input,Pooling_X,Pooling_Y);
 
  uint32_t input_x=input.GetSizeX();
  uint32_t input_y=input.GetSizeY();
@@ -368,7 +368,7 @@ void CNetLayerMaxPooling<type_t>::TrainingBackward(bool create_delta_weight)
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
  prev_delta.ReinterpretSize(BatchSize,InputSize_Z,InputSize_Y,InputSize_X);
 
- CTensorMath<type_t>::MaxPoolingBackward(prev_delta,cTensor_P,cTensor_Delta,Pooling_X,Pooling_Y);
+ CTensorPooling<type_t>::MaxPoolingBackward(prev_delta,cTensor_P,cTensor_Delta,Pooling_X,Pooling_Y);
 
  //задаём ошибку предыдущего слоя
  PrevLayerPtr->GetOutputTensor().ReinterpretSize(BatchSize,input_z,input_y,input_x);

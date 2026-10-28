@@ -224,7 +224,7 @@ void CNetLayerSoftMax<type_t>::Forward(void)
  cTensor_H.RestoreSize();
  CTensor<type_t> &input=PrevLayerPtr->GetOutputTensor();
 
- CTensorMath<type_t>::SoftMaxX(cTensor_H,input);
+ CTensorSoftMax<type_t>::SoftMaxX(cTensor_H,input);
 /*
  uint32_t input_x=input.GetSizeX();
  uint32_t input_y=input.GetSizeY();
@@ -358,7 +358,7 @@ template<class type_t>
 void CNetLayerSoftMax<type_t>::TrainingBackward(bool create_delta_weight)
 {
  CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
- CTensorMath<type_t>::SoftMaxX_Backward(prev_delta,cTensor_Delta,cTensor_H);
+ CTensorSoftMax<type_t>::SoftMaxX_Backward(prev_delta,cTensor_Delta,cTensor_H);
  /*
 
  uint32_t input_x=cTensor_H.GetSizeX();

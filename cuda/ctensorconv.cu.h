@@ -22,6 +22,7 @@
 //****************************************************************************************************
 #include "ctensor.cu.h"
 #include "ctensormath.cu.h"
+#include "ctensorsum.cu.h"
 #include <vector>
 #include "ccudatimespent.cu.h"
 
@@ -1224,7 +1225,7 @@ void CTensorConv<type_t>::CreateDeltaWeightAndBias(CTensor<type_t> &cTensor_dKer
 
  cTensor_dBias.CopyToDevice();//так как мы прибавляем поправки к уже имеющимся, обязательно нужно перенести данные на устройство
  CTensor<type_t> dB=cTensor_dBias;
- CTensorMath<type_t>::SumXY(dB,cTensor_Delta);
+ CTensorSum<type_t>::SumXY(dB,cTensor_Delta);
  CTensorMath<type_t>::Add(cTensor_dBias,cTensor_dBias,dB,1,1);
 }
 

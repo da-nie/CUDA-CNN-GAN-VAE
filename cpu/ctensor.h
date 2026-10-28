@@ -66,6 +66,42 @@ class CTensor
  template<class new_type_t>
  friend class CTensorTest;
 
+ template<class new_type_t>
+ friend class CTensorAttention;
+
+ template<class new_type_t>
+ friend class CTensorClip;
+
+ template<class new_type_t>
+ friend class CTensorSoftMax;
+
+ template<class new_type_t>
+ friend class CTensorAdam;
+
+ template<class new_type_t>
+ friend class CTensorConv;
+
+ template<class new_type_t>
+ friend class CTensorNormalization;
+
+ template<class new_type_t>
+ friend class CTensorPooling;
+
+ template<class new_type_t>
+ friend class CTensorSampling;
+
+ template<class new_type_t>
+ friend class CTensorRandom;
+
+ template<class new_type_t>
+ friend class CTensorSum;
+
+ template<class new_type_t>
+ friend class CTensorTime;
+
+ template<class new_type_t>
+ friend class CTensorTranspose;
+
  public:
   //-перечисления---------------------------------------------------------------------------------------
   //-структуры------------------------------------------------------------------------------------------

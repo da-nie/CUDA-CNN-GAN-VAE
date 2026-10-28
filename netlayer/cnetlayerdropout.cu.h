@@ -209,7 +209,7 @@ void CNetLayerDropOut<type_t>::Forward(void)
  if (Training==false || InferenceMode==true) return;
  //создаём матрицу исключения
  #ifdef USE_GPU_RANDOM_GENERATOR
- CTensorMath<type_t>::CreateDropOutMatrix(cTensor_H_DropOut,DropOut);//очень медленно выходит
+ CTensorRandom<type_t>::CreateDropOutMatrix(cTensor_H_DropOut,DropOut);//очень медленно выходит
  #endif
 
  #ifndef USE_GPU_RANDOM_GENERATOR

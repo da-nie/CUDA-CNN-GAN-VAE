@@ -383,15 +383,15 @@ void CNetLayerSelfAttention<type_t>::Forward(void)
 
  if (UseEMA==true && InferenceMode==true)
  {
-  CTensorMath<type_t>::MulAttentionTranspose(cTensor_Qh,PrevLayerPtr->GetOutputTensor(),cTensor_Wq_EMA,cTensor_Bq_EMA);
-  CTensorMath<type_t>::MulAttentionTranspose(cTensor_Kh,PrevLayerPtr->GetOutputTensor(),cTensor_Wk_EMA,cTensor_Bk_EMA);
-  CTensorMath<type_t>::MulAttentionTranspose(cTensor_Vh,PrevLayerPtr->GetOutputTensor(),cTensor_Wv_EMA,cTensor_Bv_EMA);
+  CTensorAttention<type_t>::MulAttentionTranspose(cTensor_Qh,PrevLayerPtr->GetOutputTensor(),cTensor_Wq_EMA,cTensor_Bq_EMA);
+  CTensorAttention<type_t>::MulAttentionTranspose(cTensor_Kh,PrevLayerPtr->GetOutputTensor(),cTensor_Wk_EMA,cTensor_Bk_EMA);
+  CTensorAttention<type_t>::MulAttentionTranspose(cTensor_Vh,PrevLayerPtr->GetOutputTensor(),cTensor_Wv_EMA,cTensor_Bv_EMA);
  }
  else
  {
-  CTensorMath<type_t>::MulAttentionTranspose(cTensor_Qh,PrevLayerPtr->GetOutputTensor(),cTensor_Wq,cTensor_Bq);
-  CTensorMath<type_t>::MulAttentionTranspose(cTensor_Kh,PrevLayerPtr->GetOutputTensor(),cTensor_Wk,cTensor_Bk);
-  CTensorMath<type_t>::MulAttentionTranspose(cTensor_Vh,PrevLayerPtr->GetOutputTensor(),cTensor_Wv,cTensor_Bv);
+  CTensorAttention<type_t>::MulAttentionTranspose(cTensor_Qh,PrevLayerPtr->GetOutputTensor(),cTensor_Wq,cTensor_Bq);
+  CTensorAttention<type_t>::MulAttentionTranspose(cTensor_Kh,PrevLayerPtr->GetOutputTensor(),cTensor_Wk,cTensor_Bk);
+  CTensorAttention<type_t>::MulAttentionTranspose(cTensor_Vh,PrevLayerPtr->GetOutputTensor(),cTensor_Wv,cTensor_Bv);
  }
 
  //каждую голову нужно обрабатывать отдельно
@@ -401,7 +401,7 @@ void CNetLayerSelfAttention<type_t>::Forward(void)
  CTensorMath<type_t>::Mul(iNetLayer_SoftMaxInput->GetOutputTensor(),iNetLayer_SoftMaxInput->GetOutputTensor(),1.0/sqrtf(HeadDimension));
 
  //здесь можно задать каузальную маску, если она нужна
- if (ApplyCausalMask==true) CTensorMath<type_t>::SetCausalMask(iNetLayer_SoftMaxInput->GetOutputTensor());
+ if (ApplyCausalMask==true) CTensorAttention<type_t>::SetCausalMask(iNetLayer_SoftMaxInput->GetOutputTensor());
 
  iNetLayer_SoftMaxInput->Forward();
  iNetLayer_SoftMax->Forward();
@@ -412,7 +412,7 @@ void CNetLayerSelfAttention<type_t>::Forward(void)
  */
 
  CTensorMath<type_t>::Mul(cTensor_Oh,iNetLayer_SoftMax->GetOutputTensor(),cTensor_Vh);
- CTensorMath<type_t>::AttentionUnion(cTensor_H,cTensor_Oh);
+ CTensorAttention<type_t>::AttentionUnion(cTensor_H,cTensor_Oh);
 
  //float gpu_time=cCUDATimeSpent.Stop();
  //printf("На слой ушло:%.2f мс.\r\n",gpu_time);
@@ -681,7 +681,7 @@ void CNetLayerSelfAttention<type_t>::TrainingBackward(bool create_delta_weight)
  CTensorMath<type_t>::LeftTransposeMul(cTensor_dVh,iNetLayer_SoftMax->GetOutputTensor(),cTensor_dOh);
  CTensorMath<type_t>::RightTransposeMul(cTensor_dP,cTensor_dOh,cTensor_Vh);
 */
- CTensorMath<type_t>::AttentionBackward_dV_dP(cTensor_dVh,cTensor_dP,cTensor_Vh,iNetLayer_SoftMax->GetOutputTensor(),cTensor_Delta,HeadDimension);
+ CTensorAttention<type_t>::AttentionBackward_dV_dP(cTensor_dVh,cTensor_dP,cTensor_Vh,iNetLayer_SoftMax->GetOutputTensor(),cTensor_Delta,HeadDimension);
 
 
 
@@ -718,7 +718,7 @@ void CNetLayerSelfAttention<type_t>::TrainingBackward(bool create_delta_weight)
   }
  }
  */
- CTensorMath<type_t>::AttentionBackward_dQ_dK_dV(cTensor_dQ,cTensor_dK,cTensor_dV,cTensor_dQh,cTensor_dKh,cTensor_dVh);
+ CTensorAttention<type_t>::AttentionBackward_dQ_dK_dV(cTensor_dQ,cTensor_dK,cTensor_dV,cTensor_dQh,cTensor_dKh,cTensor_dVh);
 
  //7. Градиенты весов и смещений
  if (create_delta_weight==true)
@@ -726,22 +726,22 @@ void CNetLayerSelfAttention<type_t>::TrainingBackward(bool create_delta_weight)
   //7.1 dWq += Σ_батч X.T @ dQ: батчевое умножение даёт [Batch,1,D,D], затем сумма по W
   //    в аккумулятор dWq: dWq = 1*sum_W(dWq) + 1*sum_W(dWq_Batch)
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dWq_Batch,cTensor_X,cTensor_dQ);
-  CTensorMath<type_t>::AddSumW(cTensor_dWq,cTensor_dWq,cTensor_dWq_Batch);
+  CTensorSum<type_t>::AddSumW(cTensor_dWq,cTensor_dWq,cTensor_dWq_Batch);
 
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dWk_Batch,cTensor_X,cTensor_dK);
-  CTensorMath<type_t>::AddSumW(cTensor_dWk,cTensor_dWk,cTensor_dWk_Batch);
+  CTensorSum<type_t>::AddSumW(cTensor_dWk,cTensor_dWk,cTensor_dWk_Batch);
 
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dWv_Batch,cTensor_X,cTensor_dV);
-  CTensorMath<type_t>::AddSumW(cTensor_dWv,cTensor_dWv,cTensor_dWv_Batch);
+  CTensorSum<type_t>::AddSumW(cTensor_dWv,cTensor_dWv,cTensor_dWv_Batch);
 
   //7.2 градиенты смещений: dBq[x] = Σ_w Σ_t dQ[w,0,t,x], накопление в dBq
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dBq_Batch,cTensor_Ones,cTensor_dQ);
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dBk_Batch,cTensor_Ones,cTensor_dK);
   CTensorMath<type_t>::LeftTransposeMul(cTensor_dBv_Batch,cTensor_Ones,cTensor_dV);
 
-  CTensorMath<type_t>::AddSumW(cTensor_dBq,cTensor_dBq,cTensor_dBq_Batch);
-  CTensorMath<type_t>::AddSumW(cTensor_dBk,cTensor_dBk,cTensor_dBk_Batch);
-  CTensorMath<type_t>::AddSumW(cTensor_dBv,cTensor_dBv,cTensor_dBv_Batch);
+  CTensorSum<type_t>::AddSumW(cTensor_dBq,cTensor_dBq,cTensor_dBq_Batch);
+  CTensorSum<type_t>::AddSumW(cTensor_dBk,cTensor_dBk,cTensor_dBk_Batch);
+  CTensorSum<type_t>::AddSumW(cTensor_dBv,cTensor_dBv,cTensor_dBv_Batch);
  }
 
  //8. Градиент входа: dX = dQ@Wq.T + dK@Wk.T + dV@Wv.T
@@ -782,14 +782,14 @@ void CNetLayerSelfAttention<type_t>::TrainingUpdateWeight(double speed,double it
 
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
-  CTensorMath<type_t>::Adam(cTensor_Wq,cTensor_dWq,cTensor_M_Wq,cTensor_V_Wq,BatchSize,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_Wk,cTensor_dWk,cTensor_M_Wk,cTensor_V_Wk,BatchSize,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_Wv,cTensor_dWv,cTensor_M_Wv,cTensor_V_Wv,BatchSize,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Wq,cTensor_dWq,cTensor_M_Wq,cTensor_V_Wq,BatchSize,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Wk,cTensor_dWk,cTensor_M_Wk,cTensor_V_Wk,BatchSize,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Wv,cTensor_dWv,cTensor_M_Wv,cTensor_V_Wv,BatchSize,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
 
   //градиенты bias уже просуммированы по всему батчу, поэтому batch_size=1
-  CTensorMath<type_t>::Adam(cTensor_Bq,cTensor_dBq,cTensor_M_Bq,cTensor_V_Bq,1,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_Bk,cTensor_dBk,cTensor_M_Bk,cTensor_V_Bk,1,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_Bv,cTensor_dBv,cTensor_M_Bv,cTensor_V_Bv,1,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Bq,cTensor_dBq,cTensor_M_Bq,cTensor_V_Bq,1,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Bk,cTensor_dBk,cTensor_M_Bk,cTensor_V_Bk,1,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Bv,cTensor_dBv,cTensor_M_Bv,cTensor_V_Bv,1,speed*batch_scale,Beta1,Beta2,Epsilon,iteration);
  }
 
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
@@ -840,14 +840,14 @@ void CNetLayerSelfAttention<type_t>::ClipWeight(type_t min,type_t max)
  iNetLayer_SoftMaxInput->ClipWeight(min,max);
  iNetLayer_SoftMax->ClipWeight(min,max);
 
- CTensorMath<type_t>::Clip(cTensor_Wq,min,max);
- CTensorMath<type_t>::Clip(cTensor_Bq,min,max);
+ CTensorClip<type_t>::Clip(cTensor_Wq,min,max);
+ CTensorClip<type_t>::Clip(cTensor_Bq,min,max);
 
- CTensorMath<type_t>::Clip(cTensor_Wk,min,max);
- CTensorMath<type_t>::Clip(cTensor_Bk,min,max);
+ CTensorClip<type_t>::Clip(cTensor_Wk,min,max);
+ CTensorClip<type_t>::Clip(cTensor_Bk,min,max);
 
- CTensorMath<type_t>::Clip(cTensor_Wv,min,max);
- CTensorMath<type_t>::Clip(cTensor_Bv,min,max);
+ CTensorClip<type_t>::Clip(cTensor_Wv,min,max);
+ CTensorClip<type_t>::Clip(cTensor_Bv,min,max);
 }
 
 //----------------------------------------------------------------------------------------------------

@@ -14,6 +14,18 @@
 #include "ctensormath.cu.h"
 #include "ctensorapplyfunc.cu.h"
 #include "ctensorconv.cu.h"
+#include "ctensoradam.cu.h"
+#include "ctensorattention.cu.h"
+#include "ctensorclip.cu.h"
+#include "ctensornormalization.cu.h"
+#include "ctensorpooling.cu.h"
+#include "ctensorrandom.cu.h"
+#include "ctensorsampling.cu.h"
+#include "ctensorsoftmax.cu.h"
+#include "ctensorsum.cu.h"
+#include "ctensortime.cu.h"
+#include "ctensortranspose.cu.h"
+
 #include "../common/crandom.h"
 
 //****************************************************************************************************
@@ -897,7 +909,7 @@ bool CTensorTest<type_t>::Test(void)
 
  //транспонирование тензора
  SYSTEM::PutMessageToConsole("Тест транспонирования тензоров.");
- cTensorC=CTensorMath<type_t>::Transpose(cTensorA);
+ cTensorC=CTensorTranspose<type_t>::Transpose(cTensorA);
  for(uint32_t w=0;w<batch_size;w++)
  {
   if (cTensorC.GetElement(w,0,0,0)!=1) return(false);
@@ -935,7 +947,7 @@ bool CTensorTest<type_t>::Test(void)
   CTensor<type_t> cTensor_Input(8,16,size,size);
   cTensor_Input.Fill(1);
   CTensor<type_t> cTensor_Output(8,16,1,1);
-  CTensorMath<type_t>::SumXY(cTensor_Output,cTensor_Input);
+  CTensorSum<type_t>::SumXY(cTensor_Output,cTensor_Input);
   uint32_t summ=size*size;
   bool error=false;
   for(uint32_t w=0;w<cTensor_Output.GetSizeW();w++)

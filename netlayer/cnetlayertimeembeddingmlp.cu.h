@@ -414,7 +414,7 @@ void CNetLayerTimeEmbeddingMLP<type_t>::TrainingBackward(bool create_delta_weigh
  type_t k=cTensor_H.GetSizeY()*cTensor_H.GetSizeX();
  k=1/k;
  k*=emb_scale;
- CTensorMath<type_t>::SumXY(cTensor_DeltaLocalNet,cTensor_Delta,k);
+ CTensorSum<type_t>::SumXY(cTensor_DeltaLocalNet,cTensor_Delta,k);
 
  //задаём ошибку предыдущего слоя
  prev_delta=cTensor_Delta;

@@ -309,7 +309,7 @@ bool
   //считаем среднее для каждого элемента пакета по всем пакетам
   //mu = 1./N * np.sum(x, axis = 0)
   CTensorMath<type_t>::Fill(cTensor_TmpA,0);
-  CTensorMath<type_t>::AddSumW(cTensor_TmpA,cTensor_TmpA,PrevLayerPtr->GetOutputTensor(),1,1.0/N);
+  CTensorSum<type_t>::AddSumW(cTensor_TmpA,cTensor_TmpA,PrevLayerPtr->GetOutputTensor(),1,1.0/N);
 
   CTensorMath<type_t>::Add(cTensor_NewMean,cTensor_NewMean,cTensor_TmpA,Momentum,1.0-Momentum);
 
@@ -322,7 +322,7 @@ bool
   //var = 1./N * np.sum(sq, axis = 0)
   CTensorMath<type_t>::Fill(cTensor_VAR,0);
   CTensorMath<type_t>::Pow2(cTensor_TmpA_H,cTensor_XHAT,1);
-  CTensorMath<type_t>::AddSumW(cTensor_VAR,cTensor_VAR,cTensor_TmpA_H,1,1.0/N);
+  CTensorSum<type_t>::AddSumW(cTensor_VAR,cTensor_VAR,cTensor_TmpA_H,1,1.0/N);
 
   CTensorMath<type_t>::Add(cTensor_NewVariable,cTensor_NewVariable,cTensor_VAR,Momentum,1.0-Momentum);
  }
@@ -587,17 +587,17 @@ void CNetLayerBatchNormalization<type_t>::TrainingBackward(bool create_delta_wei
  CTensorMath<type_t>::Fill(cTensor_TmpC,0);//будет np.sum(dxhat*x_hat, axis=0)
 
  CTensorMath<type_t>::TensorItemProduction(cTensor_DXHAT,cTensor_Delta,cTensor_Gamma);//dxhat = dout * gamma
- CTensorMath<type_t>::AddSumW(cTensor_TmpB,cTensor_TmpB,cTensor_DXHAT);//np.sum(dxhat, axis=0)
+ CTensorSum<type_t>::AddSumW(cTensor_TmpB,cTensor_TmpB,cTensor_DXHAT);//np.sum(dxhat, axis=0)
 
  CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_DXHAT,cTensor_XHAT);//dxhat*x_hat
- CTensorMath<type_t>::AddSumW(cTensor_TmpC,cTensor_TmpC,cTensor_TmpA_H);//np.sum(dxhat*x_hat, axis=0)
+ CTensorSum<type_t>::AddSumW(cTensor_TmpC,cTensor_TmpC,cTensor_TmpA_H);//np.sum(dxhat*x_hat, axis=0)
  if (create_delta_weight==true)
  {
   //dgamma = np.sum(dout*xhat, axis=0)
   CTensorMath<type_t>::TensorItemProduction(cTensor_TmpA_H,cTensor_Delta,cTensor_XHAT);
-  CTensorMath<type_t>::AddSumW(cTensor_dGamma,cTensor_dGamma,cTensor_TmpA_H);
+  CTensorSum<type_t>::AddSumW(cTensor_dGamma,cTensor_dGamma,cTensor_TmpA_H);
   //dbeta = np.sum(dout, axis=0)
-  CTensorMath<type_t>::AddSumW(cTensor_dBeta,cTensor_dBeta,cTensor_Delta);
+  CTensorSum<type_t>::AddSumW(cTensor_dBeta,cTensor_dBeta,cTensor_Delta);
  }
 
  CTensorMath<type_t>::Mul(prev_delta,cTensor_DXHAT,N);//N*dxhat
@@ -633,8 +633,8 @@ void CNetLayerBatchNormalization<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
- CTensorMath<type_t>::ClipByNormXY(cTensor_dGamma,cTensor_dGamma,ClipByNormThresHold);
- CTensorMath<type_t>::ClipByNormXY(cTensor_dBeta,cTensor_dBeta,ClipByNormThresHold);
+ CTensorClip<type_t>::ClipByNormXY(cTensor_dGamma,cTensor_dGamma,ClipByNormThresHold);
+ CTensorClip<type_t>::ClipByNormXY(cTensor_dBeta,cTensor_dBeta,ClipByNormThresHold);
 
 /*
  printf("Layer:%i Gamma:%f Beta:%f -> ",Layer,cTensor_Gamma.GetElement(0,0,0,0),cTensor_Beta.GetElement(0,0,0,0));
@@ -644,8 +644,8 @@ void CNetLayerBatchNormalization<type_t>::TrainingUpdateWeight(double speed,doub
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_Gamma,cTensor_dGamma,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_Beta,cTensor_dBeta,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Gamma,cTensor_dGamma,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Beta,cTensor_dBeta,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {

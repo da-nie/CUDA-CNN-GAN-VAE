@@ -161,8 +161,8 @@ void CNetLayerAdder<type_t>::Create(INetLayer<type_t> *prev_layer_a_ptr,INetLaye
 
  BatchSize=batch_size;
 
- if (prev_layer_a_ptr==NULL) throw("Слой суммирования не может быть входным!");//слой без предшествующего считается входным
- if (prev_layer_b_ptr==NULL) throw("Слой суммирования не может быть входным!");//слой без предшествующего считается входным
+ if (prev_layer_a_ptr==NULL) throw("Слой суммирования A не может быть входным!");//слой без предшествующего считается входным
+ if (prev_layer_b_ptr==NULL) throw("Слой суммирования B не может быть входным!");//слой без предшествующего считается входным
 
  //запомним размеры входного тензора, чтобы потом всегда к ним приводить
  InputSize_X=PrevLayerAPtr->GetOutputTensor().GetSizeX();

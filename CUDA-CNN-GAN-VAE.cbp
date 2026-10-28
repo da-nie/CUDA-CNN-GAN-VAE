@@ -41,12 +41,34 @@
 		<Unit filename="common/tga.h" />
 		<Unit filename="cpu/ctensor.cpp" />
 		<Unit filename="cpu/ctensor.h" />
+		<Unit filename="cpu/ctensoradam.cpp" />
+		<Unit filename="cpu/ctensoradam.h" />
 		<Unit filename="cpu/ctensorapplyfunc.cpp" />
 		<Unit filename="cpu/ctensorapplyfunc.h" />
+		<Unit filename="cpu/ctensorattention.cpp" />
+		<Unit filename="cpu/ctensorattention.h" />
+		<Unit filename="cpu/ctensorclip.cpp" />
+		<Unit filename="cpu/ctensorclip.h" />
 		<Unit filename="cpu/ctensorconv.cpp" />
 		<Unit filename="cpu/ctensorconv.h" />
 		<Unit filename="cpu/ctensormath.cpp" />
 		<Unit filename="cpu/ctensormath.h" />
+		<Unit filename="cpu/ctensornormalization.cpp" />
+		<Unit filename="cpu/ctensornormalization.h" />
+		<Unit filename="cpu/ctensorpooling.cpp" />
+		<Unit filename="cpu/ctensorpooling.h" />
+		<Unit filename="cpu/ctensorrandom.cpp" />
+		<Unit filename="cpu/ctensorrandom.h" />
+		<Unit filename="cpu/ctensorsampling.cpp" />
+		<Unit filename="cpu/ctensorsampling.h" />
+		<Unit filename="cpu/ctensorsoftmax.cpp" />
+		<Unit filename="cpu/ctensorsoftmax.h" />
+		<Unit filename="cpu/ctensorsum.cpp" />
+		<Unit filename="cpu/ctensorsum.h" />
+		<Unit filename="cpu/ctensortime.cpp" />
+		<Unit filename="cpu/ctensortime.h" />
+		<Unit filename="cpu/ctensortranspose.cpp" />
+		<Unit filename="cpu/ctensortranspose.h" />
 		<Unit filename="cpu/tensor.cpp" />
 		<Unit filename="cpu/tensor.h" />
 		<Unit filename="cuda/ccudadevicevector.cu.h" />
@@ -60,11 +82,26 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="cuda/ctensor.cu.h" />
+		<Unit filename="cuda/ctensoradam.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensoradam.cu.h" />
 		<Unit filename="cuda/ctensorapplyfunc.cu">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
 		<Unit filename="cuda/ctensorapplyfunc.cu.h" />
+		<Unit filename="cuda/ctensorattention.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensorattention.cu.h" />
+		<Unit filename="cuda/ctensorclip.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensorclip.cu.h" />
 		<Unit filename="cuda/ctensorconv.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -75,11 +112,51 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="cuda/ctensormath.cu.h" />
+		<Unit filename="cuda/ctensornormalization.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensornormalization.cu.h" />
+		<Unit filename="cuda/ctensorpooling.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensorpooling.cu.h" />
+		<Unit filename="cuda/ctensorrandom.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensorrandom.cu.h" />
+		<Unit filename="cuda/ctensorsampling.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensorsampling.cu.h" />
+		<Unit filename="cuda/ctensorsoftmax.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensorsoftmax.cu.h" />
+		<Unit filename="cuda/ctensorsum.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensorsum.cu.h" />
 		<Unit filename="cuda/ctensortest.cu">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
 		<Unit filename="cuda/ctensortest.cu.h" />
+		<Unit filename="cuda/ctensortime.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensortime.cu.h" />
+		<Unit filename="cuda/ctensortranspose.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="cuda/ctensortranspose.cu.h" />
 		<Unit filename="cuda/ctimestamp.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -412,6 +489,11 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayermaxpooling.cu.h" />
+		<Unit filename="netlayer/cnetlayerpositionalencoding.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayerpositionalencoding.cu.h" />
 		<Unit filename="netlayer/cnetlayerselfattention.cu">
 			<Option compile="1" />
 			<Option link="1" />
@@ -437,6 +519,16 @@
 			<Option link="1" />
 		</Unit>
 		<Unit filename="netlayer/cnetlayertimeembeddingmlp.cu.h" />
+		<Unit filename="netlayer/cnetlayertransposeyx.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayertransposeyx.cu.h" />
+		<Unit filename="netlayer/cnetlayertransposezx.cu">
+			<Option compile="1" />
+			<Option link="1" />
+		</Unit>
+		<Unit filename="netlayer/cnetlayertransposezx.cu.h" />
 		<Unit filename="netlayer/cnetlayerupsampling.cu">
 			<Option compile="1" />
 			<Option link="1" />

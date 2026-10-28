@@ -299,18 +299,18 @@ void CNetLayerLayerNormalizationGPT2<type_t>::Forward(void)
 
  //1. транспонирование (B,1,T,D) -> (B,1,D,T)
  cTensor_Tmp.ReinterpretSize(BatchSize,1,Features,Positions);//гарантировать вид (B,1,D,T) для Transpose
- CTensorMath<type_t>::Transpose(cTensor_Tmp,input);
+ CTensorTranspose<type_t>::Transpose(cTensor_Tmp,input);
  //2. та же память в представлении (B,D,T,1): признаки в Z, позиции в Y
  cTensor_Tmp.ReinterpretSize(BatchSize,Features,Positions,1);
 
  //3. LayerNorm: статистики по Z (=признаки) для каждой позиции (w,t)
  cTensor_H_Z.ReinterpretSize(BatchSize,Features,Positions,1);//гарантировать вид (B,D,T,1) для ядра
 
- if (UseEMA==true && InferenceMode==true) CTensorMath<type_t>::LayerNormForwardGPT2(cTensor_H_Z,cTensor_Tmp,cTensor_Gamma_EMA,cTensor_Beta_EMA,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(GPT2_LN_EPSILON));
-                                     else CTensorMath<type_t>::LayerNormForwardGPT2(cTensor_H_Z,cTensor_Tmp,cTensor_Gamma,cTensor_Beta,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(GPT2_LN_EPSILON));
+ if (UseEMA==true && InferenceMode==true) CTensorNormalization<type_t>::LayerNormForwardGPT2(cTensor_H_Z,cTensor_Tmp,cTensor_Gamma_EMA,cTensor_Beta_EMA,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(GPT2_LN_EPSILON));
+                                     else CTensorNormalization<type_t>::LayerNormForwardGPT2(cTensor_H_Z,cTensor_Tmp,cTensor_Gamma,cTensor_Beta,cTensor_XHAT,cTensor_InvStd,static_cast<type_t>(GPT2_LN_EPSILON));
  //4. обратно в раскладку сети
  cTensor_H_Z.ReinterpretSize(BatchSize,1,Features,Positions);//вид (B,1,D,T) для Transpose
- CTensorMath<type_t>::Transpose(cTensor_H,cTensor_H_Z);
+ CTensorTranspose<type_t>::Transpose(cTensor_H,cTensor_H_Z);
 }
 //----------------------------------------------------------------------------------------------------
 /*!получить ссылку на выходной тензор
@@ -447,16 +447,16 @@ void CNetLayerLayerNormalizationGPT2<type_t>::TrainingBackward(bool create_delta
 
  //1. ошибка (B,1,T,D) -> (B,1,D,T) -> (B,D,T,1)
  cTensor_Tmp.ReinterpretSize(BatchSize,1,Features,Positions);//вид (B,1,D,T) для Transpose
- CTensorMath<type_t>::Transpose(cTensor_Tmp,cTensor_Delta);
+ CTensorTranspose<type_t>::Transpose(cTensor_Tmp,cTensor_Delta);
  cTensor_Tmp.ReinterpretSize(BatchSize,Features,Positions,1);//вид (B,D,T,1) для ядра
 
  //2. LayerNormBackwardGPT2 НАКАПЛИВАЕТ dGamma/dBeta (сумма по позициям и пакету - как и требуется)
  cTensor_PrevLayerError_Z.ReinterpretSize(BatchSize,Features,Positions,1);//вид (B,D,T,1) для ядра
- CTensorMath<type_t>::LayerNormBackwardGPT2(cTensor_Tmp,cTensor_XHAT,cTensor_Gamma,cTensor_InvStd,cTensor_PrevLayerError_Z,cTensor_dGamma,cTensor_dBeta);
+ CTensorNormalization<type_t>::LayerNormBackwardGPT2(cTensor_Tmp,cTensor_XHAT,cTensor_Gamma,cTensor_InvStd,cTensor_PrevLayerError_Z,cTensor_dGamma,cTensor_dBeta);
 
  //3. ошибка предыдущему слою: (B,D,T,1) -> (B,1,D,T) -> (B,1,T,D)
  cTensor_PrevLayerError_Z.ReinterpretSize(BatchSize,1,Features,Positions);//вид (B,1,D,T) для Transpose
- CTensorMath<type_t>::Transpose(prev_delta,cTensor_PrevLayerError_Z);
+ CTensorTranspose<type_t>::Transpose(prev_delta,cTensor_PrevLayerError_Z);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -478,14 +478,14 @@ void CNetLayerLayerNormalizationGPT2<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerLayerNormalizationGPT2<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
- CTensorMath<type_t>::ClipByNormXY(cTensor_dGamma,cTensor_dGamma,ClipByNormThresHold);
- CTensorMath<type_t>::ClipByNormXY(cTensor_dBeta,cTensor_dBeta,ClipByNormThresHold);
+ CTensorClip<type_t>::ClipByNormXY(cTensor_dGamma,cTensor_dGamma,ClipByNormThresHold);
+ CTensorClip<type_t>::ClipByNormXY(cTensor_dBeta,cTensor_dBeta,ClipByNormThresHold);
 
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_Gamma,cTensor_dGamma,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_Beta,cTensor_dBeta,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Gamma,cTensor_dGamma,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Beta,cTensor_dBeta,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
@@ -495,8 +495,8 @@ void CNetLayerLayerNormalizationGPT2<type_t>::TrainingUpdateWeight(double speed,
  }
 
  //ограничиваем Gamma и Beta в диапазоне [-100,100] для защиты от взрыва
- CTensorMath<type_t>::Clip(cTensor_Gamma,-100.0,100.0);
- CTensorMath<type_t>::Clip(cTensor_Beta,-100.0,100.0);
+ CTensorClip<type_t>::Clip(cTensor_Gamma,-100.0,100.0);
+ CTensorClip<type_t>::Clip(cTensor_Beta,-100.0,100.0);
 
  if (EMAEnabled)
  {

@@ -240,8 +240,8 @@ void CNetLayerGroupNormalization<type_t>::Forward(void)
 
  // Вызов функции из CTensorMath с передачей GN_EPSILON
     // используем единую константу
- if (UseEMA==true && InferenceMode==true) CTensorMath<type_t>::GroupNormForward(cTensor_H,input,cTensor_Gamma_EMA,cTensor_Beta_EMA,cTensor_XHAT,cTensor_InvStd,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
-                                     else CTensorMath<type_t>::GroupNormForward(cTensor_H,input,cTensor_Gamma,cTensor_Beta,cTensor_XHAT,cTensor_InvStd,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
+ if (UseEMA==true && InferenceMode==true) CTensorNormalization<type_t>::GroupNormForward(cTensor_H,input,cTensor_Gamma_EMA,cTensor_Beta_EMA,cTensor_XHAT,cTensor_InvStd,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
+                                     else CTensorNormalization<type_t>::GroupNormForward(cTensor_H,input,cTensor_Gamma,cTensor_Beta,cTensor_XHAT,cTensor_InvStd,NumGroups,ChannelsPerGroup,(type_t)GN_EPSILON);
 }
 
 
@@ -387,7 +387,7 @@ void CNetLayerGroupNormalization<type_t>::TrainingBackward(bool create_delta_wei
   CTensorMath<type_t>::Fill(cTensor_dBeta,0);
  }
  CTensor<type_t> &prev_delta=PrevLayerPtr->GetDeltaTensor();// для некоторых слоёв (splitter) запрос тензора дельты меняет внутренний счётчик подключённых слоёв, поэтому можно сделать только один запрос
- CTensorMath<type_t>::GroupNormBackward(cTensor_Delta,cTensor_XHAT,cTensor_Gamma,cTensor_InvStd,prev_delta,cTensor_dGamma,cTensor_dBeta,NumGroups,ChannelsPerGroup,create_delta_weight);
+ CTensorNormalization<type_t>::GroupNormBackward(cTensor_Delta,cTensor_XHAT,cTensor_Gamma,cTensor_InvStd,prev_delta,cTensor_dGamma,cTensor_dBeta,NumGroups,ChannelsPerGroup,create_delta_weight);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -409,14 +409,14 @@ void CNetLayerGroupNormalization<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerGroupNormalization<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
- CTensorMath<type_t>::ClipByNormXY(cTensor_dGamma,cTensor_dGamma,ClipByNormThresHold);
- CTensorMath<type_t>::ClipByNormXY(cTensor_dBeta,cTensor_dBeta,ClipByNormThresHold);
+ CTensorClip<type_t>::ClipByNormXY(cTensor_dGamma,cTensor_dGamma,ClipByNormThresHold);
+ CTensorClip<type_t>::ClipByNormXY(cTensor_dBeta,cTensor_dBeta,ClipByNormThresHold);
 
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_Gamma,cTensor_dGamma,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_Beta,cTensor_dBeta,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Gamma,cTensor_dGamma,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Beta,cTensor_dBeta,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
@@ -427,8 +427,8 @@ void CNetLayerGroupNormalization<type_t>::TrainingUpdateWeight(double speed,doub
 
  // ДОБАВЛЕННАЯ ЗАЩИТА: Ограничиваем Gamma и Beta в диапазоне [-100,100]
  // Этого с головой хватит для нормализации,но это спасет от взрыва сети.
- CTensorMath<type_t>::Clip(cTensor_Gamma,-100.0,100.0);
- CTensorMath<type_t>::Clip(cTensor_Beta,-100.0,100.0);
+ CTensorClip<type_t>::Clip(cTensor_Gamma,-100.0,100.0);
+ CTensorClip<type_t>::Clip(cTensor_Beta,-100.0,100.0);
 
  if (EMAEnabled)
  {

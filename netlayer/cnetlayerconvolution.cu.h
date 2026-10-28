@@ -512,8 +512,8 @@ void CNetLayerConvolution<type_t>::TrainingBackward(bool create_delta_weight)
   CTensorConv<type_t>::CreateDeltaWeightAndBias(cTensor_dKernel_Batch,Kernel_X,Kernel_Y,Kernel_Z,Kernel_Amount,cTensor_dBias_Batch,PrevLayerPtr->GetOutputTensor(),cTensor_Delta,Stride_X,Stride_Y,Padding_X,Padding_Y);
   //тензор Delta испорчен этой операцией
 
-  CTensorMath<type_t>::AddSumW(cTensor_dKernel,cTensor_dKernel,cTensor_dKernel_Batch);
-  CTensorMath<type_t>::AddSumW(cTensor_dBias,cTensor_dBias,cTensor_dBias_Batch);
+  CTensorSum<type_t>::AddSumW(cTensor_dKernel,cTensor_dKernel,cTensor_dKernel_Batch);
+  CTensorSum<type_t>::AddSumW(cTensor_dBias,cTensor_dBias,cTensor_dBias_Batch);
  }
 
  //задаём ошибку предыдущего слоя
@@ -538,14 +538,14 @@ void CNetLayerConvolution<type_t>::TrainingResetDeltaWeight(void)
 template<class type_t>
 void CNetLayerConvolution<type_t>::TrainingUpdateWeight(double speed,double iteration,double batch_scale)
 {
- CTensorMath<type_t>::ClipByNormX(cTensor_dKernel,cTensor_dKernel,ClipByNormThresHold);
- CTensorMath<type_t>::ClipByNormXY(cTensor_dBias,cTensor_dBias,ClipByNormThresHold);
+ CTensorClip<type_t>::ClipByNormX(cTensor_dKernel,cTensor_dKernel,ClipByNormThresHold);
+ CTensorClip<type_t>::ClipByNormXY(cTensor_dBias,cTensor_dBias,ClipByNormThresHold);
 
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_ADAM)
  {
   //применяем алгоритм Adam
-  CTensorMath<type_t>::Adam(cTensor_Kernel,cTensor_dKernel,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
-  CTensorMath<type_t>::Adam(cTensor_Bias,cTensor_dBias,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Kernel,cTensor_dKernel,cTensor_MK,cTensor_VK,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
+  CTensorAdam<type_t>::Adam(cTensor_Bias,cTensor_dBias,cTensor_MB,cTensor_VB,BatchSize*batch_scale,speed,Beta1,Beta2,Epsilon,iteration);
  }
  if (INetLayer<type_t>::GetTrainingMode()==INetLayer<type_t>::TRAINING_MODE_GRADIENT)
  {
@@ -578,8 +578,8 @@ CTensor<type_t>& CNetLayerConvolution<type_t>::GetDeltaTensor(void)
 template<class type_t>
 void CNetLayerConvolution<type_t>::ClipWeight(type_t min,type_t max)
 {
- CTensorMath<type_t>::Clip(cTensor_Kernel,min,max);
- CTensorMath<type_t>::Clip(cTensor_Bias,min,max);
+ CTensorClip<type_t>::Clip(cTensor_Kernel,min,max);
+ CTensorClip<type_t>::Clip(cTensor_Bias,min,max);
 }
 //----------------------------------------------------------------------------------------------------
 /*!задать временной шаг
